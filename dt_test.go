@@ -75,8 +75,8 @@ type X2 struct {
 	K *X0
 	L unsafe.Pointer
 	M unsafe.Pointer
-	N []int
+	N []int `copy:",slicemerge"`
 	O [2]string
 	P [2]string
-	Q [3]string
+	Q [3]string `copy:",slicecopy"`
 }

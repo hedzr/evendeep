@@ -1,11 +1,8 @@
-//go:generate stringer -type=fieldTagFlag
-
 package deepcopy
 
 import (
 	"reflect"
 	"strings"
-	"sync"
 )
 
 func parseFieldTags(tag reflect.StructTag) *fieldTags {
@@ -14,74 +11,102 @@ func parseFieldTags(tag reflect.StructTag) *fieldTags {
 	return t
 }
 
+// fieldTags collect the flags and others which are parsed from a struct field tags definition.
+//
+//     type sample struct {
+//         SomeName string `copy:"someName,omitempty"`
+//         IgnoredName string `copy:"-"`
+//     }
 type fieldTags struct {
-	flags         map[string]struct{} `copy:"zeroIfEq"`
-	converter     func(ctx *ValueConverterContext, source reflect.Value) (target reflect.Value, err error)
-	copier        func(ctx *ValueConverterContext, source, target reflect.Value) (err error)
-	nameConverter func(source string, ctx *NameConverterContext) string
+	flags map[fieldTagFlag]bool `copy:"zeroIfEq"`
+
+	converter     *ValueConverter
+	copier        *ValueCopier
+	nameConverter func(source string, ctx *NameConverterContext) string `yaml:"-,omitempty"`
+
+	// targetNameRule:
+	// "-"           ignore
+	// "anyName"     from source field to 'anyName' field
+	// "->anyName"   from source field to 'anyName' field
+	targetNameRule string // first section in struct field tag, such as: "someName,must,..."
+}
+
+type ValueConverter interface {
+	Transform(ctx *ValueConverterContext, source reflect.Value) (target reflect.Value, err error)
+	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+}
+
+type ValueCopier interface {
+	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
+	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
 }
 
 type NameConverterContext struct {
-	// todo
+	*paramsPackage
 }
 
 type ValueConverterContext struct {
-	// todo
+	*paramsPackage
 }
 
-var onceFieldTagsEquip sync.Once
-var mKnownFieldTagFlags map[string]struct{}
-var mKnownFieldTagFlagsConflict map[string]map[string]struct{}
+func (f *fieldTags) String() string {
+	var a []string
+	if f != nil && f.flags != nil {
+		for k := range f.flags {
+			a = append(a, k.String())
+		}
+	}
+	return strings.Join(a, ", ")
+}
 
-type fieldTagFlag int
-
-const (
-	ftfDefault          fieldTagFlag = iota //
-	ftIgnore                                // -
-	ftMust                                  // must
-	ftfZeroIfEq                             // zeroIfEq
-	ftfKeepIfSourceNil                      // keepIfSourceNil
-	ftfKeepIfSourceZero                     // keepIfSourceZero
-	ftfKeepIfNotEq                          // keepIfNotEq
-	ftfSliceCopy                            // sliceCopy
-	ftfSliceMerge                           // sliceMerge
-	ftfMapCopy                              // mapCopy
-	ftfMapMerge                             // mapMerge
-)
+func (f *fieldTags) isFlagOK(ftf fieldTagFlag) bool {
+	if f == nil {
+		return false
+	}
+	return f.flags[ftf]
+}
 
 func (f *fieldTags) Parse(s reflect.StructTag) {
-	onceFieldTagsEquip.Do(func() {
-		add := func(s string) { mKnownFieldTagFlags[s] = struct{}{} }
-		conflictsAdd := func(s string) {
-			ss := strings.Split(s, ",")
-			if mKnownFieldTagFlagsConflict == nil {
-				mKnownFieldTagFlagsConflict = make(map[string]map[string]struct{})
-			}
-			for _, fr := range ss {
-				if v, ok := mKnownFieldTagFlagsConflict[fr]; !ok || (ok && v == nil) {
-					mKnownFieldTagFlagsConflict[fr] = make(map[string]struct{})
-				}
-				for _, to := range ss {
-					if to != fr {
-						mKnownFieldTagFlagsConflict[fr][to] = struct{}{}
-					}
-				}
-			}
-		}
-		mKnownFieldTagFlags = map[string]struct{}{}
-		for _, wh := range strings.Split("-,must,zeroIfEq,keepIfSourceNil,keepIfSourceZero,keepIfNotEq,sliceCopy,sliceMerge,mapCopy,mapMerge", ",") {
-			add(wh)
-		}
-		conflictsAdd("keepIfSourceNil,keepIfSourceZero")
-		conflictsAdd("sliceCopy,sliceMerge")
-		conflictsAdd("mapCopy,mapMerge")
-		conflictsAdd("-,must")
-	})
+	onceInitFieldTagsFlags()
+
+	if f.flags == nil {
+		f.flags = make(map[fieldTagFlag]bool)
+	}
 
 	tags := s.Get("copy")
-	for _, wh := range strings.Split(tags, ",") {
-		if _, ok := mKnownFieldTagFlags[wh]; ok {
-			f.flags[wh] = struct{}{}
+
+	for i, wh := range strings.Split(tags, ",") {
+		if i == 0 && wh != "-" {
+			f.targetNameRule = wh
+			continue
+		}
+
+		ftf := ftfDefault.Parse(wh)
+		f.flags[ftf] = true
+
+		if vm, ok := mKnownFieldTagFlagsConflict[ftf]; ok {
+			for k1 := range vm {
+				if _, ok = f.flags[k1]; ok {
+					delete(f.flags, k1)
+				}
+			}
+		}
+	}
+
+	for k := range mKnownFieldTagFlagsConflictLeaders {
+		var ok bool
+		if _, ok = f.flags[k]; ok {
+			continue
+		}
+		for k1 := range mKnownFieldTagFlagsConflict[k] {
+			if _, ok = f.flags[k1]; ok {
+				break
+			}
+		}
+
+		if !ok {
+			// set default mode
+			f.flags[k] = true
 		}
 	}
 }

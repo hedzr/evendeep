@@ -29,10 +29,12 @@ func MakeClone(fromObj Any) (result Any) {
 	lazyInitRoutines()
 
 	from := reflect.ValueOf(fromObj)
-	to := reflect.New(from.Type()).Elem()
+	fit := DefaultCloneController.indirect(from)
+	to := reflect.New(fit.Type())
 	toObj := to.Interface()
+	functorLog("toObj: %v", toObj)
 	if err := DefaultCloneController.CopyTo(fromObj, toObj); err == nil {
-		result = to.Interface()
+		result = to.Elem().Interface()
 	}
 
 	return
@@ -67,23 +69,6 @@ var (
 	// onceCpController sync.Once
 )
 
-type cpController struct {
-	keepIfSourceIsNil  bool // 源字段值为nil指针时，目标字段的值保持不变
-	keepIfSourceIsZero bool // 源字段值为未初始化的零值时，目标字段的值保持不变 // 此条尚未实现
-	keepIfNotEqual     bool // keep target field value if not equals to source
-	zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
-	eachFieldAlways    bool
-
-	copyFunctionResultToTarget bool
-
-	mergeSlice bool
-	mergeMap   bool
-
-	makeNewClone bool // make a new clone by copying to a fresh new object
-
-	ignoreNames []string
-}
-
 // NewDeepCopier gets a new instance of DeepCopier (the underlying
 // is *cpController) different with DefaultCopyController and
 // DefaultCloneController.
@@ -98,6 +83,8 @@ func NewDeepCopier(opts ...Opt) DeepCopier {
 
 func newDeepCopier() *cpController {
 	return &cpController{
+		valueConverters:            defaultValueConverters(),
+		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
 		mergeSlice:                 true,
 		mergeMap:                   true,
@@ -106,6 +93,8 @@ func newDeepCopier() *cpController {
 
 func newCloner() *cpController {
 	return &cpController{
+		valueConverters:            defaultValueConverters(),
+		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
 		makeNewClone:               true,
 	}
@@ -113,6 +102,8 @@ func newCloner() *cpController {
 
 func newPlainCloner() *cpController {
 	return &cpController{
+		valueConverters:            defaultValueConverters(),
+		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
 		makeNewClone:               true,
 	}
@@ -122,15 +113,6 @@ var onceCopyToRoutines sync.Once
 var copyToRoutines map[reflect.Kind]copyfn
 
 type copyfn func(c *cpController, params *paramsPackage, from, to reflect.Value) (err error)
-
-// paramsPackage is params package
-type paramsPackage struct {
-	owner       *reflect.Value // owner of source slice or struct
-	index       int
-	fieldType   *reflect.StructField
-	fieldTags   *fieldTags
-	ownerTarget *reflect.Value
-}
 
 func lazyInitRoutines() { onceCopyToRoutines.Do(initRoutines) }
 func initRoutines() {

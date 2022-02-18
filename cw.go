@@ -5,6 +5,18 @@ import "github.com/hedzr/log/dir"
 // Opt _
 type Opt func(c *cpController)
 
+func WithValueConverters(cvt ...ValueConverter) Opt {
+	return func(c *cpController) {
+		c.valueConverters = append(c.valueConverters, cvt...)
+	}
+}
+
+func WithValueCopiers(cvt ...ValueCopier) Opt {
+	return func(c *cpController) {
+		c.valueCopiers = append(c.valueCopiers, cvt...)
+	}
+}
+
 // WithIgnoreNames does specify the ignored field names list.
 //
 // Use the filename wildcard match characters (aka. '*' and '?', and '**')

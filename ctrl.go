@@ -7,6 +7,26 @@ import (
 	"strings"
 )
 
+type cpController struct {
+	keepIfSourceIsNil  bool // 源字段值为nil指针时，目标字段的值保持不变
+	keepIfSourceIsZero bool // 源字段值为未初始化的零值时，目标字段的值保持不变 // 此条尚未实现
+	keepIfNotEqual     bool // keep target field value if not equals to source
+	zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
+	eachFieldAlways    bool
+
+	copyFunctionResultToTarget bool
+
+	mergeSlice bool
+	mergeMap   bool
+
+	makeNewClone bool // make a new clone by copying to a fresh new object
+
+	ignoreNames []string
+
+	valueConverters []ValueConverter
+	valueCopiers    []ValueCopier
+}
+
 // CopyTo _
 func (c *cpController) CopyTo(fromObj, toObj Any, opts ...Opt) (err error) {
 	for _, opt := range opts {
@@ -27,11 +47,11 @@ func (c *cpController) CopyTo(fromObj, toObj Any, opts ...Opt) (err error) {
 		return
 	}
 
-	err = c.copyTo(from, to, nil)
+	err = c.copyTo(nil, from, to)
 	return
 }
 
-func (c *cpController) copyTo(from, to reflect.Value, params *paramsPackage) (err error) {
+func (c *cpController) copyTo(params *paramsPackage, from, to reflect.Value) (err error) {
 
 	if from.CanInterface() {
 		if dc, ok := from.Interface().(Cloneable); ok {
@@ -59,6 +79,7 @@ func (c *cpController) copyTo(from, to reflect.Value, params *paramsPackage) (er
 	}()
 
 	kind := from.Kind()
+	//functorLog(" - from.type: %v", kind)
 	if fn, ok := copyToRoutines[kind]; ok && fn != nil {
 		err = fn(c, params, from, to)
 		return
@@ -67,6 +88,37 @@ func (c *cpController) copyTo(from, to reflect.Value, params *paramsPackage) (er
 	err = copyDefaultHandler(c, params, from, to)
 
 	return
+}
+
+func (c *cpController) findCopiers(params *paramsPackage, from, to reflect.Value) (copier ValueCopier, ctx *ValueConverterContext) {
+	var yes bool
+	for _, copier = range c.valueCopiers {
+		if ctx, yes = copier.Match(params, from, to); yes {
+			break
+		}
+	}
+	return
+}
+
+func (c *cpController) findConverters(params *paramsPackage, from, to reflect.Value) (converter ValueConverter, ctx *ValueConverterContext) {
+	var yes bool
+	for _, converter = range c.valueConverters {
+		if ctx, yes = converter.Match(params, from, to); yes {
+			break
+		}
+	}
+	return
+}
+
+func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
+	// sliceValue = from.Elem()
+	// typeKindOfSliceElem = sliceValue.Type().Elem().Kind()
+	if to.Kind() != reflect.Ptr || to.Elem().Kind() != reflect.Slice {
+		x := reflect.New(c.indirect(to).Type())
+		x.Elem().Set(to)
+		return x
+	}
+	return to
 }
 
 func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {

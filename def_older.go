@@ -1,5 +1,5 @@
-//go:build !go1.18
-// +build !go1.18
+//go:build !go1.18beta1
+// +build !go1.18beta1
 
 package deepcopy
 

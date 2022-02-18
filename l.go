@@ -3,6 +3,8 @@
 
 package deepcopy
 
+var functorLogValid bool
+
 func functorLog(format string, args ...interface{}) {
 
 }

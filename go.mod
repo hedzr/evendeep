@@ -6,11 +6,13 @@ go 1.17
 
 //replace gopkg.in/hedzr/errors.v2 => ../05.errors
 
-replace github.com/hedzr/log => ../10.log
+//replace github.com/hedzr/localtest => ../29.localtest
+
+//replace github.com/hedzr/log => ../10.log
 
 //replace github.com/hedzr/logex => ../15.logex
 
 require (
-	github.com/hedzr/log v1.5.17
+	github.com/hedzr/log v1.5.20
 	gopkg.in/hedzr/errors.v2 v2.2.0
 )
