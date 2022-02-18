@@ -110,6 +110,15 @@ func (c *cpController) findConverters(params *paramsPackage, from, to reflect.Va
 	return
 }
 
+func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {
+	if c.flags == nil {
+		c.flags = newFlags(flags...)
+	} else {
+		c.flags.withFlags(flags...)
+	}
+	return c
+}
+
 func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
 	// sliceValue = from.Elem()
 	// typeKindOfSliceElem = sliceValue.Type().Elem().Kind()
@@ -119,6 +128,35 @@ func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
 		return x
 	}
 	return to
+}
+
+func (c *cpController) want(reflectValue reflect.Value, kind reflect.Kind) reflect.Value {
+	for k := reflectValue.Kind(); k != kind; {
+		if k != reflect.Interface && k != reflect.Ptr {
+			break
+		}
+		reflectValue = reflectValue.Elem()
+		k = reflectValue.Kind()
+	}
+	return reflectValue
+}
+
+func (c *cpController) want2(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
+	k := reflectValue.Kind()
+retry:
+	for _, kk := range kinds {
+		if k == kk {
+			return reflectValue
+		}
+	}
+
+	if k == reflect.Interface || k == reflect.Ptr {
+		reflectValue = reflectValue.Elem()
+		k = reflectValue.Kind()
+		goto retry
+	}
+
+	return reflectValue
 }
 
 func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {

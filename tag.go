@@ -70,7 +70,7 @@ func (f *fieldTags) Parse(s reflect.StructTag) {
 	onceInitFieldTagsFlags()
 
 	if f.flags == nil {
-		f.flags = make(map[CopyMergeStrategy]bool)
+		f.flags = newFlags()
 	}
 
 	tags := s.Get("copy")

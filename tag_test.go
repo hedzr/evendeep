@@ -8,20 +8,20 @@ import (
 func TestFieldTags_Parse(t *testing.T) {
 
 	type A struct {
-		flags     map[CopyMergeStrategy]bool `copy:",cleareq"`
+		flags     Flags `copy:",cleareq"`
 		converter *ValueConverter
-		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyenh,mapmerge"`
+		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyoverwrite,mapmerge"`
 	}
 
-	var expects = []map[CopyMergeStrategy]bool{
+	var expects = []Flags{
 		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
 		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
-		{Must: true, SliceCopyEnh: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
+		{Must: true, SliceCopyOverwrite: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
 	}
 
 	var a A
 
-	c := newDeepCopier()
+	c := newCopier()
 
 	v := reflect.ValueOf(&a)
 	v = c.indirect(v)

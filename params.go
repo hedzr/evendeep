@@ -56,19 +56,16 @@ func withOwners(ownerSource, ownerTarget *reflect.Value, index int) paramsOpt {
 func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	return func(p *paramsPackage) {
 		p.fieldTags = &fieldTags{
-			flags:          make(map[CopyMergeStrategy]bool),
+			flags:          newFlags(flags...),
 			converter:      nil,
 			copier:         nil,
 			nameConverter:  nil,
 			targetNameRule: "",
 		}
-		for _, f := range flags {
-			p.fieldTags.flags[f] = true
-		}
 	}
 }
 
-func (params *paramsPackage) isStruct() bool { return params.fieldTags != nil }
+func (params *paramsPackage) isStruct() bool { return params != nil && params.fieldTags != nil }
 
 func (params *paramsPackage) isFlagOK(ftf CopyMergeStrategy) bool {
 	if params == nil {

@@ -15,17 +15,6 @@ func copyPointer(c *cpController, params *paramsPackage, from, to reflect.Value)
 	tgt := c.indirect(to)
 
 	if tgt.CanSet() {
-		//var newCopy reflect.Value
-		//if src.IsValid() {
-		//	newCopy = reflect.New(src.Type())
-		//} else {
-		//	newCopy = src
-		//}
-		////deepOfSource := c.makeClone(src)
-		////newCopy.Elem().Set(deepOfSource)
-		//
-		//tgt.Set(newCopy) // simple now
-
 		paramsChild := newParams(withOwners(&from, &to, -1))
 		params.addChildField(paramsChild)
 		err = c.copyTo(paramsChild, src, to)
@@ -66,7 +55,6 @@ func copyUnsafePointer(c *cpController, params *paramsPackage, from, to reflect.
 }
 
 func copyFunc(c *cpController, params *paramsPackage, from, to reflect.Value) (err error) {
-
 	if to.CanSet() {
 		to.Set(from)
 	} else {
@@ -77,7 +65,6 @@ func copyFunc(c *cpController, params *paramsPackage, from, to reflect.Value) (e
 }
 
 func copyChan(c *cpController, params *paramsPackage, from, to reflect.Value) (err error) {
-
 	if to.CanSet() {
 		to.Set(from)
 	} else {
@@ -186,34 +173,37 @@ func copySlice(c *cpController, params *paramsPackage, from, to reflect.Value) (
 		return
 	}
 
+	var src, tgt reflect.Value
+
 	// sl, tl := src.Cap(), tgt.Cap()
 	if c.flags[SliceMerge] || params.isFlagOK(SliceMerge) {
 
 		if !to.CanAddr() {
-			if !params.isStruct() {
-				functorLog("use ownerTarget to get a ptr to slice")
+			if params != nil && !params.isStruct() {
 				to = *params.ownerTarget
+				functorLog("use ownerTarget to get a ptr to slice, new to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
 			}
 		}
 
-		src := c.indirectAnyAndPtr(from)
-		tgt := c.indirectAny(to)
+		src = c.indirectAnyAndPtr(from)
+		tgt = c.indirectAny(to)
+		dst := c.indirect(tgt)
 
 		functorLog("from.type: %v", from.Type().Kind())
-		functorLog("  to.type: %v, canAddr: %v", to.Type().Kind(), to.CanAddr())
+		functorLog("  to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
 		functorLog(" src.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
-		functorLog(" tgt.type: %v, len: %v, cap: %v, canAddr: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgt.CanAddr())
+		functorLog(" tgt.type: %v, len: %v, cap: %v, canAddr: %v", tgt.Type().Kind(), dst.Len(), dst.Cap(), tgt.CanAddr())
 
 		//paramsChild := newParams(withOwners(&from, &to, -1))
 		//params.addChildField(paramsChild)
 
-		tl, sl := tgt.Len(), src.Len()
-		ns := reflect.MakeSlice(tgt.Type(), 0, 0)
+		tl, sl := dst.Len(), src.Len()
+		ns := reflect.MakeSlice(dst.Type(), 0, 0)
 		for _, ss := range []struct {
 			length int
 			source reflect.Value
 		}{
-			{tl, tgt},
+			{tl, dst},
 			{sl, src},
 		} {
 			for i := 0; i < ss.length; i++ {
@@ -234,20 +224,23 @@ func copySlice(c *cpController, params *paramsPackage, from, to reflect.Value) (
 				}
 			}
 		}
-		to.Set(ns)
+		tgt = ns
+		t := c.want2(to, reflect.Slice, reflect.Interface)
+		t.Set(tgt)
 
-	} else if params != nil && params.isFlagOK(SliceCopyEnh) {
+	} else if c.flags.isFlagOK(SliceCopyOverwrite) || (params != nil && params.isFlagOK(SliceCopyOverwrite)) {
 
 		// ftfCopyEnh
 
 		to = c.ensureIsSlicePtr(to)
-		src := c.indirect(from)
+		src = c.indirect(from)
 		for i := 0; i < src.Len(); i++ {
 			si := src.Index(i)
 			var found bool
 			for j := 0; j < to.Elem().Len(); j++ {
 				ti := to.Elem().Index(j)
 				if found = reflect.DeepEqual(si, ti); found {
+					break
 				}
 			}
 			if !found {
@@ -255,17 +248,29 @@ func copySlice(c *cpController, params *paramsPackage, from, to reflect.Value) (
 			}
 		}
 
+		return
+
 	} else {
 
 		// copy and set each source element to target slice
 
-		//to = c.ensureIsSlicePtr(to)
-		src := c.indirect(from)
+		tgt = c.indirect(to)
+		src = c.indirect(from)
+
+		functorLog("from.type: %v", from.Type().Kind())
+		functorLog("  to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
+		functorLog(" src.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
+		functorLog(" tgt.type: %v, len: %v, cap: %v, canAddr: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgt.CanAddr())
+
 		for i := 0; i < src.Len(); i++ {
-			to.Set(reflect.Append(to, src.Index(i)))
+			tgt = reflect.Append(tgt, src.Index(i))
 		}
 
+		//t := c.want(to, reflect.Slice)
+		t := c.want2(to, reflect.Slice, reflect.Interface)
+		t.Set(tgt)
 	}
+
 	return
 }
 
@@ -293,7 +298,7 @@ func copyArray(c *cpController, params *paramsPackage, from, to reflect.Value) (
 
 	//pt := c.ensureIsSlicePtr(tgt)
 	for i := 0; i < cnt; i++ {
-		to.Index(i).Set(src.Index(i))
+		tgt.Index(i).Set(src.Index(i))
 	}
 	//to.Set(pt.Elem())
 

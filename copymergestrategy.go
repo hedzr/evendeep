@@ -19,6 +19,13 @@ func newFlags(ftf ...CopyMergeStrategy) Flags {
 	return flags
 }
 
+func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
+	for _, f := range flg {
+		flags[f] = true
+	}
+	return flags
+}
+
 func (flags Flags) isFlagOK(ftf CopyMergeStrategy) bool {
 	return flags[ftf]
 }
@@ -44,19 +51,19 @@ func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
 // type fieldTagFlag int
 
 const (
-	Default          CopyMergeStrategy = iota      // std
-	Ignore                                         // -
-	Must                                           // must
-	ClearIfEq        CopyMergeStrategy = iota + 10 // cleareq
-	OmitIfNotEq                                    // omitneq
-	OmitIfEmpty                                    // omitempty
-	OmitIfSourceNil                                // omitsourcenil
-	OmitIfSourceZero                               // omitsourcezero
-	SliceCopy        CopyMergeStrategy = iota + 50 // slicecopy
-	SliceCopyEnh                                   // slicecopyenh
-	SliceMerge                                     // slicemerge
-	MapCopy          CopyMergeStrategy = iota + 70 // mapcopy
-	MapMerge                                       // mapmerge
+	Default            CopyMergeStrategy = iota      // std
+	Ignore                                           // -
+	Must                                             // must
+	ClearIfEq          CopyMergeStrategy = iota + 10 // cleareq
+	OmitIfNotEq                                      // omitneq
+	OmitIfEmpty                                      // omitempty
+	OmitIfSourceNil                                  // omitsourcenil
+	OmitIfSourceZero                                 // omitsourcezero
+	SliceCopy          CopyMergeStrategy = iota + 50 // slicecopy
+	SliceCopyOverwrite                               // slicecopyoverwrite
+	SliceMerge                                       // slicemerge
+	MapCopy            CopyMergeStrategy = iota + 70 // mapcopy
+	MapMerge                                         // mapmerge
 
 	ftf100 CopyMergeStrategy = iota + 100
 	ftf110 CopyMergeStrategy = iota + 110
@@ -113,13 +120,13 @@ func onceInitFieldTagsFlags() {
 		//ftfOmitIfSourceNil                           // omitsourcenil
 		//ftfOmitIfSourceZero                          // omitsourcezero
 		//ftfSliceCopy        fieldTagFlag = iota + 50 // slicecopy
-		//ftfSliceCopyEnh                              // slicecopyenh
+		//ftfSliceCopyOverwrite                        // slicecopyoverwrite
 		//ftfSliceMerge                                // slicemerge
 		//ftfMapCopy          fieldTagFlag = iota + 70 // mapcopy
 		//ftfMapMerge                                  // mapmerge
 
 		conflictsAdd("omitempty,omitsourcenil,omitsourcezero")
-		conflictsAdd("slicecopy,slicecopyenh,slicemerge")
+		conflictsAdd("slicecopy,slicecopyoverwrite,slicemerge")
 		conflictsAdd("mapcopy,mapmerge")
 		conflictsAdd("std,-,must")
 	})

@@ -61,7 +61,7 @@ type DeepCopier interface {
 var (
 	// DefaultCopyController provides standard deepcopy feature.
 	// copy and merge slice or map to exist target
-	DefaultCopyController = newDeepCopier()
+	DefaultCopyController = newCopier()
 	// DefaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
 	DefaultCloneController = newCloner()
@@ -74,7 +74,7 @@ var (
 // DefaultCloneController.
 func NewDeepCopier(opts ...Opt) DeepCopier {
 	lazyInitRoutines()
-	var c = newDeepCopier()
+	var c = newCopier()
 	c.flags = newFlags(SliceMerge, MapMerge)
 	for _, opt := range opts {
 		opt(c)
@@ -87,7 +87,7 @@ func NewDeepCopier(opts ...Opt) DeepCopier {
 // (SliceMerge and MapMerge).
 func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	lazyInitRoutines()
-	var c = newDeepCopier()
+	var c = newCopier()
 	c.flags = newFlags()
 	for _, opt := range opts {
 		opt(c)
@@ -109,7 +109,7 @@ func NewCloner(opts ...Opt) DeepCopier {
 	return c
 }
 
-func newDeepCopier() *cpController {
+func newCopier() *cpController {
 	return &cpController{
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),

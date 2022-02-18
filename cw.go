@@ -32,17 +32,18 @@ func WithCopyStyle() Opt {
 func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		if c.flags == nil {
-			c.flags = make(map[CopyMergeStrategy]bool)
-		}
-		for _, f := range flags {
-			c.flags[f] = true
+			c.flags = newFlags(flags...)
+		} else {
+			for _, f := range flags {
+				c.flags[f] = true
+			}
 		}
 	}
 }
 
 func WithStrategiesReset() Opt {
 	return func(c *cpController) {
-		c.flags = make(map[CopyMergeStrategy]bool)
+		c.flags = newFlags()
 	}
 }
 

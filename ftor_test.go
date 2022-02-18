@@ -6,6 +6,12 @@ import (
 )
 
 func testDeepEqual(t *testing.T, got, expect interface{}) {
+	//a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
+	//switch kind:=a.Kind();kind {
+	//case reflect.Map:
+	//case reflect.Slice:
+	//}
+
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("expecting %v but got %v", expect, got)
 	}
@@ -19,7 +25,7 @@ func TestTestDeepEqual(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		mm[i] = make(map[string]bool)
-		for _, s := range []string{"std", "sliceopy", "mapcopy", "omitempty"} {
+		for s := range map[string]bool{"std": true, "sliceopy": true, "mapcopy": true, "omitempty": true} {
 			mm[i][s] = true
 		}
 	}
@@ -59,7 +65,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -69,7 +75,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -79,7 +85,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -114,7 +120,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 func TestCopySlice_mergeMode(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
-	c := newDeepCopier()
+	c := newCopier().withFlags(SliceMerge, MapMerge)
 
 	var so = []int{9, 77}
 	var to = []int{}
@@ -145,7 +151,7 @@ func TestCopySlice_mergeMode(t *testing.T) {
 func TestCopyArray(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
-	c := newDeepCopier()
+	c := newCopier().withFlags()
 
 	var so = [3]int{9, 77, 13}
 	var to = [5]int{}
@@ -184,7 +190,7 @@ func TestCopyArray(t *testing.T) {
 
 func TestCopyChan(t *testing.T) {
 
-	c := newDeepCopier()
+	c := newCopier()
 
 	var err error
 	var so = make(chan struct{})

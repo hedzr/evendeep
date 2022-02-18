@@ -33,12 +33,21 @@ func TestSimple(t *testing.T) {
 		),
 		deepcopy.NewTestCase(
 			"primitive types - int slice - merge",
-			[]int{7, 99}, []int{125, 99}, []int{125, 99, 7},
+			[]int{99, 7}, []int{125, 99}, []int{125, 99, 7},
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(deepcopy.SliceMerge),
 			},
 			nil,
 		),
+		// NEED REVIEW: what is copyenh strategy
+		//deepcopy.NewTestCase(
+		//	"primitive types - int slice - copyenh(overwrite and extend)",
+		//	[]int{13, 7, 99}, []int{125, 99}, []int{7, 99, 7},
+		//	[]deepcopy.Opt{
+		//		deepcopy.WithStrategies(deepcopy.SliceCopyOverwrite),
+		//	},
+		//	nil,
+		//),
 	))
 
 }
