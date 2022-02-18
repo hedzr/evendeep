@@ -59,7 +59,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(ftfSliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -69,7 +69,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(ftfSliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -79,7 +79,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(ftfSliceCopyEnh)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyEnh)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -91,7 +91,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 	src = reflect.ValueOf(&so)
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(ftfSliceMerge)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceMerge)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -101,7 +101,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{3, 77, 2, 15}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(ftfSliceMerge)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceMerge)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {

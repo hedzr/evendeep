@@ -53,10 +53,10 @@ func withOwners(ownerSource, ownerTarget *reflect.Value, index int) paramsOpt {
 	}
 }
 
-func withFlags(flags ...fieldTagFlag) paramsOpt {
+func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	return func(p *paramsPackage) {
 		p.fieldTags = &fieldTags{
-			flags:          make(map[fieldTagFlag]bool),
+			flags:          make(map[CopyMergeStrategy]bool),
 			converter:      nil,
 			copier:         nil,
 			nameConverter:  nil,
@@ -68,11 +68,36 @@ func withFlags(flags ...fieldTagFlag) paramsOpt {
 	}
 }
 
-func (params *paramsPackage) isFlagOK(ftf fieldTagFlag) bool {
+func (params *paramsPackage) isStruct() bool { return params.fieldTags != nil }
+
+func (params *paramsPackage) isFlagOK(ftf CopyMergeStrategy) bool {
 	if params == nil {
 		return false
 	}
-	return params.fieldTags.flags[ftf]
+	if params.fieldTags == nil {
+		return false
+	}
+	return params.fieldTags.flags.isFlagOK(ftf)
+}
+
+func (params *paramsPackage) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
+	if params == nil {
+		return false
+	}
+	if params.fieldTags == nil {
+		return false
+	}
+	return params.fieldTags.flags.isAnyFlagsOK(ftf...)
+}
+
+func (params *paramsPackage) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
+	if params == nil {
+		return false
+	}
+	if params.fieldTags == nil {
+		return false
+	}
+	return params.fieldTags.flags.isAllFlagsOK(ftf...)
 }
 
 func (params *paramsPackage) depth() (depth int) {

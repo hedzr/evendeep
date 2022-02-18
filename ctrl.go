@@ -8,27 +8,27 @@ import (
 )
 
 type cpController struct {
-	keepIfSourceIsNil  bool // 源字段值为nil指针时，目标字段的值保持不变
-	keepIfSourceIsZero bool // 源字段值为未初始化的零值时，目标字段的值保持不变 // 此条尚未实现
-	keepIfNotEqual     bool // keep target field value if not equals to source
-	zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
-	eachFieldAlways    bool
+	//keepIfSourceIsNil  bool // 源字段值为nil指针时，目标字段的值保持不变
+	//keepIfSourceIsZero bool // 源字段值为未初始化的零值时，目标字段的值保持不变 // 此条尚未实现
+	//keepIfNotEqual     bool // keep target field value if not equals to source
+	//zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
+	//eachFieldAlways    bool
 
 	copyFunctionResultToTarget bool
 
-	mergeSlice bool
-	mergeMap   bool
+	//mergeSlice bool
+	//mergeMap   bool
 
 	makeNewClone bool // make a new clone by copying to a fresh new object
-
-	ignoreNames []string
+	flags        Flags
+	ignoreNames  []string
 
 	valueConverters []ValueConverter
 	valueCopiers    []ValueCopier
 }
 
 // CopyTo _
-func (c *cpController) CopyTo(fromObj, toObj Any, opts ...Opt) (err error) {
+func (c *cpController) CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error) {
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -123,6 +123,22 @@ func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
 
 func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
 	for reflectValue.Kind() == reflect.Ptr {
+		reflectValue = reflectValue.Elem()
+	}
+	return reflectValue
+}
+
+// indirectAnyAndPtr converts/follows Any/any/interface{} to its underlying type (with decoding)
+func (c *cpController) indirectAnyAndPtr(reflectValue reflect.Value) reflect.Value {
+	for k := reflectValue.Kind(); k == reflect.Interface || k == reflect.Ptr; k = reflectValue.Kind() {
+		reflectValue = reflectValue.Elem()
+	}
+	return reflectValue
+}
+
+// indirectAny converts/follows Any/any/interface{} to its underlying type (with decoding)
+func (c *cpController) indirectAny(reflectValue reflect.Value) reflect.Value {
+	for reflectValue.Kind() == reflect.Interface {
 		reflectValue = reflectValue.Elem()
 	}
 	return reflectValue

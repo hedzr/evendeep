@@ -8,6 +8,41 @@ import (
 	"unsafe"
 )
 
+func TestSimple(t *testing.T) {
+
+	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+		deepcopy.NewTestCase(
+			"primitive types - int",
+			8, 9, 8,
+			nil, nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive types - string",
+			"hello", "world", "hello",
+			nil, nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive types - string slice",
+			[]string{"hello", "world"}, []string{"?"}, []string{"hello", "world"},
+			nil, nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive types - int slice",
+			[]int{7, 99}, []int{5}, []int{7, 99},
+			nil, nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive types - int slice - merge",
+			[]int{7, 99}, []int{125, 99}, []int{125, 99, 7},
+			[]deepcopy.Opt{
+				deepcopy.WithStrategies(deepcopy.SliceMerge),
+			},
+			nil,
+		),
+	))
+
+}
+
 func TestDeepCopy(t *testing.T) {
 
 	defer newCaptureLog(t).Release()
@@ -17,8 +52,8 @@ func TestDeepCopy(t *testing.T) {
 	a[0] = "Hello"
 	a[1] = "World"
 
-	x0 := X0{}
-	x1 := X1{
+	x0 := deepcopy.X0{}
+	x1 := deepcopy.X1{
 		A: uintptr(unsafe.Pointer(&x0)),
 		H: make(chan int, 5),
 		M: unsafe.Pointer(&x0),
@@ -42,7 +77,7 @@ func TestDeepCopy(t *testing.T) {
 	t.Run("DeepCopy()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &X2{N: nn[1:3]}
+		x2 := &deepcopy.X2{N: nn[1:3]}
 
 		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
 		testBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
@@ -52,7 +87,7 @@ func TestDeepCopy(t *testing.T) {
 	t.Run("NewDeepCopier().CopyTo()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &X2{N: nn[1:3]}
+		x2 := &deepcopy.X2{N: nn[1:3]}
 
 		ret = deepcopy.NewDeepCopier().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
 		testBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)

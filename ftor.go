@@ -103,10 +103,20 @@ func copyInterface(c *cpController, params *paramsPackage, from, to reflect.Valu
 	paramsChild := newParams(withOwners(&from, &to, -1))
 	params.addChildField(paramsChild)
 
-	find := from.Elem()
-	copyValue := reflect.New(find.Type()).Elem()
-	if err = c.copyTo(paramsChild, find, copyValue); err == nil {
-		to.Set(copyValue)
+	findirect := c.indirectAny(from)
+
+	functorLog("from.type: %v, decode to: %v", from.Type().Kind(), findirect.Kind())
+	functorLog("  to.type: %v, decode to: %v", to.Type().Kind(), to.Elem().Type().Kind())
+
+	merging := c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
+	if merging {
+		err = c.copyTo(paramsChild, findirect, c.indirectAny(to))
+
+	} else {
+		copyValue := reflect.New(findirect.Type()).Elem()
+		if err = c.copyTo(paramsChild, findirect, copyValue); err == nil {
+			to.Set(copyValue)
+		}
 	}
 	return
 }
@@ -151,7 +161,7 @@ func copyStruct(c *cpController, params *paramsPackage, from, to reflect.Value) 
 		}
 
 		paramsChild := newParams(withOwners(&from, &to, i))
-		if paramsChild.isFlagOK(ftfIgnore) {
+		if paramsChild.isFlagOK(Ignore) {
 			functorLog("   ignored [field tag settings]: %v original %q", paramsChild.fieldTags, paramsChild.fieldTypeSource.Tag)
 			continue
 		}
@@ -177,74 +187,82 @@ func copySlice(c *cpController, params *paramsPackage, from, to reflect.Value) (
 	}
 
 	// sl, tl := src.Cap(), tgt.Cap()
-	if c.mergeSlice || params.isFlagOK(ftfSliceMerge) {
+	if c.flags[SliceMerge] || params.isFlagOK(SliceMerge) {
 
-		src := c.indirect(from)
-		tgt := c.indirect(to)
-
-		functorLog("from.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
-		functorLog("  to.type: %v, len: %v, cap: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap())
-
-		tl := tgt.Len()
-
-		ns := reflect.MakeSlice(tgt.Type(), tl, tgt.Cap())
-		paramsChild := newParams(withOwners(&from, &to, -1))
-		params.addChildField(paramsChild)
-
-		for i := 0; i < tl; i++ {
-			v := tgt.Index(i)
-			paramsChild.index = i
-			err = c.copyTo(paramsChild, v, ns.Index(i))
+		if !to.CanAddr() {
+			if !params.isStruct() {
+				functorLog("use ownerTarget to get a ptr to slice")
+				to = *params.ownerTarget
+			}
 		}
 
-		for i := 0; i < src.Len(); i++ {
-			found, el := false, src.Index(i)
-			elv := el.Interface()
-			for j := 0; j < ns.Len(); j++ {
-				tev := ns.Index(j).Interface()
-				//functorLog("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
-				if reflect.DeepEqual(tev, elv) {
-					found = true
-					//functorLog("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
-					break
-				}
-			}
-			if !found {
-				ns = reflect.Append(ns, el)
-			}
-			//functorLog("new tgt: %v", ns.Interface())
-		}
+		src := c.indirectAnyAndPtr(from)
+		tgt := c.indirectAny(to)
 
-		tgt.Set(ns)
+		functorLog("from.type: %v", from.Type().Kind())
+		functorLog("  to.type: %v, canAddr: %v", to.Type().Kind(), to.CanAddr())
+		functorLog(" src.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
+		functorLog(" tgt.type: %v, len: %v, cap: %v, canAddr: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgt.CanAddr())
 
-	} else {
-		if params == nil || params.isFlagOK(ftfSliceCopy) {
+		//paramsChild := newParams(withOwners(&from, &to, -1))
+		//params.addChildField(paramsChild)
 
-			// copy and set each source element to target slice
-
-			//to = c.ensureIsSlicePtr(to)
-			src := c.indirect(from)
-			for i := 0; i < src.Len(); i++ {
-				to.Set(reflect.Append(to, src.Index(i)))
-			}
-
-		} else {
-			// ftfCopyEnh
-
-			to = c.ensureIsSlicePtr(to)
-			src := c.indirect(from)
-			for i := 0; i < src.Len(); i++ {
-				si := src.Index(i)
-				var found bool
-				for j := 0; j < to.Elem().Len(); j++ {
-					ti := to.Elem().Index(j)
-					if found = reflect.DeepEqual(si, ti); found {
+		tl, sl := tgt.Len(), src.Len()
+		ns := reflect.MakeSlice(tgt.Type(), 0, 0)
+		for _, ss := range []struct {
+			length int
+			source reflect.Value
+		}{
+			{tl, tgt},
+			{sl, src},
+		} {
+			for i := 0; i < ss.length; i++ {
+				//to.Set(reflect.Append(to, src.Index(i)))
+				found, el := false, ss.source.Index(i)
+				elv := el.Interface()
+				for j := 0; j < ns.Len(); j++ {
+					tev := ns.Index(j).Interface()
+					functorLog("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
+					if reflect.DeepEqual(tev, elv) {
+						found = true
+						functorLog("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
+						break
 					}
 				}
 				if !found {
-					to.Elem().Set(reflect.Append(to.Elem(), si))
+					ns = reflect.Append(ns, el)
 				}
 			}
+		}
+		to.Set(ns)
+
+	} else if params != nil && params.isFlagOK(SliceCopyEnh) {
+
+		// ftfCopyEnh
+
+		to = c.ensureIsSlicePtr(to)
+		src := c.indirect(from)
+		for i := 0; i < src.Len(); i++ {
+			si := src.Index(i)
+			var found bool
+			for j := 0; j < to.Elem().Len(); j++ {
+				ti := to.Elem().Index(j)
+				if found = reflect.DeepEqual(si, ti); found {
+				}
+			}
+			if !found {
+				to.Elem().Set(reflect.Append(to.Elem(), si))
+			}
+		}
+
+	} else {
+
+		// copy and set each source element to target slice
+
+		//to = c.ensureIsSlicePtr(to)
+		src := c.indirect(from)
+		for i := 0; i < src.Len(); i++ {
+			to.Set(reflect.Append(to, src.Index(i)))
 		}
 
 	}

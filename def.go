@@ -6,7 +6,7 @@ import (
 )
 
 // DeepCopy _
-func DeepCopy(fromObj, toObj Any, opts ...Opt) (result Any) {
+func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	if fromObj == nil {
 		return toObj
 	}
@@ -21,7 +21,7 @@ func DeepCopy(fromObj, toObj Any, opts ...Opt) (result Any) {
 }
 
 // MakeClone _
-func MakeClone(fromObj Any) (result Any) {
+func MakeClone(fromObj interface{}) (result interface{}) {
 	if fromObj == nil {
 		return
 	}
@@ -55,7 +55,7 @@ type DeepCopyable interface {
 // DeepCopier _
 type DeepCopier interface {
 	// CopyTo _
-	CopyTo(fromObj, toObj Any, opts ...Opt) (err error)
+	CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error)
 }
 
 var (
@@ -75,6 +75,34 @@ var (
 func NewDeepCopier(opts ...Opt) DeepCopier {
 	lazyInitRoutines()
 	var c = newDeepCopier()
+	c.flags = newFlags(SliceMerge, MapMerge)
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// NewFlatDeepCopier gets a new instance of DeepCopier (the underlying
+// is *cpController) like NewDeepCopier but no merge strategies
+// (SliceMerge and MapMerge).
+func NewFlatDeepCopier(opts ...Opt) DeepCopier {
+	lazyInitRoutines()
+	var c = newDeepCopier()
+	c.flags = newFlags()
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// NewCloner gets a new instance of DeepCopier (the underlying
+// is *cpController) different with DefaultCopyController and
+// DefaultCloneController.
+// It returns a cloner like MakeClone()
+func NewCloner(opts ...Opt) DeepCopier {
+	lazyInitRoutines()
+	var c = newCloner()
+	c.flags = newFlags()
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -86,8 +114,7 @@ func newDeepCopier() *cpController {
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
-		mergeSlice:                 true,
-		mergeMap:                   true,
+		makeNewClone:               false,
 	}
 }
 

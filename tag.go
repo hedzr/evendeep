@@ -18,7 +18,7 @@ func parseFieldTags(tag reflect.StructTag) *fieldTags {
 //         IgnoredName string `copy:"-"`
 //     }
 type fieldTags struct {
-	flags map[fieldTagFlag]bool `copy:"zeroIfEq"`
+	flags Flags `copy:"zeroIfEq"`
 
 	converter     *ValueConverter
 	copier        *ValueCopier
@@ -59,7 +59,7 @@ func (f *fieldTags) String() string {
 	return strings.Join(a, ", ")
 }
 
-func (f *fieldTags) isFlagOK(ftf fieldTagFlag) bool {
+func (f *fieldTags) isFlagOK(ftf CopyMergeStrategy) bool {
 	if f == nil {
 		return false
 	}
@@ -70,7 +70,7 @@ func (f *fieldTags) Parse(s reflect.StructTag) {
 	onceInitFieldTagsFlags()
 
 	if f.flags == nil {
-		f.flags = make(map[fieldTagFlag]bool)
+		f.flags = make(map[CopyMergeStrategy]bool)
 	}
 
 	tags := s.Get("copy")
@@ -81,7 +81,7 @@ func (f *fieldTags) Parse(s reflect.StructTag) {
 			continue
 		}
 
-		ftf := ftfDefault.Parse(wh)
+		ftf := Default.Parse(wh)
 		f.flags[ftf] = true
 
 		if vm, ok := mKnownFieldTagFlagsConflict[ftf]; ok {

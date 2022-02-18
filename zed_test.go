@@ -15,8 +15,8 @@ func TestDeepCopyExternal(t *testing.T) {
 	a[0] = "Hello"
 	a[1] = "World"
 
-	x0 := X0{}
-	x1 := X1{
+	x0 := deepcopy.X0{}
+	x1 := deepcopy.X1{
 		A: uintptr(unsafe.Pointer(&x0)),
 		H: make(chan int, 5),
 		M: unsafe.Pointer(&x0),
@@ -29,7 +29,7 @@ func TestDeepCopyExternal(t *testing.T) {
 	t.Run("DeepCopy()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &X2{N: nn[1:3]}
+		x2 := &deepcopy.X2{N: nn[1:3]}
 
 		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
 		testBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)

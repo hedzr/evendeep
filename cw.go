@@ -17,6 +17,35 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 	}
 }
 
+func WithCloneStyle() Opt {
+	return func(c *cpController) {
+		c.makeNewClone = true
+	}
+}
+
+func WithCopyStyle() Opt {
+	return func(c *cpController) {
+		c.makeNewClone = false
+	}
+}
+
+func WithStrategies(flags ...CopyMergeStrategy) Opt {
+	return func(c *cpController) {
+		if c.flags == nil {
+			c.flags = make(map[CopyMergeStrategy]bool)
+		}
+		for _, f := range flags {
+			c.flags[f] = true
+		}
+	}
+}
+
+func WithStrategiesReset() Opt {
+	return func(c *cpController) {
+		c.flags = make(map[CopyMergeStrategy]bool)
+	}
+}
+
 // WithIgnoreNames does specify the ignored field names list.
 //
 // Use the filename wildcard match characters (aka. '*' and '?', and '**')

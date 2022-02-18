@@ -8,15 +8,15 @@ import (
 func TestFieldTags_Parse(t *testing.T) {
 
 	type A struct {
-		flags     map[fieldTagFlag]bool `copy:",cleareq"`
+		flags     map[CopyMergeStrategy]bool `copy:",cleareq"`
 		converter *ValueConverter
 		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyenh,mapmerge"`
 	}
 
-	var expects = []map[fieldTagFlag]bool{
-		map[fieldTagFlag]bool{ftfDefault: true, ftfClearIfEq: true, ftfSliceCopy: true, ftfMapCopy: true, ftfOmitIfEmpty: true},
-		map[fieldTagFlag]bool{ftfDefault: true, ftfSliceCopy: true, ftfMapCopy: true, ftfOmitIfEmpty: true},
-		map[fieldTagFlag]bool{ftfMust: true, ftfSliceCopyEnh: true, ftfMapMerge: true, ftfOmitIfNotEq: true, ftfOmitIfSourceZero: true},
+	var expects = []map[CopyMergeStrategy]bool{
+		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
+		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
+		{Must: true, SliceCopyEnh: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
 	}
 
 	var a A
@@ -29,7 +29,7 @@ func TestFieldTags_Parse(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
 		ft := parseFieldTags(fld.Tag)
-		if !ft.isFlagOK(ftfIgnore) {
+		if !ft.isFlagOK(Ignore) {
 			t.Logf("%q flags: %v", fld.Tag, ft)
 		} else {
 			t.Logf("%q flags: %v", fld.Tag, ft)
