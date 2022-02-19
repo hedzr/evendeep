@@ -7,8 +7,13 @@ import (
 	"sync"
 )
 
+// CopyMergeStrategy _
 type CopyMergeStrategy int
 
+// CopyMergeStrategies an array of CopyMergeStrategy
+type CopyMergeStrategies []CopyMergeStrategy
+
+// Flags is an efficient manager for a group of CopyMergeStrategy items.
 type Flags map[CopyMergeStrategy]bool
 
 func newFlags(ftf ...CopyMergeStrategy) Flags {
@@ -134,6 +139,7 @@ func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
 	return true
 }
 
+// Parse decodes the given string and return the matched CopyMergeStrategy value.
 func (i CopyMergeStrategy) Parse(s string) CopyMergeStrategy {
 	for ix, str := range _CopyMergeStrategy_map {
 		if s == str {
@@ -178,20 +184,47 @@ func onceInitFieldTagsFlags() {
 }
 
 const (
-	Default          CopyMergeStrategy = iota      // std
-	Ignore                                         // -
-	Must                                           // must
-	ClearIfEq        CopyMergeStrategy = iota + 10 // cleareq
-	OmitIfNotEq                                    // omitneq
-	OmitIfEmpty                                    // omitempty
-	OmitIfSourceNil                                // omitsourcenil
-	OmitIfSourceZero                               // omitsourcezero
-	SliceCopy        CopyMergeStrategy = iota + 50 // slicecopy
-	SliceCopyAppend                                // slicecopyappend
-	SliceMerge                                     // slicemerge
-	MapCopy          CopyMergeStrategy = iota + 70 // mapcopy
-	MapMerge                                       // mapmerge
+	// Default the public fields will be copied
+	Default CopyMergeStrategy = iota // std
+	// Ignore the ignored fields will be ignored in any scene
+	Ignore // -
+	// Must the must-be-copied fields will be always copied to the target
+	Must // must
+	// ClearIfEq the target field will be reset/clear to zero if it equals to the source
+	ClearIfEq CopyMergeStrategy = iota + 10 // cleareq
+	// OmitIfNotEq the source field will not be copied if it does not equal to the target
+	OmitIfNotEq // omitneq
+	// OmitIfEmpty is both OmitIfSourceNil+OmitIfSourceZero
+	OmitIfEmpty // omitempty
+	// OmitIfSourceNil the target field will be kept if source is nil
+	OmitIfSourceNil // omitsourcenil
+	// OmitIfSourceZero the target field will be kept if source is zero
+	OmitIfSourceZero // omitsourcezero
+	// SliceCopy the source slice will be set or duplicated to the target.
+	// the target slice will be lost.
+	SliceCopy CopyMergeStrategy = iota + 50 // slicecopy
+	// SliceCopyAppend the source slice will be appended into the target.
+	// The original value in the target will be kept
+	SliceCopyAppend // slicecopyappend
+	// SliceMerge the source slice will be appended into the target
+	// if anyone of them is not exists inside the target slice.
+	//
+	// The duplicated items in the target original slice have no changes.
+	//
+	// The uniqueness checking is only applied to each source slice items.
+	SliceMerge // slicemerge
+	// MapCopy do copy source map to the target
+	MapCopy CopyMergeStrategy = iota + 70 // mapcopy
+	// MapMerge try to merge each fields inside source map recursively,
+	// even if it's a slice, a pointer, another sub-map, and so on.
+	MapMerge // mapmerge
 
+	// // --- Globally settings ---
+
+	// UnexportedToo _
+	UnexportedToo CopyMergeStrategy = iota + 90 // private
+
+	// MaxStrategy is a mark to indicate the max value of all available CopyMergeStrategies
 	MaxStrategy
 
 	ftf100 CopyMergeStrategy = iota + 100
@@ -203,6 +236,7 @@ const (
 	ftf160 CopyMergeStrategy = iota + 160
 	ftf170 CopyMergeStrategy = iota + 170
 
+	// InvalidStrategy for algorithm purpose
 	InvalidStrategy
 )
 

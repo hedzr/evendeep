@@ -48,6 +48,24 @@ func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
 	return reflect.New(want)
 }
 
+func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) {
+	addrStr = "not-addressable"
+	if valueField.Kind() == reflect.Interface && !valueField.IsNil() {
+		elm := valueField.Elem()
+		if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
+			valueField = elm
+		}
+	}
+	if valueField.Kind() == reflect.Ptr {
+		valueField = valueField.Elem()
+	}
+	if valueField.CanAddr() {
+		addrStr = fmt.Sprintf("0x%X", valueField.Addr().Pointer())
+	}
+	v = valueField
+	return
+}
+
 func inspectStructV(val reflect.Value) {
 	if val.Kind() == reflect.Interface && !val.IsNil() {
 		elm := val.Elem()
@@ -60,24 +78,9 @@ func inspectStructV(val reflect.Value) {
 	}
 
 	for i, count := 0, val.NumField(); i < count; i++ {
-		valueField := val.Field(i)
+		valField := val.Field(i)
 		typeField := val.Type().Field(i)
-		address := "not-addressable"
-
-		if valueField.Kind() == reflect.Interface && !valueField.IsNil() {
-			elm := valueField.Elem()
-			if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
-				valueField = elm
-			}
-		}
-
-		if valueField.Kind() == reflect.Ptr {
-			valueField = valueField.Elem()
-
-		}
-		if valueField.CanAddr() {
-			address = fmt.Sprintf("0x%X", valueField.Addr().Pointer())
-		}
+		valueField, address := testFieldValue(valField)
 
 		fmt.Printf("kind: %v, ", valueField.Kind())
 		var v interface{}
@@ -93,6 +96,7 @@ func inspectStructV(val reflect.Value) {
 	}
 }
 
+// InspectStruct dumps wach field in a struct with its reflect information
 func InspectStruct(v interface{}) {
 	inspectStructV(reflect.ValueOf(v))
 }

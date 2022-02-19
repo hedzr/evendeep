@@ -5,30 +5,41 @@ import "github.com/hedzr/log/dir"
 // Opt _
 type Opt func(c *cpController)
 
+// WithValueConverters gives a set of ValueConverter.
+// The value converters will be applied on its Match returns ok.
 func WithValueConverters(cvt ...ValueConverter) Opt {
 	return func(c *cpController) {
 		c.valueConverters = append(c.valueConverters, cvt...)
 	}
 }
 
+// WithValueCopiers gives a set of ValueCopier.
+// The value copiers will be applied on its Match returns ok.
 func WithValueCopiers(cvt ...ValueCopier) Opt {
 	return func(c *cpController) {
 		c.valueCopiers = append(c.valueCopiers, cvt...)
 	}
 }
 
+// WithCloneStyle sets the cpController to clone mode.
+// In this mode, source object will be cloned to a new
+// object and returned as new target object.
 func WithCloneStyle() Opt {
 	return func(c *cpController) {
 		c.makeNewClone = true
 	}
 }
 
+// WithCopyStyle sets the cpController to copier mode.
+// In this mode, source object will be deepcopied to
+// target object.
 func WithCopyStyle() Opt {
 	return func(c *cpController) {
 		c.makeNewClone = false
 	}
 }
 
+// WithStrategies appends more flags into *cpController
 func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		if c.flags == nil {
@@ -41,6 +52,8 @@ func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	}
 }
 
+// WithStrategiesReset clears the exists flags in a *cpController
+// so that you can append new ones (with WithStrategies(flags...))
 func WithStrategiesReset() Opt {
 	return func(c *cpController) {
 		c.flags = newFlags()

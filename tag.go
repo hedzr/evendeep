@@ -31,20 +31,24 @@ type fieldTags struct {
 	targetNameRule string // first section in struct field tag, such as: "someName,must,..."
 }
 
+// ValueConverter _
 type ValueConverter interface {
 	Transform(ctx *ValueConverterContext, source reflect.Value) (target reflect.Value, err error)
 	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
 }
 
+// ValueCopier _
 type ValueCopier interface {
 	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
 	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
 }
 
+// NameConverterContext _
 type NameConverterContext struct {
 	*paramsPackage
 }
 
+// ValueConverterContext _
 type ValueConverterContext struct {
 	*paramsPackage
 }
