@@ -10,13 +10,13 @@ func TestFieldTags_Parse(t *testing.T) {
 	type A struct {
 		flags     Flags `copy:",cleareq"`
 		converter *ValueConverter
-		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyoverwrite,mapmerge"`
+		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyappend,mapmerge"`
 	}
 
 	var expects = []Flags{
 		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
 		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
-		{Must: true, SliceCopyOverwrite: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
+		{Must: true, SliceCopyAppend: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
 	}
 
 	var a A

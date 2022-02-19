@@ -4,7 +4,6 @@ import (
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v2"
 	"reflect"
-	"strings"
 )
 
 type cpController struct {
@@ -28,15 +27,20 @@ type cpController struct {
 }
 
 // CopyTo _
-func (c *cpController) CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error) {
+func (c *cpController) CopyTo(fromObjPtr, toObjPtr interface{}, opts ...Opt) (err error) {
 	for _, opt := range opts {
 		opt(c)
 	}
 
 	var (
-		from = c.indirect(reflect.ValueOf(fromObj))
-		to   = c.indirect(reflect.ValueOf(toObj))
+		from0 = reflect.ValueOf(fromObjPtr)
+		to0   = reflect.ValueOf(toObjPtr)
+		from  = c.indirect(from0)
+		to    = c.indirect(to0)
 	)
+
+	functorLog("from.type: %v | input: %v", from.Type().Kind(), from0.Type().Kind())
+	functorLog("  to.type: %v | input: %v", to.Type().Kind(), to0.Type().Kind())
 
 	//if !to.CanAddr() {
 	//	return errors.New("copy to value is unaddressable")
@@ -119,115 +123,57 @@ func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {
 	return c
 }
 
-func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
-	// sliceValue = from.Elem()
-	// typeKindOfSliceElem = sliceValue.Type().Elem().Kind()
-	if to.Kind() != reflect.Ptr || to.Elem().Kind() != reflect.Slice {
-		x := reflect.New(c.indirect(to).Type())
-		x.Elem().Set(to)
-		return x
-	}
-	return to
+//func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
+//	// sliceValue = from.Elem()
+//	// typeKindOfSliceElem = sliceValue.Type().Elem().Kind()
+//	if to.Kind() != reflect.Ptr || to.Elem().Kind() != reflect.Slice {
+//		x := reflect.New(c.indirect(to).Type())
+//		x.Elem().Set(to)
+//		return x
+//	}
+//	return to
+//}
+
+// decode decodes a value to its underlying type, if it was wrapped by
+// interface{} or pointer.
+//
+//    var b = 11
+//    var i interface{} = &b
+//    var v = reflect.ValueOf(&i)
+//    var n = c.decode(v)
+//    println(n.Type())    // = int
+func (c *cpController) decode(reflectValue reflect.Value) (ret, prev reflect.Value) {
+	return rdecode(reflectValue)
 }
 
-func (c *cpController) want(reflectValue reflect.Value, kind reflect.Kind) reflect.Value {
-	for k := reflectValue.Kind(); k != kind; {
-		if k != reflect.Interface && k != reflect.Ptr {
-			break
-		}
-		reflectValue = reflectValue.Elem()
-		k = reflectValue.Kind()
-	}
-	return reflectValue
+func (c *cpController) skip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
+	return rskip(reflectValue, kinds...)
 }
 
-func (c *cpController) want2(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
-	k := reflectValue.Kind()
-retry:
-	for _, kk := range kinds {
-		if k == kk {
-			return reflectValue
-		}
-	}
-
-	if k == reflect.Interface || k == reflect.Ptr {
-		reflectValue = reflectValue.Elem()
-		k = reflectValue.Kind()
-		goto retry
-	}
-
-	return reflectValue
+func (c *cpController) want(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
+	return rwant(reflectValue, kinds...)
 }
 
 func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
-	for reflectValue.Kind() == reflect.Ptr {
-		reflectValue = reflectValue.Elem()
-	}
-	return reflectValue
+	return rindirect(reflectValue)
 }
 
-// indirectAnyAndPtr converts/follows Any/any/interface{} to its underlying type (with decoding)
-func (c *cpController) indirectAnyAndPtr(reflectValue reflect.Value) reflect.Value {
-	for k := reflectValue.Kind(); k == reflect.Interface || k == reflect.Ptr; k = reflectValue.Kind() {
-		reflectValue = reflectValue.Elem()
-	}
-	return reflectValue
-}
-
-// indirectAny converts/follows Any/any/interface{} to its underlying type (with decoding)
-func (c *cpController) indirectAny(reflectValue reflect.Value) reflect.Value {
-	for reflectValue.Kind() == reflect.Interface {
-		reflectValue = reflectValue.Elem()
-	}
-	return reflectValue
-}
+//// indirectAnyAndPtr converts/follows Any/any/interface{} to its underlying type (with decoding)
+//func (c *cpController) indirectAnyAndPtr(reflectValue reflect.Value) reflect.Value {
+//	for k := reflectValue.Kind(); k == reflect.Interface || k == reflect.Ptr; k = reflectValue.Kind() {
+//		reflectValue = reflectValue.Elem()
+//	}
+//	return reflectValue
+//}
+//
+//// indirectAny converts/follows Any/any/interface{} to its underlying type (with decoding)
+//func (c *cpController) indirectAny(reflectValue reflect.Value) reflect.Value {
+//	for reflectValue.Kind() == reflect.Interface {
+//		reflectValue = reflectValue.Elem()
+//	}
+//	return reflectValue
+//}
 
 func (c *cpController) indirectType(reflectType reflect.Type) reflect.Type {
-	for reflectType.Kind() == reflect.Ptr || reflectType.Kind() == reflect.Slice {
-		reflectType = reflectType.Elem()
-	}
-	return reflectType
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func contains(names []string, name string) bool {
-	for _, n := range names {
-		if strings.EqualFold(n, name) {
-			return true
-		}
-	}
-	return false
-}
-
-func containsPartialsOnly(partialNames []string, testedString string) (contains bool) {
-	for _, n := range partialNames {
-		if strings.Contains(testedString, n) {
-			return true
-		}
-	}
-	return
-}
-
-func partialContainsShort(names []string, partialNeedle string) (contains bool) {
-	for _, n := range names {
-		if strings.Contains(n, partialNeedle) {
-			return true
-		}
-	}
-	return
-}
-
-func partialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
-	for ix, n := range names {
-		if strings.Contains(n, partialNeedle) {
-			return ix, n, true
-		}
-	}
-	return -1, "", false
+	return rindirectType(reflectType)
 }

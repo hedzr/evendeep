@@ -10,6 +10,7 @@ import (
 	"unsafe"
 )
 
+// TestNormal _
 func TestNormal(t *testing.T) {
 	// config := log.NewLoggerConfigWith(true, "logrus", "trace")
 	// logger := logrus.NewWithConfig(config)
@@ -23,6 +24,7 @@ func TestNormal(t *testing.T) {
 	functorLog("but again")
 }
 
+// TestCpChan _
 func TestCpChan(t *testing.T) {
 	var val = make(chan int, 10)
 	vv := reflect.ValueOf(&val)
@@ -38,6 +40,7 @@ func TestCpChan(t *testing.T) {
 
 }
 
+// TestCase _
 type TestCase struct {
 	description string      // description of what test is checking
 	src, dst    interface{} //
@@ -46,10 +49,12 @@ type TestCase struct {
 	verifier    func(src, dst, expect interface{}) (err error)
 }
 
+// NewTestCases _
 func NewTestCases(c ...TestCase) []TestCase {
 	return c
 }
 
+// NewTestCase _
 func NewTestCase(
 	description string, // description of what test is checking
 	src, dst interface{}, //
@@ -62,8 +67,10 @@ func NewTestCase(
 	}
 }
 
+// ExtrasOpt for TestCase
 type ExtrasOpt func(tc *TestCase)
 
+// RunTestCases _
 func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 	for ix, tc := range cases {
 		t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
@@ -75,14 +82,21 @@ func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 				t.Fatal(err)
 			}
 
-			t.Logf("expect %v, got %v.", tc.expect, tc.dst)
-
 			if tc.verifier != nil {
+				t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 				if err = tc.verifier(tc.src, tc.dst, tc.expect); err != nil {
 					return
 				}
-			} else if reflect.DeepEqual(tc.dst, tc.expect) {
-				return
+			} else {
+				a, b := reflect.ValueOf(tc.dst), reflect.ValueOf(tc.expect)
+				aa, _ := rdecode(a)
+				bb, _ := rdecode(b)
+				av, bv := aa.Interface(), bb.Interface()
+				t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
+				t.Logf("\nexpect: %+v\n   got: %+v.", bv, av)
+				if reflect.DeepEqual(av, bv) {
+					return
+				}
 			}
 
 			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
@@ -91,6 +105,7 @@ func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 	}
 }
 
+// Employee type for testing
 type Employee struct {
 	Name      string
 	Birthday  *time.Time
@@ -124,8 +139,10 @@ type Employee struct {
 	Ro        []int
 }
 
+// X0 type for testing
 type X0 struct{}
 
+// X1 type for testing
 type X1 struct {
 	A uintptr
 	B map[string]interface{}
@@ -146,6 +163,7 @@ type X1 struct {
 	Q [2]string
 }
 
+// X2 type for testing
 type X2 struct {
 	A uintptr
 	B map[string]interface{}

@@ -38,6 +38,8 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	c := newCloner()
 
+	onceInitFieldTagsFlags()
+
 	var so = []int{9, 77}
 	var to = []int{}
 	var err error
@@ -60,12 +62,12 @@ func TestCopySlice_cloneMode(t *testing.T) {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{1, 9, 77})
+		testDeepEqual(t, to, []int{9, 77})
 	}
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -75,7 +77,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -85,7 +87,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyOverwrite)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {

@@ -12,28 +12,42 @@ func TestSimple(t *testing.T) {
 
 	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
 		deepcopy.NewTestCase(
-			"primitive types - int",
+			"primitive - int",
 			8, 9, 8,
 			nil, nil,
 		),
 		deepcopy.NewTestCase(
-			"primitive types - string",
+			"primitive - string",
 			"hello", "world", "hello",
 			nil, nil,
 		),
 		deepcopy.NewTestCase(
-			"primitive types - string slice",
-			[]string{"hello", "world"}, []string{"?"}, []string{"hello", "world"},
+			"primitive - string slice",
+			[]string{"hello", "world"},
+			&[]string{"?"},             // target needn't addressof
+			[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
 			nil, nil,
 		),
 		deepcopy.NewTestCase(
-			"primitive types - int slice",
-			[]int{7, 99}, []int{5}, []int{7, 99},
+			"primitive - int slice",
+			[]int{7, 99},
+			&[]int{5},
+			[]int{7, 99},
 			nil, nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive - int slice",
+			[]int{7, 99},
+			&[]int{5},
+			[]int{5, 7, 99},
+			[]deepcopy.Opt{
+				deepcopy.WithStrategies(deepcopy.SliceMerge),
+			},
+			nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive types - int slice - merge",
-			[]int{99, 7}, []int{125, 99}, []int{125, 99, 7},
+			[]int{99, 7}, &[]int{125, 99}, []int{125, 99, 7},
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(deepcopy.SliceMerge),
 			},
@@ -52,7 +66,51 @@ func TestSimple(t *testing.T) {
 
 }
 
-func TestDeepCopy(t *testing.T) {
+func TestStructSimple(t *testing.T) {
+
+	nn := []int{2, 9, 77, 111, 23, 29}
+	var a [2]string
+	a[0] = "Hello"
+	a[1] = "World"
+	var a3 = [3]string{"Hello", "World"}
+
+	x0 := deepcopy.X0{}
+	x1 := deepcopy.X1{
+		A: uintptr(unsafe.Pointer(&x0)),
+		H: make(chan int, 5),
+		M: unsafe.Pointer(&x0),
+		// E: []*X0{&x0},
+		N: nn[1:5],
+		O: a,
+		Q: a,
+	}
+
+	expect1 := &deepcopy.X2{
+		A: uintptr(unsafe.Pointer(&x0)),
+		H: make(chan int, 5),
+		M: unsafe.Pointer(&x0),
+		// E: []*X0{&x0},
+		N: nn[1:5],
+		O: a,
+		Q: a3,
+	}
+	t.Logf("expect.Q: %v", expect1.Q)
+
+	t.Logf("   src: %+v", x1)
+	t.Logf("   tgt: %+v", deepcopy.X2{N: nn[1:3]})
+
+	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+		deepcopy.NewTestCase(
+			"struct - 1",
+			x1, &deepcopy.X2{N: nn[1:3]},
+			expect1,
+			nil, nil,
+		),
+	))
+
+}
+
+func TestDeepCopyGenerally(t *testing.T) {
 
 	defer newCaptureLog(t).Release()
 

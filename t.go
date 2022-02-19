@@ -1,8 +1,11 @@
 package deepcopy
 
+// t.go - tools functions here
+
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -92,4 +95,47 @@ func inspectStructV(val reflect.Value) {
 
 func InspectStruct(v interface{}) {
 	inspectStructV(reflect.ValueOf(v))
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func contains(names []string, name string) bool {
+	for _, n := range names {
+		if strings.EqualFold(n, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPartialsOnly(partialNames []string, testedString string) (contains bool) {
+	for _, n := range partialNames {
+		if strings.Contains(testedString, n) {
+			return true
+		}
+	}
+	return
+}
+
+func partialContainsShort(names []string, partialNeedle string) (contains bool) {
+	for _, n := range names {
+		if strings.Contains(n, partialNeedle) {
+			return true
+		}
+	}
+	return
+}
+
+func partialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
+	for ix, n := range names {
+		if strings.Contains(n, partialNeedle) {
+			return ix, n, true
+		}
+	}
+	return -1, "", false
 }

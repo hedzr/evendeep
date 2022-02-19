@@ -68,30 +68,28 @@ func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 func (params *paramsPackage) isStruct() bool { return params != nil && params.fieldTags != nil }
 
 func (params *paramsPackage) isFlagOK(ftf CopyMergeStrategy) bool {
-	if params == nil {
-		return false
-	}
-	if params.fieldTags == nil {
+	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isFlagOK(ftf)
 }
 
-func (params *paramsPackage) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
-	if params == nil {
-		return false
+func (params *paramsPackage) isGroupedFlagOK(ftf CopyMergeStrategy) bool {
+	if params == nil || params.fieldTags == nil {
+		return newFlags().isGroupedFlagOK(ftf)
 	}
-	if params.fieldTags == nil {
+	return params.fieldTags.flags.isGroupedFlagOK(ftf)
+}
+
+func (params *paramsPackage) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
+	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isAnyFlagsOK(ftf...)
 }
 
 func (params *paramsPackage) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
-	if params == nil {
-		return false
-	}
-	if params.fieldTags == nil {
+	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isAllFlagsOK(ftf...)
