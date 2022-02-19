@@ -2,7 +2,7 @@ package deepcopy
 
 import (
 	"github.com/hedzr/log"
-	"gopkg.in/hedzr/errors.v2"
+	"gopkg.in/hedzr/errors.v3"
 	"reflect"
 	"strings"
 	"time"
@@ -127,7 +127,7 @@ func copyStruct(c *cpController, params *paramsPackage, from, to reflect.Value) 
 			ff, tf := f.Field(i), t.Field(i)
 			err = errors.New("[recovered] copyStruct unsatisfied ([%v] %v -> [%v] %v), causes: %v",
 				ff.Type(), ff, tf.Type(), tf, e).
-				AttachGenerals(e)
+				WithData(e)
 			//n := log.CalcStackFrames(1)   // skip defer-recover frame at first
 			//log.Skip(n).Errorf("%v", err) // skip golib frames and defer-recover frame, back to the point throwing panic
 			log.Errorf("%+v", err)

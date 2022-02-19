@@ -2,7 +2,7 @@ package deepcopy
 
 import (
 	"github.com/hedzr/log"
-	"gopkg.in/hedzr/errors.v2"
+	"gopkg.in/hedzr/errors.v3"
 	"reflect"
 )
 
@@ -75,7 +75,7 @@ func (c *cpController) copyTo(params *paramsPackage, from, to reflect.Value) (er
 		if e := recover(); e != nil {
 			err = errors.New("[recovered] copyTo unsatisfied ([%v] %v -> [%v] %v), causes: %v",
 				c.indirectType(from.Type()), from, c.indirectType(to.Type()), to, e).
-				AttachGenerals(e)
+				WithData(e)
 			n := log.CalcStackFrames(1)   // skip defer-recover frame at first
 			log.Skip(n).Errorf("%v", err) // skip golib frames and defer-recover frame, back to the point throwing panic
 

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/log"
-	"gopkg.in/hedzr/errors.v2"
+	"gopkg.in/hedzr/errors.v3"
 	"reflect"
 	"testing"
 	"time"
