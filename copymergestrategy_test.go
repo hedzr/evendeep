@@ -3,7 +3,7 @@ package deepcopy
 import "testing"
 
 func subtest1(t *testing.T) {
-	flags := newFlags().withFlags(SliceCopyAppend)
+	flags := newFlags().withFlags(SliceCopyAppend, OmitIfSourceNil, MapMerge, Ignore)
 
 	for _, coll := range [][]CopyMergeStrategy{
 		{SliceCopy, SliceCopyAppend, SliceMerge},
@@ -12,8 +12,8 @@ func subtest1(t *testing.T) {
 		{Default, Ignore, Must},
 	} {
 		for _, f := range coll {
-			if ret := flags.testGroupedFlag(f); ret != coll[0] {
-				t.Fatal("bad")
+			if ret := flags.testGroupedFlag(f); ret != coll[1] {
+				t.Fatalf("bad: ret = %v, expect %v", ret, coll[0])
 			}
 		}
 	}
