@@ -19,7 +19,7 @@ func copyPointer(c *cpController, params *paramsPackage, from, to reflect.Value)
 		params.addChildField(paramsChild)
 		err = c.copyTo(paramsChild, src, to)
 	} else {
-		functorLog("    pointer - tgt is invalid/cannot-set, cannot be set or ignore it: %v -> %v. src.valid: %v", from.Kind(), to.Kind(), src.IsValid())
+		functorLog("    pointer - tgt is invalid/cannot-be-set/ignored: %v -> %v. src.valid: %v", from.Kind(), to.Kind(), src.IsValid())
 	}
 	return
 }
@@ -66,10 +66,12 @@ func copyFunc(c *cpController, params *paramsPackage, from, to reflect.Value) (e
 
 func copyChan(c *cpController, params *paramsPackage, from, to reflect.Value) (err error) {
 	if to.CanSet() {
+		functorLog("    copy chan: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
 		to.Set(from)
+		//functorLog("        after: %v -> %v", from.Interface(), to.Interface())
 	} else {
 		//to.SetPointer(from.Pointer())
-		functorLog("    copy chan not support: %v -> %v", from.Kind(), to.Kind())
+		functorLog("    copy chan not support: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
 	}
 	// v := reflect.MakeChan(from.Type(), from.Cap())
 	//ft := from.Type()

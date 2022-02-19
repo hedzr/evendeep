@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/log"
+	"gopkg.in/hedzr/errors.v2"
 	"reflect"
 	"testing"
 	"time"
@@ -82,26 +83,43 @@ func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 				t.Fatal(err)
 			}
 
-			if tc.verifier != nil {
-				t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
-				if err = tc.verifier(tc.src, tc.dst, tc.expect); err != nil {
-					return
-				}
-			} else {
-				a, b := reflect.ValueOf(tc.dst), reflect.ValueOf(tc.expect)
-				aa, _ := rdecode(a)
-				bb, _ := rdecode(b)
-				av, bv := aa.Interface(), bb.Interface()
-				t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
-				t.Logf("\nexpect: %+v\n   got: %+v.", bv, av)
-				if reflect.DeepEqual(av, bv) {
-					return
-				}
+			verifier := tc.verifier
+			if verifier == nil {
+				verifier = runtestcasesverifier(t)
+			}
+
+			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+			if err = verifier(tc.src, tc.dst, tc.expect); err == nil {
+				return
 			}
 
 			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
 		})
 
+	}
+}
+
+func runtestcasesverifier(t *testing.T) func(src, dst, expect interface{}) (err error) {
+	return func(src, dst, expect interface{}) (err error) {
+		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
+		aa, _ := rdecode(a)
+		bb, _ := rdecode(b)
+		av, bv := aa.Interface(), bb.Interface()
+		t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
+		t.Logf("\nexpect: %+v\n   got: %+v.", bv, av)
+
+		//diff, equal := messagediff.PrettyDiff(expect, dst)
+		//if !equal {
+		//	fmt.Println(diff)
+		//	err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+		//}
+
+		if reflect.DeepEqual(av, bv) {
+			return
+		} else {
+			err = errors.New("reflect.DeepEqual test its not equal.")
+		}
+		return
 	}
 }
 

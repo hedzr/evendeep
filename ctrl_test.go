@@ -87,7 +87,7 @@ func TestStructSimple(t *testing.T) {
 
 	expect1 := &deepcopy.X2{
 		A: uintptr(unsafe.Pointer(&x0)),
-		H: make(chan int, 5),
+		H: x1.H,
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
 		N: nn[1:5],
@@ -104,7 +104,15 @@ func TestStructSimple(t *testing.T) {
 			"struct - 1",
 			x1, &deepcopy.X2{N: nn[1:3]},
 			expect1,
-			nil, nil,
+			nil,
+			nil,
+			//func(src, dst, expect interface{}) (err error) {
+			//	diff, equal := messagediff.PrettyDiff(expect, dst)
+			//	if !equal {
+			//		fmt.Println(diff)
+			//	}
+			//	return
+			//},
 		),
 	))
 
