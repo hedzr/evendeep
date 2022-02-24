@@ -5,56 +5,42 @@ import (
 	"reflect"
 )
 
-// paramsPackage is params package
-type paramsPackage struct {
-	ownerSource *reflect.Value // ownerSource of source slice or struct, or any others
-	ownerTarget *reflect.Value
+// Params is params package
+type Params struct {
+	srcOwner   *reflect.Value // srcOwner of source slice or struct, or any others
+	dstOwner   *reflect.Value // dstOwner of destination slice or struct, or any others
+	srcDecoded *reflect.Value //
+	dstDecoded *reflect.Value //
+	srcType    reflect.Type   // = field(i+parent.srcOffset).type, or srcOwner.type for non-struct
+	dstType    reflect.Type   // = field(i+parent.dstOffset).type, or dstOwner.type for non-struct
 
-	index int // struct field or slice index,
+	index     int // struct field or slice index,
+	srcOffset int // -1, or an offset of the embedded struct fields
+	dstOffset int // -1, or an offset of the embedded struct fields
 
-	fieldTypeSource *reflect.StructField
-	fieldTypeTarget *reflect.StructField
-	fieldTags       *fieldTags
+	srcFieldType *reflect.StructField //
+	dstFieldType *reflect.StructField //
+	fieldTags    *fieldTags           // tag of source field
+	srcAnonymous bool                 //
+	dstAnonymous bool                 //
 
-	children          map[string]*paramsPackage // children of struct fields
-	childrenAnonymous []*paramsPackage          // or children without name (non-struct)
-	owner             *paramsPackage
+	children          map[string]*Params // children of struct fields
+	childrenAnonymous []*Params          // or children without name (non-struct)
+	owner             *Params            //
 }
 
-type paramsOpt func(p *paramsPackage)
+type paramsOpt func(p *Params)
 
-func newParams(opts ...paramsOpt) *paramsPackage {
-	p := &paramsPackage{}
+func newParams(opts ...paramsOpt) *Params {
+	p := &Params{}
 	for _, opt := range opts {
 		opt(p)
 	}
 	return p
 }
 
-func withOwners(ownerSource, ownerTarget *reflect.Value, index int) paramsOpt {
-	return func(p *paramsPackage) {
-		p.ownerSource = ownerSource
-		p.ownerTarget = ownerTarget
-
-		p.index = index
-		st := ownerSource.Type()
-		if st.Kind() == reflect.Struct {
-			t := ownerSource.Type().Field(index)
-			p.fieldTypeSource = &t
-			p.fieldTags = parseFieldTags(t.Tag)
-		}
-
-		tt := ownerTarget.Type()
-		if tt.Kind() == reflect.Struct {
-			t := ownerTarget.Type().Field(index)
-			p.fieldTypeTarget = &t
-		}
-
-	}
-}
-
 func withFlags(flags ...CopyMergeStrategy) paramsOpt {
-	return func(p *paramsPackage) {
+	return func(p *Params) {
 		p.fieldTags = &fieldTags{
 			flags:          newFlags(flags...),
 			converter:      nil,
@@ -65,68 +51,162 @@ func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	}
 }
 
-func (params *paramsPackage) isStruct() bool { return params != nil && params.fieldTags != nil }
+func withOwners(ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value, index int) paramsOpt {
+	return func(p *Params) {
 
-func (params *paramsPackage) isFlagOK(ftf CopyMergeStrategy) bool {
+		p.srcOwner = ownerSource
+		p.dstOwner = ownerTarget
+		p.srcDecoded = osDecoded
+		p.dstDecoded = otDecoded
+		if p.srcDecoded == nil {
+			d, _ := rdecode(*p.srcOwner)
+			p.srcDecoded = &d
+		}
+		if p.dstDecoded == nil {
+			d, _ := rdecode(*p.dstOwner)
+			p.dstDecoded = &d
+		}
+
+		p.index = index
+
+		st := p.srcDecoded.Type()
+		p.srcType = st
+		if kind := st.Kind(); kind == reflect.Struct {
+			idx := index
+			if ownerParams != nil {
+				idx += ownerParams.srcOffset
+			}
+			t := st.Field(idx)
+			p.srcFieldType = &t
+			p.fieldTags = parseFieldTags(t.Tag)
+			p.srcType = t.Type
+			if ownerParams != nil {
+				if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+					p.srcAnonymous = true
+					p.srcOffset = p.index
+				}
+			}
+		}
+
+		tt := p.dstDecoded.Type()
+		p.dstType = tt
+		if kind := tt.Kind(); kind == reflect.Struct {
+			idx := index
+			if ownerParams != nil {
+				idx += ownerParams.dstOffset
+			}
+			t := tt.Field(idx)
+			p.dstFieldType = &t
+			p.dstType = t.Type
+			if ownerParams != nil {
+				if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+					p.dstAnonymous = true
+					p.dstOffset = p.index
+				}
+			}
+		} else if ownerParams != nil && ownerParams.dstFieldType != nil {
+
+		}
+
+		ownerParams.addChildParams(p)
+
+	}
+}
+
+// addChildParams does link this params into parent params
+func (params *Params) addChildParams(pp *Params) {
+	if params == nil {
+		return
+	}
+
+	// if struct
+	if pp.srcFieldType != nil {
+		fieldName := pp.srcFieldType.Name
+
+		if pp.children == nil {
+			pp.children = make(map[string]*Params)
+		}
+		if _, ok := pp.children[fieldName]; ok {
+			log.Panicf("field %q exists, cannot iterate another field on the same name", fieldName)
+		}
+		if pp == nil {
+			log.Panicf("setting nil Params for field %q, r u kidding me?", fieldName)
+		}
+
+		pp.children[fieldName] = pp
+	} else {
+		pp.childrenAnonymous = append(params.childrenAnonymous, params)
+	}
+
+	pp.owner = params
+}
+
+// revoke does revoke itself from parent params if necessary
+func (params *Params) revoke() {
+	if pp := params.owner; pp != nil {
+		if pp.srcFieldType != nil {
+			fieldName := pp.srcFieldType.Name
+			delete(pp.children, fieldName)
+		} else {
+			for i := 0; i < len(pp.childrenAnonymous); i++ {
+				if child := pp.childrenAnonymous[i]; child == params {
+					pp.childrenAnonymous = append(pp.childrenAnonymous[0:i], pp.childrenAnonymous[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+}
+
+func (params *Params) ValueOfSource() reflect.Value {
+	if params.srcFieldType != nil {
+		return params.srcDecoded.Field(params.index + params.srcOffset)
+	}
+	return *params.srcOwner
+}
+
+func (params *Params) ValueOfDestination() reflect.Value {
+	if params.dstFieldType != nil {
+		return params.dstDecoded.Field(params.index + params.dstOffset)
+	}
+	return *params.dstOwner
+}
+
+func (params *Params) isStruct() bool { return params != nil && params.fieldTags != nil }
+
+func (params *Params) isFlagExists(ftf CopyMergeStrategy) bool {
 	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isFlagOK(ftf)
 }
 
-func (params *paramsPackage) isGroupedFlagOK(ftf CopyMergeStrategy) bool {
+func (params *Params) isGroupedFlagOK(ftf CopyMergeStrategy) bool {
 	if params == nil || params.fieldTags == nil {
 		return newFlags().isGroupedFlagOK(ftf)
 	}
 	return params.fieldTags.flags.isGroupedFlagOK(ftf)
 }
 
-func (params *paramsPackage) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
+func (params *Params) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
 	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isAnyFlagsOK(ftf...)
 }
 
-func (params *paramsPackage) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
+func (params *Params) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
 	if params == nil || params.fieldTags == nil {
 		return false
 	}
 	return params.fieldTags.flags.isAllFlagsOK(ftf...)
 }
 
-func (params *paramsPackage) depth() (depth int) {
+func (params *Params) depth() (depth int) {
 	p := params
 	for p != nil {
 		depth++
 		p = p.owner
 	}
 	return
-}
-
-func (params *paramsPackage) addChildField(pp *paramsPackage) {
-	if params == nil {
-		return
-	}
-
-	// if struct
-	if pp.fieldTypeSource != nil {
-		fieldName := pp.fieldTypeSource.Name
-
-		if params.children == nil {
-			params.children = make(map[string]*paramsPackage)
-		}
-		if _, ok := params.children[fieldName]; ok {
-			log.Panicf("field %q exists, cannot iterate another field on the same name", fieldName)
-		}
-		if pp == nil {
-			log.Panicf("setting nil paramsPackage for field %q, r u kidding me?", fieldName)
-		}
-
-		params.children[fieldName] = pp
-	} else {
-		params.childrenAnonymous = append(params.childrenAnonymous, pp)
-	}
-
-	pp.owner = params
 }

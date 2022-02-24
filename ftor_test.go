@@ -47,7 +47,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 	var src = reflect.ValueOf(&so)
 	var tgt = reflect.ValueOf(&to)
 
-	err = copySlice(c, nil, src, tgt)
+	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -57,7 +57,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, nil, src, tgt)
+	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -67,7 +67,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -77,7 +77,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -87,7 +87,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -99,7 +99,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 	src = reflect.ValueOf(&so)
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceMerge)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -109,7 +109,7 @@ func TestCopySlice_cloneMode(t *testing.T) {
 
 	to = []int{3, 77, 2, 15}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge)), src, tgt)
+	err = copySlice(c, newParams(withFlags(SliceMerge)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -131,7 +131,7 @@ func TestCopySlice_mergeMode(t *testing.T) {
 	var src = reflect.ValueOf(&so)
 	var tgt = reflect.ValueOf(&to)
 
-	err = copySlice(c, nil, src, tgt)
+	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -140,7 +140,8 @@ func TestCopySlice_mergeMode(t *testing.T) {
 	}
 
 	to = []int{2, 77}
-	err = copySlice(c, nil, src, reflect.ValueOf(&to))
+	tgt = reflect.ValueOf(&to)
+	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {

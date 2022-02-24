@@ -14,13 +14,14 @@ type cpController struct {
 	//eachFieldAlways    bool
 
 	copyFunctionResultToTarget bool
+	autoExpandStuct            bool
 
 	//mergeSlice bool
 	//mergeMap   bool
 
-	makeNewClone bool // make a new clone by copying to a fresh new object
-	flags        Flags
-	ignoreNames  []string
+	makeNewClone bool     // make a new clone by copying to a fresh new object
+	flags        Flags    //
+	ignoreNames  []string //
 
 	valueConverters []ValueConverter
 	valueCopiers    []ValueCopier
@@ -46,16 +47,16 @@ func (c *cpController) CopyTo(fromObjPtr, toObjPtr interface{}, opts ...Opt) (er
 	//	return errors.New("copy to value is unaddressable")
 	//}
 
-	// Return is from value is invalid
-	if !from.IsValid() {
-		return
-	}
-
 	err = c.copyTo(nil, from, to)
 	return
 }
 
-func (c *cpController) copyTo(params *paramsPackage, from, to reflect.Value) (err error) {
+func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
+
+	// Return is from value is invalid
+	if !from.IsValid() {
+		return
+	}
 
 	if from.CanInterface() {
 		if dc, ok := from.Interface().(Cloneable); ok {
@@ -77,24 +78,26 @@ func (c *cpController) copyTo(params *paramsPackage, from, to reflect.Value) (er
 				c.indirectType(from.Type()), from, c.indirectType(to.Type()), to, e).
 				WithData(e)
 			n := log.CalcStackFrames(1)   // skip defer-recover frame at first
-			log.Skip(n).Errorf("%v", err) // skip golib frames and defer-recover frame, back to the point throwing panic
+			log.Skip(n).Errorf("%v", err) // skip go-lib frames and defer-recover frame, back to the point throwing panic
 
 		}
 	}()
 
-	kind := from.Kind()
-	//functorLog(" - from.type: %v", kind)
-	if fn, ok := copyToRoutines[kind]; ok && fn != nil {
-		err = fn(c, params, from, to)
-		return
+	kind := from.Kind() //functorLog(" - from.type: %v", kind)
+	if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
+		if fn, ok := copyToRoutines[kind]; ok && fn != nil {
+			err = fn(c, params, from, to)
+			return
+		}
 	}
 
+	functorLog(" - from.type: %v - fallback to copyDefaultHandler", kind)
 	err = copyDefaultHandler(c, params, from, to)
 
 	return
 }
 
-func (c *cpController) findCopiers(params *paramsPackage, from, to reflect.Value) (copier ValueCopier, ctx *ValueConverterContext) {
+func (c *cpController) findCopiers(params *Params, from, to reflect.Value) (copier ValueCopier, ctx *ValueConverterContext) {
 	var yes bool
 	for _, copier = range c.valueCopiers {
 		if ctx, yes = copier.Match(params, from, to); yes {
@@ -104,7 +107,7 @@ func (c *cpController) findCopiers(params *paramsPackage, from, to reflect.Value
 	return
 }
 
-func (c *cpController) findConverters(params *paramsPackage, from, to reflect.Value) (converter ValueConverter, ctx *ValueConverterContext) {
+func (c *cpController) findConverters(params *Params, from, to reflect.Value) (converter ValueConverter, ctx *ValueConverterContext) {
 	var yes bool
 	for _, converter = range c.valueConverters {
 		if ctx, yes = converter.Match(params, from, to); yes {

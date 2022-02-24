@@ -39,6 +39,13 @@ func WithCopyStyle() Opt {
 	}
 }
 
+// WithAutoExpandInnerStruct does copy fields with flat struct.
+func WithAutoExpandInnerStruct(autoexpand bool) Opt {
+	return func(c *cpController) {
+		c.autoExpandStuct = autoexpand
+	}
+}
+
 // WithStrategies appends more flags into *cpController
 func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	return func(c *cpController) {

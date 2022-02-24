@@ -3,14 +3,9 @@ package deepcopy
 import "testing"
 
 func subtest1(t *testing.T) {
-	flags := newFlags().withFlags(SliceCopyAppend, OmitIfSourceNil, MapMerge, Ignore)
+	flags := newFlags().withFlags(SliceCopyAppend, OmitIfNil, MapMerge, Ignore)
 
-	for _, coll := range [][]CopyMergeStrategy{
-		{SliceCopy, SliceCopyAppend, SliceMerge},
-		{OmitIfEmpty, OmitIfSourceNil, OmitIfSourceZero},
-		{MapCopy, MapMerge},
-		{Default, Ignore, Must},
-	} {
+	for _, coll := range mKnownStrategyGroup {
 		for _, f := range coll {
 			if ret := flags.testGroupedFlag(f); ret != coll[1] {
 				t.Fatalf("bad: ret = %v, expect %v", ret, coll[0])
@@ -22,12 +17,7 @@ func subtest1(t *testing.T) {
 func subtest2(t *testing.T) {
 	flags := newFlags()
 
-	for _, coll := range [][]CopyMergeStrategy{
-		{SliceCopy, SliceCopyAppend, SliceMerge},
-		{OmitIfEmpty, OmitIfSourceNil, OmitIfSourceZero},
-		{MapCopy, MapMerge},
-		{Default, Ignore, Must},
-	} {
+	for _, coll := range mKnownStrategyGroup {
 		for _, f := range coll {
 			if flags.testGroupedFlag(f) != coll[0] {
 				t.Fatal("bad")
@@ -39,12 +29,7 @@ func subtest2(t *testing.T) {
 func subtest3(t *testing.T) {
 	flags := newFlags()
 
-	for _, coll := range [][]CopyMergeStrategy{
-		{SliceCopy, SliceCopyAppend, SliceMerge},
-		{OmitIfEmpty, OmitIfSourceNil, OmitIfSourceZero},
-		{MapCopy, MapMerge},
-		{Default, Ignore, Must},
-	} {
+	for _, coll := range mKnownStrategyGroup {
 		for i, f := range coll {
 			if flags.isGroupedFlagOK(f) {
 				if i != 0 {

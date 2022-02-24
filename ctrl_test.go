@@ -5,6 +5,7 @@ import (
 	"github.com/hedzr/deepcopy"
 	"reflect"
 	"testing"
+	"time"
 	"unsafe"
 )
 
@@ -24,22 +25,22 @@ func TestSimple(t *testing.T) {
 		deepcopy.NewTestCase(
 			"primitive - string slice",
 			[]string{"hello", "world"},
-			&[]string{"?"},             // target needn't addressof
-			[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
+			&[]string{"?"},              // target needn't addressof
+			&[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
 			nil, nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - int slice",
 			[]int{7, 99},
 			&[]int{5},
-			[]int{7, 99},
+			&[]int{7, 99},
 			nil, nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - int slice",
 			[]int{7, 99},
 			&[]int{5},
-			[]int{5, 7, 99},
+			&[]int{5, 7, 99},
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(deepcopy.SliceMerge),
 			},
@@ -47,7 +48,7 @@ func TestSimple(t *testing.T) {
 		),
 		deepcopy.NewTestCase(
 			"primitive types - int slice - merge",
-			[]int{99, 7}, &[]int{125, 99}, []int{125, 99, 7},
+			[]int{99, 7}, &[]int{125, 99}, &[]int{125, 99, 7},
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(deepcopy.SliceMerge),
 			},
@@ -118,6 +119,71 @@ func TestStructSimple(t *testing.T) {
 
 }
 
+func TestStructEmbedded(t *testing.T) {
+
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+
+	src := deepcopy.Employee2{
+		Base: deepcopy.Base{
+			Name:      "Bob",
+			Birthday:  &tm,
+			Age:       24,
+			EmployeID: 7,
+		},
+		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:   &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:  true,
+	}
+
+	tgt := deepcopy.User{
+		Name:      "Frank",
+		Birthday:  &tm2,
+		Age:       18,
+		EmployeID: 9,
+		Attr:      &deepcopy.Attr{Attrs: []string{"baby"}},
+		Deleted:   true,
+	}
+
+	expect1 := &deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"baby", "hello", "world"}},
+		Valid:     true,
+	}
+
+	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+		deepcopy.NewTestCase(
+			"struct - 1",
+			src, &tgt,
+			expect1,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategies(deepcopy.SliceMerge, deepcopy.MapMerge),
+				deepcopy.WithAutoExpandInnerStruct(true),
+			},
+			nil,
+			//func(src, dst, expect interface{}) (err error) {
+			//	diff, equal := messagediff.PrettyDiff(expect, dst)
+			//	if !equal {
+			//		fmt.Println(diff)
+			//	}
+			//	return
+			//},
+		),
+	))
+
+}
+
+func TestStructOthers(t *testing.T) {
+
+}
+
 func TestDeepCopyGenerally(t *testing.T) {
 
 	defer newCaptureLog(t).Release()
@@ -144,7 +210,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 		//x2 := &X2{N: nn[1:3]}
 
 		ret = deepcopy.MakeClone(&x1)
-		testBadCopy(t, x1, ret, ret, "MakeClone x1 -> new")
+		testIfBadCopy(t, x1, ret, ret, "MakeClone x1 -> new")
 		t.Log("MakeClone is done.")
 
 	})
@@ -155,7 +221,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 		x2 := &deepcopy.X2{N: nn[1:3]}
 
 		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
-		testBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
+		testIfBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
 
 	})
 
@@ -165,20 +231,20 @@ func TestDeepCopyGenerally(t *testing.T) {
 		x2 := &deepcopy.X2{N: nn[1:3]}
 
 		ret = deepcopy.NewDeepCopier().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
-		testBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
+		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
 
 	})
 
 }
 
-func testBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) {
+func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) {
 
 	t.Logf("checking result ...")
 
 	//if diff := deep.Equal(src, tgt); diff == nil {
 	//	return
 	//} else {
-	//	t.Fatalf("testBadCopy - BAD COPY (%v):\n  SRC: %+v\n  TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
+	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n  SRC: %+v\n  TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
 	//}
 
 	//dd := deepdiff.New()
@@ -187,7 +253,7 @@ func testBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFa
 	//	return
 	//}
 	//if diff.Len() > 0 {
-	//	t.Fatalf("testBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
+	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
 	//} else {
 	//	return
 	//}
@@ -201,11 +267,11 @@ func testBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFa
 				if string(b1) == string(b2) {
 					return
 				}
-				t.Logf("testBadCopy - src: %v\ntgt: %v\n", string(b1), string(b2))
+				t.Logf("testIfBadCopy - src: %v\ntgt: %v\n", string(b1), string(b2))
 			}
 		}
 		if err != nil {
-			t.Logf("testBadCopy - json marshal not ok (just a warning): %v", err)
+			t.Logf("testIfBadCopy - json marshal not ok (just a warning): %v", err)
 
 			//if b1, err = yaml.Marshal(src); err == nil {
 			//	if b2, err = yaml.Marshal(src); err == nil {
@@ -241,6 +307,6 @@ func testBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFa
 			}
 		}
 
-		t.Fatalf("testBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
+		t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
 	}
 }

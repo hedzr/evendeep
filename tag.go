@@ -34,23 +34,29 @@ type fieldTags struct {
 // ValueConverter _
 type ValueConverter interface {
 	Transform(ctx *ValueConverterContext, source reflect.Value) (target reflect.Value, err error)
-	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+	Match(params *Params, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
 }
 
 // ValueCopier _
 type ValueCopier interface {
 	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
-	Match(params *paramsPackage, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+	Match(params *Params, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+}
+
+// NameConverter _
+type NameConverter interface {
+	ToGoName(ctx *NameConverterContext, fieldName string) (goName string)
+	ToFieldName(ctx *NameConverterContext, goName string) (fieldName string)
 }
 
 // NameConverterContext _
 type NameConverterContext struct {
-	*paramsPackage
+	*Params
 }
 
 // ValueConverterContext _
 type ValueConverterContext struct {
-	*paramsPackage
+	*Params
 }
 
 func (f *fieldTags) String() string {
@@ -63,7 +69,7 @@ func (f *fieldTags) String() string {
 	return strings.Join(a, ", ")
 }
 
-func (f *fieldTags) isFlagOK(ftf CopyMergeStrategy) bool {
+func (f *fieldTags) isFlagExists(ftf CopyMergeStrategy) bool {
 	if f == nil {
 		return false
 	}

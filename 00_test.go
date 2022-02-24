@@ -3,6 +3,7 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/localtest/deepdiff/d4l3k/messagediff"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
@@ -106,19 +107,19 @@ func runtestcasesverifier(t *testing.T) func(src, dst, expect interface{}) (err 
 		bb, _ := rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
 		t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
-		t.Logf("\nexpect: %+v\n   got: %+v.", bv, av)
+		t.Logf("\nexpect: %+v\n   got: %+v", bv, av)
 
-		//diff, equal := messagediff.PrettyDiff(expect, dst)
-		//if !equal {
-		//	fmt.Println(diff)
-		//	err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
-		//}
+		diff, equal := messagediff.PrettyDiff(expect, dst)
+		if !equal {
+			fmt.Println(diff)
+			err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+		}
 
 		if reflect.DeepEqual(av, bv) {
 			return
-		} else {
-			err = errors.New("reflect.DeepEqual test its not equal.")
 		}
+
+		err = errors.New("reflect.DeepEqual test its not equal")
 		return
 	}
 }
@@ -200,4 +201,36 @@ type X2 struct {
 	O [2]string
 	P [2]string
 	Q [3]string `copy:",slicecopy"`
+}
+
+type Attr struct {
+	Attrs []string `copy:",slicemerge"`
+}
+
+type Base struct {
+	Name      string
+	Birthday  *time.Time
+	Age       int
+	EmployeID int64
+}
+
+type Employee2 struct {
+	Base
+	Avatar  string
+	Image   []byte
+	Attr    *Attr
+	Valid   bool
+	Deleted bool
+}
+
+type User struct {
+	Name      string
+	Birthday  *time.Time
+	Age       int
+	EmployeID int64
+	Avatar    string
+	Image     []byte
+	Attr      *Attr
+	Valid     bool
+	Deleted   bool
 }

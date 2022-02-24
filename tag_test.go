@@ -10,13 +10,14 @@ func TestFieldTags_Parse(t *testing.T) {
 	type A struct {
 		flags     Flags `copy:",cleareq"`
 		converter *ValueConverter
-		wouldbe   int `copy:",must,omitneq,omitsourcezero,slicecopyappend,mapmerge"`
+		wouldbe   int `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
 	}
 
 	var expects = []Flags{
-		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
-		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true},
-		{Must: true, SliceCopyAppend: true, MapMerge: true, OmitIfNotEq: true, OmitIfSourceZero: true},
+		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true, ByOrdinal: true},
+		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true, ByOrdinal: true},
+		{Must: true, SliceCopyAppend: true, MapMerge: true, OmitIfNotEq: true, OmitIfZero: true, ByOrdinal: true},
+		{ByOrdinal: true, ByName: true},
 	}
 
 	var a A
@@ -29,7 +30,7 @@ func TestFieldTags_Parse(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
 		ft := parseFieldTags(fld.Tag)
-		if !ft.isFlagOK(Ignore) {
+		if !ft.isFlagExists(Ignore) {
 			t.Logf("%q flags: %v", fld.Tag, ft)
 		} else {
 			t.Logf("%q flags: %v", fld.Tag, ft)

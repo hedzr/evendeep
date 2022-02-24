@@ -1,6 +1,6 @@
 package deepcopy
 
-// t.go - tools functions here
+// tool.go - tools functions here
 
 import (
 	"fmt"
@@ -66,7 +66,7 @@ func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) 
 	return
 }
 
-func inspectStructV(val reflect.Value) {
+func inspectStructV(val reflect.Value, level int) {
 	if val.Kind() == reflect.Interface && !val.IsNil() {
 		elm := val.Elem()
 		if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
@@ -77,28 +77,28 @@ func inspectStructV(val reflect.Value) {
 		val = val.Elem()
 	}
 
+	padding := strings.Repeat("  ", level)
 	for i, count := 0, val.NumField(); i < count; i++ {
 		valField := val.Field(i)
 		typeField := val.Type().Field(i)
 		valueField, address := testFieldValue(valField)
 
-		fmt.Printf("kind: %v, ", valueField.Kind())
 		var v interface{}
 		if valueField.IsValid() && !valueField.IsZero() && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
-		fmt.Printf("%d/%d. Field Name: %s,\t Field Value: %v,\t Address: %v\t, Field type: %v\n",
-			i, count, typeField.Name, v, address, typeField.Type)
+		fmt.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",
+			padding, i, count, typeField.Name, v, address, typeField.Type, valueField.Kind())
 
 		if valueField.Kind() == reflect.Struct {
-			inspectStructV(valueField)
+			inspectStructV(valueField, level+1)
 		}
 	}
 }
 
 // InspectStruct dumps wach field in a struct with its reflect information
 func InspectStruct(v interface{}) {
-	inspectStructV(reflect.ValueOf(v))
+	inspectStructV(reflect.ValueOf(v), 0)
 }
 
 func minInt(a, b int) int {
@@ -142,4 +142,30 @@ func partialContains(names []string, partialNeedle string) (index int, matched s
 		}
 	}
 	return -1, "", false
+}
+
+// reverseAnySlice reverse any slice/array
+func reverseAnySlice(s interface{}) {
+	n := reflect.ValueOf(s).Len()
+	swap := reflect.Swapper(s)
+	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+		swap(i, j)
+	}
+}
+
+// reverseStringSlice reverse a string slice
+func reverseStringSlice(s []string) []string {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+	return s
+
+	//// reverse it
+	//i := 0
+	//j := len(a) - 1
+	//for i < j {
+	//	a[i], a[j] = a[j], a[i]
+	//	i++
+	//	j--
+	//}
 }

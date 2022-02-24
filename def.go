@@ -2,7 +2,6 @@ package deepcopy
 
 import (
 	"reflect"
-	"sync"
 )
 
 // DeepCopy _
@@ -29,12 +28,12 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	lazyInitRoutines()
 
 	from := reflect.ValueOf(fromObj)
-	fit := DefaultCloneController.indirect(from)
-	to := reflect.New(fit.Type())
-	toObj := to.Interface()
-	functorLog("toObj: %v", toObj)
-	if err := DefaultCloneController.CopyTo(fromObj, toObj); err == nil {
-		result = to.Elem().Interface()
+	find := rindirect(from)
+	toPtr := reflect.New(find.Type())
+	toPtrObj := toPtr.Interface()
+	functorLog("toPtrObj: %v", toPtrObj)
+	if err := DefaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
+		result = toPtr.Elem().Interface()
 	}
 
 	return
@@ -76,6 +75,7 @@ func NewDeepCopier(opts ...Opt) DeepCopier {
 	lazyInitRoutines()
 	var c = newCopier()
 	c.flags = newFlags(SliceMerge, MapMerge)
+	//c.autoExpandStuct = true
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -95,19 +95,19 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	return c
 }
 
-// NewCloner gets a new instance of DeepCopier (the underlying
-// is *cpController) different with DefaultCopyController and
-// DefaultCloneController.
-// It returns a cloner like MakeClone()
-func NewCloner(opts ...Opt) DeepCopier {
-	lazyInitRoutines()
-	var c = newCloner()
-	c.flags = newFlags()
-	for _, opt := range opts {
-		opt(c)
-	}
-	return c
-}
+//// NewCloner gets a new instance of DeepCopier (the underlying
+//// is *cpController) different with DefaultCopyController and
+//// DefaultCloneController.
+//// It returns a cloner like MakeClone()
+//func NewCloner(opts ...Opt) DeepCopier {
+//	lazyInitRoutines()
+//	var c = newCloner()
+//	c.flags = newFlags()
+//	for _, opt := range opts {
+//		opt(c)
+//	}
+//	return c
+//}
 
 func newCopier() *cpController {
 	return &cpController{
@@ -127,60 +127,11 @@ func newCloner() *cpController {
 	}
 }
 
-func newPlainCloner() *cpController {
-	return &cpController{
-		valueConverters:            defaultValueConverters(),
-		valueCopiers:               defaultValueCopiers(),
-		copyFunctionResultToTarget: true,
-		makeNewClone:               true,
-	}
-}
-
-var onceCopyToRoutines sync.Once
-var copyToRoutines map[reflect.Kind]copyfn
-
-type copyfn func(c *cpController, params *paramsPackage, from, to reflect.Value) (err error)
-
-func lazyInitRoutines() { onceCopyToRoutines.Do(initRoutines) }
-func initRoutines() {
-	copyToRoutines = map[reflect.Kind]copyfn{
-		reflect.Ptr:           copyPointer,
-		reflect.Uintptr:       copyUintptr,
-		reflect.UnsafePointer: copyUnsafePointer,
-		reflect.Func:          copyFunc,
-		reflect.Chan:          copyChan,
-		reflect.Interface:     copyInterface,
-		reflect.Struct:        copyStruct,
-		reflect.Slice:         copySlice,
-		reflect.Array:         copyArray,
-		reflect.Map:           copyMap,
-
-		//Invalid Kind = iota
-		//Bool
-		//Int
-		//Int8
-		//Int16
-		//Int32
-		//Int64
-		//Uint
-		//Uint8
-		//Uint16
-		//Uint32
-		//Uint64
-		//Uintptr
-		//Float32
-		//Float64
-		//Complex64
-		//Complex128
-		//Array
-		//Chan
-		//Func
-		//Interface
-		//Map
-		//Ptr
-		//Slice
-		//String
-		//Struct
-		//UnsafePointer
-	}
-}
+//func newPlainCloner() *cpController {
+//	return &cpController{
+//		valueConverters:            defaultValueConverters(),
+//		valueCopiers:               defaultValueCopiers(),
+//		copyFunctionResultToTarget: true,
+//		makeNewClone:               true,
+//	}
+//}
