@@ -33,7 +33,7 @@ func TestTestDeepEqual(t *testing.T) {
 	testDeepEqual(t, mm[0], mm[1])
 }
 
-func TestCopySlice_cloneMode(t *testing.T) {
+func TestCopySlice_differModes(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
 	c := newCloner()

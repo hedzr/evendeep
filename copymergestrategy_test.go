@@ -3,7 +3,9 @@ package deepcopy
 import "testing"
 
 func subtest1(t *testing.T) {
-	flags := newFlags().withFlags(SliceCopyAppend, OmitIfNil, MapMerge, Ignore)
+	flags := newFlags().withFlags(ByName, SliceCopyAppend, OmitIfNil, MapMerge, Ignore)
+
+	t.Logf("flags: %v", flags)
 
 	for _, coll := range mKnownStrategyGroup {
 		for _, f := range coll {

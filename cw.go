@@ -59,8 +59,24 @@ func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	}
 }
 
-// WithStrategiesReset clears the exists flags in a *cpController
-// so that you can append new ones (with WithStrategies(flags...))
+// WithCopyStrategy is synonym of SliceCopy + MapCopy
+var WithCopyStrategy = WithStrategies(SliceCopy, MapCopy)
+
+// WithMergeStrategy is synonym of SliceMerge + MapMerge
+var WithMergeStrategy = WithStrategies(SliceMerge, MapMerge)
+
+// WithStrategiesReset clears the exists flags in a *cpController.
+// So that you can append new ones (with WithStrategies(flags...)).
+//
+// In generally, WithStrategiesReset is synonym of SliceCopy +
+// MapCopy, since all strategies are cleared. A nothing Flags
+// means that a set of default strategies will be applied,
+// in another words, its include:
+//
+//    Default, OmitIfEmpty, SliceCopy,
+//    MapCopy, ByOrdinal.
+//
+//
 func WithStrategiesReset() Opt {
 	return func(c *cpController) {
 		c.flags = newFlags()

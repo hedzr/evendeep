@@ -40,6 +40,7 @@ func onceInitFieldTagsFlags() {
 		conflictsAdd("std,-,must")
 
 		mKnownStrategyGroup = []CopyMergeStrategies{
+			{ByOrdinal, ByName},
 			{SliceCopy, SliceCopyAppend, SliceMerge},
 			{OmitIfEmpty, OmitIfNil, OmitIfZero, OmitIfTargetNil, OmitIfTargetZero},
 			{MapCopy, MapMerge},

@@ -15,26 +15,38 @@ func TestSimple(t *testing.T) {
 		deepcopy.NewTestCase(
 			"primitive - int",
 			8, 9, 8,
-			nil, nil,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategiesReset(),
+			},
+			nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - string",
 			"hello", "world", "hello",
-			nil, nil,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategiesReset(),
+			},
+			nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - string slice",
 			[]string{"hello", "world"},
 			&[]string{"?"},              // target needn't addressof
 			&[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
-			nil, nil,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategiesReset(),
+			},
+			nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - int slice",
 			[]int{7, 99},
 			&[]int{5},
 			&[]int{7, 99},
-			nil, nil,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategiesReset(),
+			},
+			nil,
 		),
 		deepcopy.NewTestCase(
 			"primitive - int slice",
@@ -95,6 +107,16 @@ func TestStructSimple(t *testing.T) {
 		O: a,
 		Q: a3,
 	}
+	x2 := deepcopy.X2{N: []int{23, 8}}
+	expect2 := &deepcopy.X2{
+		A: uintptr(unsafe.Pointer(&x0)),
+		H: x1.H,
+		M: unsafe.Pointer(&x0),
+		// E: []*X0{&x0},
+		N: []int{23, 8, 9, 77, 111}, // Note: [23,8] + [9,77,111,23] -> [23,8,9,77,111]
+		O: a,
+		Q: a3,
+	}
 	t.Logf("expect.Q: %v", expect1.Q)
 
 	t.Logf("   src: %+v", x1)
@@ -105,7 +127,9 @@ func TestStructSimple(t *testing.T) {
 			"struct - 1",
 			x1, &deepcopy.X2{N: nn[1:3]},
 			expect1,
-			nil,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategiesReset(),
+			},
 			nil,
 			//func(src, dst, expect interface{}) (err error) {
 			//	diff, equal := messagediff.PrettyDiff(expect, dst)
@@ -114,6 +138,15 @@ func TestStructSimple(t *testing.T) {
 			//	}
 			//	return
 			//},
+		),
+		deepcopy.NewTestCase(
+			"struct - 2 - merge",
+			x1, &x2,
+			expect2,
+			[]deepcopy.Opt{
+				deepcopy.WithStrategies(deepcopy.SliceMerge),
+			},
+			nil,
 		),
 	))
 
@@ -164,7 +197,7 @@ func TestStructEmbedded(t *testing.T) {
 			src, &tgt,
 			expect1,
 			[]deepcopy.Opt{
-				deepcopy.WithStrategies(deepcopy.SliceMerge, deepcopy.MapMerge),
+				deepcopy.WithMergeStrategy,
 				deepcopy.WithAutoExpandInnerStruct(true),
 			},
 			nil,
