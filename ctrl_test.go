@@ -3,6 +3,8 @@ package deepcopy_test
 import (
 	"encoding/json"
 	"github.com/hedzr/deepcopy"
+	"gopkg.in/hedzr/errors.v3"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -11,13 +13,11 @@ import (
 
 func TestSimple(t *testing.T) {
 
-	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+	for _, tc := range []deepcopy.TestCase{
 		deepcopy.NewTestCase(
 			"primitive - int",
 			8, 9, 8,
-			[]deepcopy.Opt{
-				deepcopy.WithStrategiesReset(),
-			},
+			nil,
 			nil,
 		),
 		deepcopy.NewTestCase(
@@ -31,10 +31,20 @@ func TestSimple(t *testing.T) {
 		deepcopy.NewTestCase(
 			"primitive - string slice",
 			[]string{"hello", "world"},
-			&[]string{"?"},              // target needn't addressof
+			&[]string{"andy"},           // target needn't addressof
 			&[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
 			[]deepcopy.Opt{
 				deepcopy.WithStrategiesReset(),
+			},
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"primitive - string slice - merge",
+			[]string{"hello", "hello", "world"}, // elements in source will be merged into target with uniqueness.
+			&[]string{"andy", "andy"},           // target needn't addressof
+			&[]string{"andy", "hello", "world"}, // In merge mode, any dup elems will be removed.
+			[]deepcopy.Opt{
+				deepcopy.WithMergeStrategyOpt,
 			},
 			nil,
 		),
@@ -49,7 +59,7 @@ func TestSimple(t *testing.T) {
 			nil,
 		),
 		deepcopy.NewTestCase(
-			"primitive - int slice",
+			"primitive - int slice - merge",
 			[]int{7, 99},
 			&[]int{5},
 			&[]int{5, 7, 99},
@@ -59,7 +69,7 @@ func TestSimple(t *testing.T) {
 			nil,
 		),
 		deepcopy.NewTestCase(
-			"primitive types - int slice - merge",
+			"primitive types - int slice - merge for dup",
 			[]int{99, 7}, &[]int{125, 99}, &[]int{125, 99, 7},
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(deepcopy.SliceMerge),
@@ -75,7 +85,76 @@ func TestSimple(t *testing.T) {
 		//	},
 		//	nil,
 		//),
-	))
+	} {
+		t.Run(deepcopy.RunTestCasesWith(&tc))
+	}
+
+}
+
+func TestTypeConvert(t *testing.T) {
+
+	var i9 = 9
+	var i5 = 5
+	var ui6 = uint(6)
+	var i64 int64 = 10
+	var f64 float64 = 9.1
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"int -> int64",
+			8, i64, int64(8),
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int64 -> int",
+			int64(8), i5, 8,
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int64 -> uint",
+			int64(8), ui6, uint(8),
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"float32 -> float64",
+			float32(8.1), f64, float64(8.100000381469727),
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"complex -> complex128",
+			complex64(8.1+3i), complex128(9.1), complex128(8.100000381469727+3i),
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"complex -> int - ErrCannotSet test",
+			complex64(8.1+3i), &i5, int(8),
+			nil,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if e == deepcopy.ErrCannotSet {
+					return
+				}
+				return e
+			},
+		),
+		deepcopy.NewTestCase(
+			"int -> intptr",
+			8, &i9, 8,
+			nil,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if d, ok := dst.(*int); ok && e == nil {
+					if *d == src {
+						return
+					}
+				}
+				return errors.DataLoss
+			},
+		),
+	)
 
 }
 
@@ -122,7 +201,7 @@ func TestStructSimple(t *testing.T) {
 	t.Logf("   src: %+v", x1)
 	t.Logf("   tgt: %+v", deepcopy.X2{N: nn[1:3]})
 
-	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+	deepcopy.RunTestCases(t,
 		deepcopy.NewTestCase(
 			"struct - 1",
 			x1, &deepcopy.X2{N: nn[1:3]},
@@ -148,7 +227,7 @@ func TestStructSimple(t *testing.T) {
 			},
 			nil,
 		),
-	))
+	)
 
 }
 
@@ -191,14 +270,14 @@ func TestStructEmbedded(t *testing.T) {
 		Valid:     true,
 	}
 
-	deepcopy.RunTestCases(t, deepcopy.NewTestCases(
+	deepcopy.RunTestCases(t,
 		deepcopy.NewTestCase(
 			"struct - 1",
 			src, &tgt,
 			expect1,
 			[]deepcopy.Opt{
-				deepcopy.WithMergeStrategy,
-				deepcopy.WithAutoExpandInnerStruct(true),
+				deepcopy.WithMergeStrategyOpt,
+				deepcopy.WithAutoExpandStructOpt,
 			},
 			nil,
 			//func(src, dst, expect interface{}) (err error) {
@@ -209,11 +288,231 @@ func TestStructEmbedded(t *testing.T) {
 			//	return
 			//},
 		),
-	))
+	)
 
 }
 
 func TestStructOthers(t *testing.T) {
+
+}
+
+func TestSliceSimple(t *testing.T) {
+
+	tgt := []float32{3.1, 4.5, 9.67}
+	itgt := []int{13, 5}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"slice (float64 -> float32)",
+			[]float64{9.123, 5.2}, &tgt, &[]float32{3.1, 4.5, 9.67, 9.123, 5.2},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt},
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"slice (uint64 -> int)",
+			[]uint64{9, 5}, &itgt, &[]int{13, 5, 9},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt},
+			nil,
+		),
+	)
+
+}
+
+func TestSliceTypeConvert(t *testing.T) {
+
+	//tgt := []float32{3.1, 4.5, 9.67}
+	//itgt := []int{13, 5}
+	stgt := []string{"-", "2.718280076980591"}
+	stgt2 := []string{"-", "2.718280076980591", "9", "5", "3.1415927410125732"}
+	itgt := []int{17}
+
+	//itgt2 := []int{17}
+	//ftgt2 := []float64{17}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"slice (uint64 -> string)",
+			[]uint64{9, 5}, &stgt,
+			&[]string{"-", "2.718280076980591", "9", "5"},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt},
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"slice (float32 -> string)",
+			[]float32{math.Pi, 2.71828}, &stgt,
+			// NOTE that stgt kept the new result in last subtest
+			&stgt2,
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt},
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"slice (string(with floats) -> int)",
+			stgt2, &itgt,
+			&[]int{17, 2, 9, 5, 3},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt},
+			nil,
+		),
+
+		// needs complexToAnythingConverter
+
+		//deepcopy.NewTestCase(
+		//	"slice (complex -> float64)",
+		//	[]complex64{math.Pi + 3i, 2.71828 + 4.19i},
+		//	&ftgt2,
+		//	// NOTE that stgt kept the new result in last subtest
+		//	&[]float64{2.718280076980591, 17, 3.1415927410125732},
+		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
+		//	nil,
+		//),
+		//deepcopy.NewTestCase(
+		//	"slice (complex -> int)",
+		//	[]complex64{math.Pi + 3i, 2.71828 + 4.19i},
+		//	&itgt2,
+		//	// NOTE that stgt kept the new result in last subtest
+		//	&[]float64{3, 17},
+		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
+		//	nil,
+		//),
+	)
+
+}
+
+func TestMapSimple(t *testing.T) {
+
+	src := map[int64]float64{7: 0, 3: 7.18}
+	tgt := map[int]float32{1: 3.1, 2: 4.5, 3: 9.67}
+	exp := map[int]float32{1: 3.1, 2: 4.5, 3: 7.18, 7: 0}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"map (map[int64]float64 -> map[int]float32)",
+			src, &tgt, &exp,
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+		//deepcopy.NewTestCase(
+		//	"slice (uint64 -> int)",
+		//	[]uint64{9, 5}, &itgt, &[]int{13, 5, 9},
+		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
+		//	nil,
+		//),
+	)
+
+}
+
+func TestMapAndStruct(t *testing.T) {
+
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+
+	src := deepcopy.Employee2{
+		Base: deepcopy.Base{
+			Name:      "Bob",
+			Birthday:  &tm,
+			Age:       24,
+			EmployeID: 7,
+		},
+		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:   &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:  true,
+	}
+
+	src3 := deepcopy.Employee2{
+		Base: deepcopy.Base{
+			Name:      "Ellen",
+			Birthday:  &tm2,
+			Age:       55,
+			EmployeID: 9,
+		},
+		Avatar:  "https://placeholder.com/225x168",
+		Image:   []byte{181, 130, 23},
+		Attr:    &deepcopy.Attr{Attrs: []string{"god", "bless"}},
+		Valid:   false,
+		Deleted: true,
+	}
+
+	tgt := deepcopy.User{
+		Name:      "Mathews",
+		Birthday:  &tm3,
+		Age:       3,
+		EmployeID: 92,
+		Attr:      &deepcopy.Attr{Attrs: []string{"get"}},
+		Deleted:   false,
+	}
+
+	tgt2 := deepcopy.User{
+		Name:      "Frank",
+		Birthday:  &tm2,
+		Age:       18,
+		EmployeID: 9,
+		Attr:      &deepcopy.Attr{Attrs: []string{"baby"}},
+	}
+
+	tgt3 := deepcopy.User{
+		Name:      "Zeuth",
+		Birthday:  &tm1,
+		Age:       31,
+		EmployeID: 17,
+		Image:     []byte{181, 130, 29},
+		Attr:      &deepcopy.Attr{Attrs: []string{"you"}},
+	}
+
+	expect1 := deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"get", "hello", "world"}},
+		Valid:     true,
+	}
+
+	expect3 := deepcopy.User{
+		Name:      "Ellen",
+		Birthday:  &tm2,
+		Age:       55,
+		EmployeID: 9,
+		Avatar:    "https://placeholder.com/225x168",
+		Image:     []byte{181, 130, 29, 23},
+		Attr:      &deepcopy.Attr{Attrs: []string{"you", "god", "bless"}},
+		Deleted:   true,
+	}
+
+	srcmap := map[int64]*deepcopy.Employee2{
+		7: &src,
+		3: &src3,
+	}
+	tgtmap := map[float32]*deepcopy.User{
+		7: &tgt,
+		2: &tgt2,
+		3: &tgt3,
+	}
+	expmap := map[float32]*deepcopy.User{
+		7: &expect1,
+		2: &tgt2,
+		3: &expect3,
+	}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"map (map[int64]Employee2 -> map[int]User)",
+			srcmap, &tgtmap, &expmap,
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+		//deepcopy.NewTestCase(
+		//	"slice (uint64 -> int)",
+		//	[]uint64{9, 5}, &itgt, &[]int{13, 5, 9},
+		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
+		//	nil,
+		//),
+	)
 
 }
 

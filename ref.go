@@ -7,7 +7,7 @@ import (
 )
 
 //
-// r.go - the routines about reflect operations
+// ref.go - the routines about reflect operations
 //
 
 // rdecode decodes an interface{} or a pointer to something to its
@@ -17,7 +17,7 @@ import (
 // pointer to an integer, rdecode will extract or retrieve the Value
 // of that integer.
 //
-// See our TestRdecode() in r_test.go
+// See our TestRdecode() in ref_test.go
 //
 //    var b = 11
 //    var i interface{} = &b
@@ -154,25 +154,33 @@ func isZero(v reflect.Value) bool {
 		c := v.Complex()
 		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
-		for i := 0; i < v.Len(); i++ {
-			if !v.Index(i).IsZero() {
-				return false
-			}
-		}
-		return true
+		return arrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
 		return v.IsNil()
 	case reflect.String:
 		return v.Len() == 0
 	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
-			if !v.Field(i).IsZero() {
-				return false
-			}
-		}
-		return true
+		return structIsZero(v)
 	}
 	return false
+}
+
+func structIsZero(v reflect.Value) bool {
+	for i := 0; i < v.NumField(); i++ {
+		if !v.Field(i).IsZero() {
+			return false
+		}
+	}
+	return true
+}
+
+func arrayIsZero(v reflect.Value) bool {
+	for i := 0; i < v.Len(); i++ {
+		if !v.Index(i).IsZero() {
+			return false
+		}
+	}
+	return true
 }
 
 // isNil for go1.12+, the difference is it never panic on unavailable kinds.

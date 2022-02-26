@@ -51,6 +51,46 @@ func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	}
 }
 
+func _parseSourceStruct(ownerParams, p *Params, st reflect.Type, index int) {
+	p.srcType = st
+	if kind := st.Kind(); kind == reflect.Struct {
+		idx := index
+		if ownerParams != nil {
+			idx += ownerParams.srcOffset
+		}
+		t := st.Field(idx)
+		p.srcFieldType = &t
+		p.fieldTags = parseFieldTags(t.Tag)
+		p.srcType = t.Type
+		if ownerParams != nil {
+			if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+				p.srcAnonymous = true
+				p.srcOffset = p.index
+			}
+		}
+	}
+}
+
+func _parseTargetStruct(ownerParams, p *Params, tt reflect.Type, index int) {
+	p.dstType = tt
+	if kind := tt.Kind(); kind == reflect.Struct {
+		idx := index
+		if ownerParams != nil {
+			idx += ownerParams.dstOffset
+		}
+		t := tt.Field(idx)
+		p.dstFieldType = &t
+		p.dstType = t.Type
+		if ownerParams != nil {
+			if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+				p.dstAnonymous = true
+				p.dstOffset = p.index
+			}
+		}
+	} else if ownerParams != nil && ownerParams.dstFieldType != nil {
+	}
+}
+
 func withOwners(ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value, index int) paramsOpt {
 	return func(p *Params) {
 
@@ -70,43 +110,10 @@ func withOwners(ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDeco
 		p.index = index
 
 		st := p.srcDecoded.Type()
-		p.srcType = st
-		if kind := st.Kind(); kind == reflect.Struct {
-			idx := index
-			if ownerParams != nil {
-				idx += ownerParams.srcOffset
-			}
-			t := st.Field(idx)
-			p.srcFieldType = &t
-			p.fieldTags = parseFieldTags(t.Tag)
-			p.srcType = t.Type
-			if ownerParams != nil {
-				if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-					p.srcAnonymous = true
-					p.srcOffset = p.index
-				}
-			}
-		}
+		_parseSourceStruct(ownerParams, p, st, index)
 
 		tt := p.dstDecoded.Type()
-		p.dstType = tt
-		if kind := tt.Kind(); kind == reflect.Struct {
-			idx := index
-			if ownerParams != nil {
-				idx += ownerParams.dstOffset
-			}
-			t := tt.Field(idx)
-			p.dstFieldType = &t
-			p.dstType = t.Type
-			if ownerParams != nil {
-				if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-					p.dstAnonymous = true
-					p.dstOffset = p.index
-				}
-			}
-		} else if ownerParams != nil && ownerParams.dstFieldType != nil {
-
-		}
+		_parseTargetStruct(ownerParams, p, tt, index)
 
 		ownerParams.addChildParams(p)
 
@@ -158,6 +165,7 @@ func (params *Params) revoke() {
 	}
 }
 
+// ValueOfSource _
 func (params *Params) ValueOfSource() reflect.Value {
 	if params.srcFieldType != nil {
 		return params.srcDecoded.Field(params.index + params.srcOffset)
@@ -165,6 +173,7 @@ func (params *Params) ValueOfSource() reflect.Value {
 	return *params.srcOwner
 }
 
+// ValueOfDestination _
 func (params *Params) ValueOfDestination() reflect.Value {
 	if params.dstFieldType != nil {
 		return params.dstDecoded.Field(params.index + params.dstOffset)
@@ -181,7 +190,32 @@ func (params *Params) isFlagExists(ftf CopyMergeStrategy) bool {
 	return params.fieldTags.flags.isFlagOK(ftf)
 }
 
+// isGroupedFlagOK tests if the given flag is exists or valid.
+//
+// Different with isGroupedFlagOKDeeply is, isGroupedFlagOK will return
+// false simply while Params.fieldTags is empty or unset.
+//
+// When Params.fieldTags is valid, the actual testing will be forwarded
+// to Params.fieldTags.flags.isGroupedFlagOK().
 func (params *Params) isGroupedFlagOK(ftf CopyMergeStrategy) bool {
+	if params == nil /* || params.fieldTags == nil */ {
+		return newFlags().isGroupedFlagOK(ftf)
+	}
+	if params.fieldTags == nil {
+		return false
+	}
+	return params.fieldTags.flags.isGroupedFlagOK(ftf)
+}
+
+// isGroupedFlagOKDeeply tests if the given flag is exists or valid.
+//
+// Different with isGroupedFlagOK is, isGroupedFlagOKDeeply will check
+// whether the given flag is a leader (i.e. default choice) in a group
+// or not, even if Params.fieldTags is empty or unset.
+//
+// When Params.fieldTags is valid, the actual testing will be forwarded
+// to Params.fieldTags.flags.isGroupedFlagOK().
+func (params *Params) isGroupedFlagOKDeeply(ftf CopyMergeStrategy) bool {
 	if params == nil || params.fieldTags == nil {
 		return newFlags().isGroupedFlagOK(ftf)
 	}

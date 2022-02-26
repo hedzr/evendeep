@@ -10,7 +10,7 @@ import (
 //
 
 type fieldstable struct {
-	records          []tablerec
+	tablerecords
 	autoexpandstruct bool
 }
 
@@ -21,8 +21,14 @@ type tablerec struct {
 	structField      *reflect.StructField
 }
 
+type tablerecords []tablerec
+
 func (rec tablerec) Value() *reflect.Value {
 	return rec.structFieldValue
+}
+
+func (rec tablerec) FieldName() string {
+	return strings.Join(reverseStringSlice(rec.names), ".")
 }
 
 func (table *fieldstable) shouldIgnore(field reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
@@ -38,13 +44,63 @@ func (table *fieldstable) getallfields(structValue reflect.Value, autoexpandstru
 		return *table
 	}
 
-	ret := table.getfields(structValue, "", -1)
-	for _, ni := range ret.records {
-		//ni.names = append(ni.names, sf.Name)
-		//ni.indexes = append(ni.indexes, i)
-		table.records = append(table.records, ni)
-	}
+	styp := structValue.Type()
+	ret := table.getfields(&structValue, styp, "", -1)
+	table.tablerecords = append(table.tablerecords, ret...)
+	//for _, ni := range ret.records {
+	//	table.records = append(table.records, ni)
+	//}
 	return *table
+}
+
+func (table *fieldstable) safegetstructfieldvalueind(structValue *reflect.Value, i int) *reflect.Value {
+	if structValue != nil && structValue.IsValid() {
+		for structValue.Kind() == reflect.Ptr {
+			v := structValue.Elem()
+			structValue = &v
+		}
+		if structValue != nil && structValue.IsValid() {
+			sv := structValue.Field(i)
+			return &sv
+		}
+	}
+	return nil
+}
+
+func (table *fieldstable) getfields(structValue *reflect.Value, structType reflect.Type, fieldname string, fi int) (ret tablerecords) {
+	var i, amount int
+	for i, amount = 0, structType.NumField(); i < amount; i++ {
+		var tr tablerec
+
+		sf := structType.Field(i)
+		sftyp := sf.Type
+		sftypind := rindirectType(sftyp)
+		svind := table.safegetstructfieldvalueind(structValue, i)
+
+		functorLog("%d, %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
+
+		isStruct := sf.Anonymous || sftypind.Kind() == reflect.Struct
+		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
+
+		if isStruct && table.autoexpandstruct && !shouldIgnored {
+			n := table.getfields(svind, sftypind, sf.Name, i)
+			if len(n) > 0 {
+				ret = append(ret, n...)
+			} else {
+				// add empty struct
+				ret = append(ret, tablerec{
+					names:            []string{sf.Name},
+					indexes:          sf.Index,
+					structFieldValue: svind,
+					structField:      &sf,
+				})
+			}
+		} else {
+			tr = table.tablerec(svind, &sf, i, fi, fieldname)
+			ret = append(ret, tr)
+		}
+	}
+	return
 }
 
 func (table *fieldstable) tablerec(svind *reflect.Value, sf *reflect.StructField, index, parentIndex int, parentFieldName string) (tr tablerec) {
@@ -61,109 +117,31 @@ func (table *fieldstable) tablerec(svind *reflect.Value, sf *reflect.StructField
 	return
 }
 
-func (table *fieldstable) getfields(structValue reflect.Value, fieldname string, fi int) (ret fieldstable) {
-	var i, amount int
-	for i, amount = 0, structValue.NumField(); i < amount; i++ {
-		var tr tablerec
-
-		sv := structValue.Field(i)
-		svind := rdecodesimple(sv)
-
-		sf := structValue.Type().Field(i)
-
-		//functorLog("%d, %v (%v (%v))", i, sf.Name, sf.Type, sf.Type.Kind())
-
-		if !svind.IsValid() {
-			tr = table.tablerec(&svind, &sf, i, fi, fieldname)
-			ret.records = append(ret.records, tr)
-			continue
-		}
-
-		svindtype := svind.Type() // may panic on a zero/invalid value
-		svindtypekind := svindtype.Kind()
-		isStruct := sf.Anonymous || svindtypekind == reflect.Struct
-		shouldIgnored := table.shouldIgnore(sf, svindtype, svindtypekind)
-
-		if isStruct && table.autoexpandstruct && !shouldIgnored {
-			n := table.getfields(svind, sf.Name, i)
-			for _, ni := range n.records {
-				ret.records = append(ret.records, ni)
-			}
-		} else {
-			tr = table.tablerec(&svind, &sf, i, fi, fieldname)
-			ret.records = append(ret.records, tr)
-		}
-	}
-	return
-}
-
 //
 
 //
 
-type valueIterator interface {
+// structIterable provides a struct fields iterable interface
+type structIterable interface {
+	// Next returns the next field as an accessor.
+	//
+	// Next iterates all fields by ordinal, and enter any
+	// inner struct for the children, expect empty struct.
+	//
+	// For an empty struct, Next return it exactly rather than
+	// field since it has nothing to iterate.
 	Next() (accessor *fieldaccessor, ok bool)
 }
 
-type valueIteratorOpt func(s *structIterator)
+type structIterableOpt func(s *structIterator)
 
 //
 
-type structIterator struct {
-	rootStruct       reflect.Value
-	stack            []*fieldaccessor
-	autoexpandstruct bool // Next will expand *struct to struct and get inside loop deeply
-}
-
-type fieldaccessor struct {
-	structvalue *reflect.Value
-	structtype  reflect.Type
-	index       int
-	structfield *reflect.StructField
-}
-
-func (s *fieldaccessor) Type() reflect.Type { return s.structtype }
-func (s *fieldaccessor) ValueValid() bool   { return s.structvalue != nil && s.structvalue.IsValid() }
-func (s *fieldaccessor) FieldValue() *reflect.Value {
-	if s.ValueValid() {
-		r := s.structvalue.Field(s.index)
-		return &r
-	}
-	return nil
-}
-func (s *fieldaccessor) StructField() *reflect.StructField {
-	if s.ValueValid() {
-		r := s.structvalue.Type().Field(s.index)
-		s.structfield = &r
-	}
-	return s.structfield
-}
-func (s *fieldaccessor) getStructField() *reflect.StructField {
-	if s.ValueValid() {
-		r := s.structvalue.Type().Field(s.index)
-		s.structfield = &r
-	}
-	return s.structfield
-}
-func (s *fieldaccessor) StructFieldName() string {
-	fld := s.StructField()
-	if fld != nil {
-		return fld.Name
-	}
-	return ""
-}
-func (s *fieldaccessor) NumField() int {
-	if s.ValueValid() {
-		return s.structvalue.NumField()
-	}
-	return 0
-}
-func (s *fieldaccessor) incr() *fieldaccessor {
-	s.index++
-	return s
-}
-
-func newStructIterator(structValue reflect.Value, opts ...valueIteratorOpt) valueIterator {
+// newStructIterator return a deep recursive iterator for the given
+// struct value.
+//
+// The structIterable.Next() will enumerate all children fields.
+func newStructIterator(structValue reflect.Value, opts ...structIterableOpt) structIterable {
 	s := &structIterator{
 		rootStruct: structValue,
 		stack:      nil,
@@ -176,11 +154,127 @@ func newStructIterator(structValue reflect.Value, opts ...valueIteratorOpt) valu
 
 // withStructPtrAutoExpand allows auto-expanding the struct or its pointer
 // in iterating a parent struct
-func withStructPtrAutoExpand(expand bool) valueIteratorOpt {
+func withStructPtrAutoExpand(expand bool) structIterableOpt {
 	return func(s *structIterator) {
 		s.autoexpandstruct = expand
 	}
 }
+
+// withStructFieldPtrAutoNew allows auto-expanding the struct or its pointer
+// in iterating a parent struct
+func withStructFieldPtrAutoNew(create bool) structIterableOpt {
+	return func(s *structIterator) {
+		s.autonew = create
+	}
+}
+
+//
+
+type structIterator struct {
+	rootStruct       reflect.Value
+	stack            []*fieldaccessor
+	autoexpandstruct bool // Next will expand *struct to struct and get inside loop deeply
+	autonew          bool // create new inner objects for the child ptr,map,chan,..., if necessary
+}
+
+type fieldaccessor struct {
+	structvalue *reflect.Value
+	structtype  reflect.Type
+	index       int
+	structfield *reflect.StructField
+}
+
+func (s *fieldaccessor) Set(v reflect.Value) {
+	if s.ValueValid() {
+		sv := s.structvalue.Field(s.index)
+		sv.Set(v)
+	}
+}
+func (s *fieldaccessor) Type() reflect.Type { return s.structtype }
+func (s *fieldaccessor) ValueValid() bool   { return s.structvalue != nil && s.structvalue.IsValid() }
+func (s *fieldaccessor) FieldValue() *reflect.Value {
+	if s.ValueValid() {
+		vind := rindirect(*s.structvalue)
+		if vind.IsValid() {
+			r := vind.Field(s.index)
+			return &r
+		}
+	}
+	return nil
+}
+func (s *fieldaccessor) FieldType() *reflect.Type {
+	sf := s.StructField()
+	if sf != nil {
+		return &sf.Type
+	}
+	return nil
+}
+func (s *fieldaccessor) NumField() int {
+	sf := s.structtype
+	return sf.NumField()
+	//if s.ValueValid() {
+	//	return s.structvalue.NumField()
+	//}
+	//return 0
+}
+func (s *fieldaccessor) StructField() *reflect.StructField {
+	//if s.ValueValid() {
+	//	r := s.structvalue.Type().Field(s.index)
+	//	s.structfield = &r
+	//}
+	//return s.structfield
+	return s.getStructField()
+}
+func (s *fieldaccessor) getStructField() *reflect.StructField {
+	if s.structfield == nil && s.index < s.structtype.NumField() {
+		r := s.structtype.Field(s.index)
+		s.structfield = &r
+	}
+	//if s.ValueValid() {
+	//	r := s.structvalue.Type().Field(s.index)
+	//	s.structfield = &r
+	//}
+	return s.structfield
+}
+func (s *fieldaccessor) StructFieldName() string {
+	fld := s.StructField()
+	if fld != nil {
+		return fld.Name
+	}
+	return ""
+}
+func (s *fieldaccessor) incr() *fieldaccessor {
+	s.index++
+	s.structfield = nil
+	return s
+}
+func (s *fieldaccessor) ensure_ptr_field() {
+	if s.index < s.structtype.NumField() {
+		if s.structvalue == nil {
+			return // cannot do anything except return
+		}
+		//if s.structvalue.IsValid() {
+		//	return
+		//}
+		sf := s.structtype.Field(s.index)
+		vind := rindirect(*s.structvalue)
+		fv := vind.Field(s.index)
+		kind := sf.Type.Kind()
+		switch kind {
+		case reflect.Ptr:
+			if isNil(fv) {
+				functorLog("    autonew")
+				typ := sf.Type.Elem()
+				nv := reflect.New(typ)
+				fv.Set(nv)
+			}
+		}
+	}
+}
+
+//
+
+//
 
 func (s *structIterator) _push(structvalue *reflect.Value, structtype reflect.Type, index int) *fieldaccessor {
 	s.stack = append(s.stack, &fieldaccessor{structvalue, structtype, index, nil})
@@ -241,8 +335,13 @@ func (s *structIterator) _safegetFieldType() (sf *reflect.StructField) {
 	return nil
 }
 
+func (s *structIterator) _check_nil_ptr(lastone *fieldaccessor, field *reflect.StructField) {
+	lastone.ensure_ptr_field()
+}
+
 func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 	var lastone *fieldaccessor
+	var inretry bool
 
 	if s._empty() {
 		vind := rindirect(s.rootStruct)
@@ -264,38 +363,39 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 	}
 
 retry:
-	field, valvalid := lastone.getStructField(), true
-	if field == nil {
-		valvalid = false
-		field = s._safegetFieldType()
-		if field == nil {
-			log.Warnf("Next(): cannot get field type, field value == nil, or it's an empty struct")
-		} else {
-			//log.Debugf("typ: %v, name: %v | %v", typfmt(field.Type), field.Name, field)
-		}
-	}
+	field := lastone.getStructField()
 	if field != nil {
-		tind := field.Type
+		tind := field.Type // rindirectType(field.Type)
 		if s.autoexpandstruct {
 			tind = rindirectType(field.Type)
-		}
-		k1 := tind.Kind()
-		if k1 == reflect.Struct && !s.shouldIgnore(field, tind, k1) {
-			if valvalid {
-				vind := rindirect(*lastone.FieldValue())
-				lastone = s._push(&vind, tind, 0)
-				log.Debugf("    -- (retry) -> filed is struct: %v, typ: %v\n", valfmt(&vind), typfmt(tind))
-				//field = lastone.StructField()
-				//fmt.Printf("    - (retry) %d. %q (%v (%v)) %v\n", field.Index, field.Name, field.Type.Kind(), field.Type, field.Index) //, tind, vind.Interface())
-			} else {
-				lastone = s._push(nil, tind, 0)
-				log.Debugf("    -- (retry) -> filed is struct [value invalid]: %v\n", typfmt(tind))
+			k1 := tind.Kind()
+			functorLog("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
+			if s.autonew {
+				//s._check_nil_ptr(lastone, field)
+				lastone.ensure_ptr_field()
 			}
-			goto retry
+			if k1 == reflect.Struct && !s.shouldIgnore(field, tind, k1) {
+				fvp := lastone.FieldValue()
+				lastone = s._push(fvp, tind, 0)
+				functorLog("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
+				inretry = true
+				goto retry
+			}
 		}
 
-		//field = lastone.StructField()
-		//fmt.Printf("    - %d. %q (%v (%v)) %v\n", field.Index, field.Name, field.Type.Kind(), field.Type, field.Index) //, tind, vind.Interface())
+	} else {
+		if inretry && lastone.NumField() == 0 {
+			// for an empty struct, go back and up to parent level and
+			// iterate it instead of iterating its fields since there's
+			// no longer fields.
+			//
+			// NOTE that should be cared to prevent endless loop at this
+			// point.
+			s._pop()
+			lastone = s._top()
+		} else {
+			log.Warnf("cannot fetching field, empty struct ? ")
+		}
 	}
 
 	ok, accessor = true, lastone

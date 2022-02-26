@@ -1,5 +1,7 @@
 package deepcopy_test
 
+// a little copy from logex, so we can avoid importing it
+
 import (
 	"github.com/hedzr/log"
 	"io"

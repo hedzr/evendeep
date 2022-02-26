@@ -15,5 +15,5 @@ replace github.com/hedzr/localtest => ../29.localtest
 require (
 	github.com/hedzr/localtest v0.0.0-00010101000000-000000000000
 	github.com/hedzr/log v1.5.27
-	gopkg.in/hedzr/errors.v3 v3.0.6
+	gopkg.in/hedzr/errors.v3 v3.0.9
 )

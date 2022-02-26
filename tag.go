@@ -33,14 +33,14 @@ type fieldTags struct {
 
 // ValueConverter _
 type ValueConverter interface {
-	Transform(ctx *ValueConverterContext, source reflect.Value) (target reflect.Value, err error)
-	Match(params *Params, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+	Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error)
+	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
 }
 
 // ValueCopier _
 type ValueCopier interface {
 	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
-	Match(params *Params, source, target reflect.Value) (ctx *ValueConverterContext, yes bool)
+	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
 }
 
 // NameConverter _

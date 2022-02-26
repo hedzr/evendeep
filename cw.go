@@ -39,12 +39,15 @@ func WithCopyStyle() Opt {
 	}
 }
 
-// WithAutoExpandInnerStruct does copy fields with flat struct.
-func WithAutoExpandInnerStruct(autoexpand bool) Opt {
+// WithAutoExpandForInnerStruct does copy fields with flat struct.
+func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
 	return func(c *cpController) {
 		c.autoExpandStuct = autoexpand
 	}
 }
+
+// WithAutoExpandStructOpt is synonym of SliceMerge + MapMerge
+var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
 
 // WithStrategies appends more flags into *cpController
 func WithStrategies(flags ...CopyMergeStrategy) Opt {
@@ -59,11 +62,11 @@ func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	}
 }
 
-// WithCopyStrategy is synonym of SliceCopy + MapCopy
-var WithCopyStrategy = WithStrategies(SliceCopy, MapCopy)
+// WithCopyStrategyOpt is synonym of SliceCopy + MapCopy
+var WithCopyStrategyOpt = WithStrategies(SliceCopy, MapCopy)
 
-// WithMergeStrategy is synonym of SliceMerge + MapMerge
-var WithMergeStrategy = WithStrategies(SliceMerge, MapMerge)
+// WithMergeStrategyOpt is synonym of SliceMerge + MapMerge
+var WithMergeStrategyOpt = WithStrategies(SliceMerge, MapMerge)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).

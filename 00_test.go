@@ -42,13 +42,15 @@ func TestCpChan(t *testing.T) {
 
 }
 
+type Verifier func(src, dst, expect interface{}, e error) (err error)
+
 // TestCase _
 type TestCase struct {
 	description string      // description of what test is checking
 	src, dst    interface{} //
 	expect      interface{} // expected output
 	opts        []Opt
-	verifier    func(src, dst, expect interface{}) (err error)
+	verifier    Verifier
 }
 
 // NewTestCases _
@@ -62,7 +64,7 @@ func NewTestCase(
 	src, dst interface{}, //
 	expect interface{}, // expected output
 	opts []Opt,
-	verifier func(src, dst, expect interface{}) (err error),
+	verifier Verifier,
 ) TestCase {
 	return TestCase{
 		description, src, dst, expect, opts, verifier,
@@ -72,17 +74,37 @@ func NewTestCase(
 // ExtrasOpt for TestCase
 type ExtrasOpt func(tc *TestCase)
 
+// RunTestCasesWith _
+func RunTestCasesWith(tc *TestCase) (desc string, subtest func(t *testing.T)) {
+	desc = tc.description
+	subtest = func(t *testing.T) {
+		c := NewFlatDeepCopier(tc.opts...)
+
+		err := c.CopyTo(&tc.src, &tc.dst)
+
+		verifier := tc.verifier
+		if verifier == nil {
+			verifier = runtestcasesverifier(t)
+		}
+
+		//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+		if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
+			return
+		}
+
+		t.Fatalf("%s FAILED, %+v", tc.description, err)
+	}
+	return
+}
+
 // RunTestCases _
-func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
+func RunTestCases(t *testing.T, cases ...TestCase) {
 	for ix, tc := range cases {
 		t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
 
-			c := NewFlatDeepCopier(append(opts, tc.opts...)...)
+			c := NewFlatDeepCopier(tc.opts...)
 
 			err := c.CopyTo(&tc.src, &tc.dst)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			verifier := tc.verifier
 			if verifier == nil {
@@ -90,7 +112,7 @@ func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 			}
 
 			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
-			if err = verifier(tc.src, tc.dst, tc.expect); err == nil {
+			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
 				return
 			}
 
@@ -100,14 +122,40 @@ func RunTestCases(t *testing.T, cases []TestCase, opts ...Opt) {
 	}
 }
 
-func runtestcasesverifier(t *testing.T) func(src, dst, expect interface{}) (err error) {
-	return func(src, dst, expect interface{}) (err error) {
+// RunTestCasesWithOpts _
+func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
+	for ix, tc := range cases {
+		t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
+
+			c := NewFlatDeepCopier(append(opts, tc.opts...)...)
+
+			err := c.CopyTo(&tc.src, &tc.dst)
+
+			verifier := tc.verifier
+			if verifier == nil {
+				verifier = runtestcasesverifier(t)
+			}
+
+			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
+				return
+			}
+
+			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
+		})
+
+	}
+}
+
+func runtestcasesverifier(t *testing.T) Verifier {
+	return func(src, dst, expect interface{}, e error) (err error) {
 		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
 		aa, _ := rdecode(a)
 		bb, _ := rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
 		t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
-		t.Logf("\nexpect: %+v\n   got: %+v", bv, av)
+		t.Logf("\nexpect: %+v (%v)\n   got: %+v (%v)",
+			bv, typfmtv(&bb), av, typfmtv(&aa))
 
 		diff, equal := messagediff.PrettyDiff(expect, dst)
 		if !equal {

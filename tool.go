@@ -169,3 +169,16 @@ func reverseStringSlice(s []string) []string {
 	//	j--
 	//}
 }
+
+func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
+	for j := 0; j < ns.Len(); j++ {
+		tev := ns.Index(j).Interface()
+		functorLog("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
+		if reflect.DeepEqual(tev, elv) {
+			found = true
+			functorLog("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
+			break
+		}
+	}
+	return
+}

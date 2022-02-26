@@ -74,9 +74,13 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = errors.New("[recovered] copyTo unsatisfied ([%v] %v -> [%v] %v), causes: %v",
-				c.indirectType(from.Type()), from, c.indirectType(to.Type()), to, e).
-				WithData(e)
+			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v]), causes: %v",
+				c.indirectType(from.Type()), c.indirectType(to.Type()), e).
+				WithData(e).
+				WithTaggedData(errors.TaggedData{
+					"source": from,
+					"target": to,
+				})
 			n := log.CalcStackFrames(1)   // skip defer-recover frame at first
 			log.Skip(n).Errorf("%v", err) // skip go-lib frames and defer-recover frame, back to the point throwing panic
 
@@ -91,26 +95,28 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 		}
 	}
 
-	functorLog(" - from.type: %v - fallback to copyDefaultHandler", kind)
+	functorLog(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
 	err = copyDefaultHandler(c, params, from, to)
 
 	return
 }
 
-func (c *cpController) findCopiers(params *Params, from, to reflect.Value) (copier ValueCopier, ctx *ValueConverterContext) {
+func (c *cpController) findCopiers(params *Params, from, to reflect.Type) (copier ValueCopier, ctx *ValueConverterContext) {
 	var yes bool
-	for _, copier = range c.valueCopiers {
-		if ctx, yes = copier.Match(params, from, to); yes {
+	for _, cpr := range c.valueCopiers {
+		if ctx, yes = cpr.Match(params, from, to); yes {
+			copier = cpr
 			break
 		}
 	}
 	return
 }
 
-func (c *cpController) findConverters(params *Params, from, to reflect.Value) (converter ValueConverter, ctx *ValueConverterContext) {
+func (c *cpController) findConverters(params *Params, from, to reflect.Type) (converter ValueConverter, ctx *ValueConverterContext) {
 	var yes bool
-	for _, converter = range c.valueConverters {
-		if ctx, yes = converter.Match(params, from, to); yes {
+	for _, cvt := range c.valueConverters {
+		if ctx, yes = cvt.Match(params, from, to); yes {
+			converter = cvt
 			break
 		}
 	}
