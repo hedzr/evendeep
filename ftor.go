@@ -30,10 +30,10 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 		return
 	}
 
-	if tgt.CanSet() {
-		paramsChild := newParams(withOwners(params, &from, &to, nil, nil, 0))
-		defer paramsChild.revoke()
+	paramsChild := newParams(withOwners(c, params, &from, &to, nil, nil, 0))
+	defer paramsChild.revoke()
 
+	if tgt.CanSet() {
 		if src.IsValid() {
 			err = c.copyTo(paramsChild, src, to)
 		} else {
@@ -48,7 +48,7 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 		functorLog("    pointer - tgt is invalid/cannot-be-set/ignored: src.valid: %v, %v (%v) -> tgt.valid: %v, %v (%v)",
 			src.IsValid(), src.Type(), from.Kind(),
 			tgt.IsValid(), to.Type(), to.Kind())
-		err = newobj(c, params, src, to, tgt)
+		err = newobj(c, paramsChild, src, to, tgt)
 	}
 	return
 }
@@ -118,7 +118,7 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 		return // TODO omitempty,...
 	}
 
-	paramsChild := newParams(withOwners(params, &from, &to, nil, nil, 0))
+	paramsChild := newParams(withOwners(c, params, &from, &to, nil, nil, 0))
 	defer paramsChild.revoke()
 
 	// unbox the interface{} to original data type
@@ -127,8 +127,8 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 	functorLog("from.type: %v, decode to: %v", from.Type().Kind(), paramsChild.srcDecoded.Kind())
 	functorLog("  to.type: %v, decode to: %v (ptr: %v) | CanSet: %v, CanAddr: %v", to.Type().Kind(), toind.Kind(), toptr.Kind(), toind.CanSet(), toind.CanAddr())
 
-	var merging = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
-	if merging || c.makeNewClone == false {
+	// var merging = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
+	if paramsChild.mergingMode || c.makeNewClone == false {
 		err = c.copyTo(paramsChild, *paramsChild.srcDecoded, toptr)
 
 	} else {
@@ -147,23 +147,26 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 	}
 
 	var (
-		i, amount      int
-		ok             bool
-		padding        string
-		f, _           = rdecode(from)
-		t, _           = rdecode(to)
-		merging        = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
-		targetIterator = newStructIterator(t, withStructPtrAutoExpand(c.autoExpandStuct), withStructFieldPtrAutoNew(true))
-		accessor       *fieldaccessor
-		sourcefields   fieldstable
-		ec             = errors.New("copyStruct errors")
+		i, amount   int
+		ok          bool
+		padding     string
+		accessor    *fieldaccessor
+		ec          = errors.New("copyStruct errors")
+		paramsChild = newParams(withOwners(c, params, &from, &to, nil, nil, 0))
+		//f, _        = rdecode(from)
+		//t, _        = rdecode(to)
+		// merging        = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
+		//targetIterator = newStructIterator(t, withStructPtrAutoExpand(c.autoExpandStuct), withStructFieldPtrAutoNew(true))
+		//sourcefields   fieldstable
 	)
 
-	sourcefields = sourcefields.getallfields(f, c.autoExpandStuct)
+	//sourcefields = sourcefields.getallfields(f, c.autoExpandStuct)
+
+	defer paramsChild.revoke()
 
 	if functorLogValid {
 		padding = strings.Repeat("  ", params.depth()*2)
-		fromT, toT := f.Type(), t.Type()
+		fromT, toT := paramsChild.srcDecoded.Type(), paramsChild.dstDecoded.Type()
 		//functorLog(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
 		fq := dbgMakeInfoString(fromT, params, true)
 		dq := dbgMakeInfoString(toT, params, false)
@@ -173,7 +176,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 
 	defer func() {
 		if e := recover(); e != nil {
-			ff := sourcefields.tablerecords[i].structFieldValue
+			ff := paramsChild.sourcefields.tablerecords[i].structFieldValue
 			tf := accessor.FieldValue()
 			tft := accessor.FieldType()
 
@@ -192,21 +195,22 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 		}
 	}()
 
-	for i, amount = 0, len(sourcefields.tablerecords); i < amount; i++ {
-		sourcefield := sourcefields.tablerecords[i]
-		accessor, ok = targetIterator.Next()
+	for i, amount = 0, len(paramsChild.sourcefields.tablerecords); i < amount; i++ {
+		sourcefield := paramsChild.sourcefields.tablerecords[i]
+		accessor, ok = paramsChild.targetIterator.Next()
 		flags := parseFieldTags(sourcefield.structField.Tag) // todo pass and apply the flags in field tag
 		if flags.isFlagExists(Ignore) || !ok {
 			continue
 		}
 
+		paramsChild.withIteratorIndex(i)
 		srcval, dstval := sourcefield.Value(), accessor.FieldValue()
 		functorLog("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), accessor.StructFieldName(), valfmt(dstval), typfmt(*accessor.FieldType()))
 
 		if srcval != nil && dstval != nil && srcval.IsValid() {
-			ec.Attach(invokeStructFieldTransformer(c, params, *srcval, *dstval, padding))
+			ec.Attach(invokeStructFieldTransformer(c, paramsChild, *srcval, *dstval, padding))
 
-		} else if merging {
+		} else if paramsChild.mergingMode {
 
 			newtyp := accessor.FieldType()
 			functorLog("    new object for %v", typfmt(*newtyp))
@@ -215,7 +219,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 			toobjcopyptrv := reflect.New(*newtyp)
 			functorLog("    toobjcopyptrv: %v", typfmtv(&toobjcopyptrv))
 
-			if err = invokeStructFieldTransformer(c, params, *srcval, toobjcopyptrv, padding); err != nil {
+			if err = invokeStructFieldTransformer(c, paramsChild, *srcval, toobjcopyptrv, padding); err != nil {
 				ec.Attach(err)
 			} else {
 				accessor.Set(toobjcopyptrv.Elem())
@@ -267,30 +271,30 @@ func dbgMakeFieldInfoString(fld reflect.StructField, ofs int, params *Params) (q
 	return
 }
 
-// transformField _
-// these codes are reserved here since its are the elder implements but have flaws.
-func transformField(c *cpController, params *Params, from, to, fromDecoded, toDecoded reflect.Value, i int, padding string) (err error) {
-	paramsChild := newParams(withOwners(params, &from, &to, &fromDecoded, &toDecoded, i))
-	defer paramsChild.revoke()
-
-	if functorLogValid {
-		functorLog(" %s  %2d, srcFieldType: %v, srcType: %v, ofs: %v, parent.ofs: %v", padding, i, paramsChild.srcFieldType, paramsChild.srcType, paramsChild.srcOffset, paramsChild.owner.srcOffset)
-		functorLog(" %s      dstFieldType: %v, dstType: %v, ofs: %v, parent.ofs: %v", padding, paramsChild.dstFieldType, paramsChild.dstType, paramsChild.dstOffset, paramsChild.owner.dstOffset)
-	}
-	if paramsChild.isFlagExists(Ignore) {
-		functorLog("%s  IGNORED [field tag settings]: %v original %q", padding, paramsChild.fieldTags, paramsChild.srcFieldType.Tag)
-		return
-	}
-
-	ff, df := params.ValueOfSource(), params.ValueOfDestination() // f.Field(params.index), t.Field(params.index)
-	if functorLogValid {
-		functorLog(" %s      src value: %v", padding, ff.Interface())
-		functorLog(" %s      dst value: %v", padding, df.Interface())
-	}
-
-	err = invokeStructFieldTransformer(c, paramsChild, ff, df, padding)
-	return
-}
+//// transformField _
+//// these codes are reserved here since its are the elder implements but have flaws.
+//func transformField(c *cpController, params *Params, from, to, fromDecoded, toDecoded reflect.Value, i int, padding string) (err error) {
+//	paramsChild := newParams(withOwners(c, params, &from, &to, &fromDecoded, &toDecoded, i))
+//	defer paramsChild.revoke()
+//
+//	if functorLogValid {
+//		functorLog(" %s  %2d, srcFieldType: %v, srcType: %v, ofs: %v, parent.ofs: %v", padding, i, paramsChild.srcFieldType, paramsChild.srcType, paramsChild.srcOffset, paramsChild.owner.srcOffset)
+//		functorLog(" %s      dstFieldType: %v, dstType: %v, ofs: %v, parent.ofs: %v", padding, paramsChild.dstFieldType, paramsChild.dstType, paramsChild.dstOffset, paramsChild.owner.dstOffset)
+//	}
+//	if paramsChild.isFlagExists(Ignore) {
+//		functorLog("%s  IGNORED [field tag settings]: %v original %q", padding, paramsChild.fieldTags, paramsChild.srcFieldType.Tag)
+//		return
+//	}
+//
+//	ff, df := params.ValueOfSource(), params.ValueOfDestination() // f.Field(params.index), t.Field(params.index)
+//	if functorLogValid {
+//		functorLog(" %s      src value: %v", padding, ff.Interface())
+//		functorLog(" %s      dst value: %v", padding, df.Interface())
+//	}
+//
+//	err = invokeStructFieldTransformer(c, paramsChild, ff, df, padding)
+//	return
+//}
 
 func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, padding string) (err error) {
 	fft, dft := ff.Type(), df.Type()

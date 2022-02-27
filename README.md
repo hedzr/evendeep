@@ -2,21 +2,21 @@
 
 Yet another golang deepcopy library to provide these features:
 
-- loosely datatypes
-- widely datatypes
+- loosely datatypes convertion, with customizable converter/transformer
+- widely datatypes, includes chan, func, ...
 - full customizable
-  - user-defined value converters
+  - user-defined value/type converters/transformers
   - user-defined field to field name converting rule via struct Tag
 - easily apply different strategies
-  - basic strategies are: copy-n-merge, clone,
-  - stratigies per field:
+  - basic strategies are: copy-n-merge, clone, 
+  - strategies per struct field:
     slicecopy, slicemerge, mapcopy, mapmerge,
     omitempty (keep if source is zero or nil), omitnil, omitzero,
     omitneq (keep if not euqal), cleareq (clear if equal)
 - deep series
   - deepcopy: `CopyTo()`
   - deepclone: `MakeClone()`
-  - deepequal: `Equal()`
+  - deepequal: `Equal()` [NOT YET]
   - deepdiff [NOT YET]
 
 ## Usages
