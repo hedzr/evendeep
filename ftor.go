@@ -16,26 +16,39 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 	src := c.indirect(from)
 	tgt := c.indirect(to)
 
-	if tgt.CanSet() {
-		paramsChild := newParams(withOwners(params, &from, &to, nil, nil, 0))
-		defer paramsChild.revoke()
-		err = c.copyTo(paramsChild, src, to)
-	} else {
-		functorLog("    pointer - tgt is invalid/cannot-be-set/ignored: src.valid: %v, %v (%v) -> tgt.valid: %v, %v (%v)",
-			src.IsValid(), src.Type(), from.Kind(),
-			tgt.IsValid(), to.Type(), to.Kind())
-
+	newobj := func(c *cpController, params *Params, src, to, tgt reflect.Value) (err error) {
 		newtyp := to.Type()
 		if to.Type() == from.Type() {
 			newtyp = newtyp.Elem() // is pointer and its same
 		}
-
 		// create new object and pointer
 		toobjcopyptrv := reflect.New(newtyp)
 		functorLog("    toobjcopyptrv: %v", typfmtv(&toobjcopyptrv))
 		if err = c.copyTo(params, src, toobjcopyptrv); err == nil {
 			to.Set(toobjcopyptrv)
 		}
+		return
+	}
+
+	if tgt.CanSet() {
+		paramsChild := newParams(withOwners(params, &from, &to, nil, nil, 0))
+		defer paramsChild.revoke()
+
+		if src.IsValid() {
+			err = c.copyTo(paramsChild, src, to)
+		} else {
+			// pointer - src is nil - set tgt to nil too
+			newtyp := to.Type()
+			zv := reflect.Zero(newtyp)
+			functorLog("    pointer - zv: %v (%v), to: %v (%v)", valfmt(&zv), typfmt(newtyp), valfmt(&to), typfmtv(&to))
+			to.Set(zv)
+			// err = newobj(c, params, src, to, tgt)
+		}
+	} else {
+		functorLog("    pointer - tgt is invalid/cannot-be-set/ignored: src.valid: %v, %v (%v) -> tgt.valid: %v, %v (%v)",
+			src.IsValid(), src.Type(), from.Kind(),
+			tgt.IsValid(), to.Type(), to.Kind())
+		err = newobj(c, params, src, to, tgt)
 	}
 	return
 }
@@ -292,6 +305,7 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 		fftk, dftk := fft.Kind(), dft.Kind()
 		if fftk == reflect.Struct && ff.NumField() == 0 {
 			// never get into here because tablerecords.getallfields skip empty struct
+			log.Warnf("should never get into here, might be algor wrong ?")
 		}
 		if dftk == reflect.Struct && df.NumField() == 0 {
 			// structIterable.Next() might return an empty struct accessor

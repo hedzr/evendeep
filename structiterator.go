@@ -248,7 +248,7 @@ func (s *fieldaccessor) incr() *fieldaccessor {
 	s.structfield = nil
 	return s
 }
-func (s *fieldaccessor) ensure_ptr_field() {
+func (s *fieldaccessor) ensurePtrField() {
 	if s.index < s.structtype.NumField() {
 		if s.structvalue == nil {
 			return // cannot do anything except return
@@ -276,30 +276,30 @@ func (s *fieldaccessor) ensure_ptr_field() {
 
 //
 
-func (s *structIterator) _push(structvalue *reflect.Value, structtype reflect.Type, index int) *fieldaccessor {
+func (s *structIterator) iipush(structvalue *reflect.Value, structtype reflect.Type, index int) *fieldaccessor {
 	s.stack = append(s.stack, &fieldaccessor{structvalue, structtype, index, nil})
-	return s._top()
+	return s.iitop()
 }
-func (s *structIterator) _empty() bool { return len(s.stack) == 0 }
-func (s *structIterator) _pop() {
+func (s *structIterator) iiempty() bool { return len(s.stack) == 0 }
+func (s *structIterator) iipop() {
 	if len(s.stack) > 0 {
 		s.stack = s.stack[0 : len(s.stack)-1]
 	}
 }
-func (s *structIterator) _top() *fieldaccessor {
+func (s *structIterator) iitop() *fieldaccessor {
 	if len(s.stack) == 0 {
 		return nil
 	}
 	return s.stack[len(s.stack)-1]
 }
-func (s *structIterator) _prev() *fieldaccessor {
+func (s *structIterator) iiprev() *fieldaccessor {
 	if len(s.stack) <= 1 {
 		return nil
 	}
 	return s.stack[len(s.stack)-1-1]
 }
 
-func (s *structIterator) _safegetFieldType() (sf *reflect.StructField) {
+func (s *structIterator) iiSafegetFieldType() (sf *reflect.StructField) {
 
 	var reprev func(position int) (sf *reflect.StructField)
 	reprev = func(position int) (sf *reflect.StructField) {
@@ -335,28 +335,28 @@ func (s *structIterator) _safegetFieldType() (sf *reflect.StructField) {
 	return nil
 }
 
-func (s *structIterator) _check_nil_ptr(lastone *fieldaccessor, field *reflect.StructField) {
-	lastone.ensure_ptr_field()
+func (s *structIterator) iiCheckNilPtr(lastone *fieldaccessor, field *reflect.StructField) {
+	lastone.ensurePtrField()
 }
 
 func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 	var lastone *fieldaccessor
 	var inretry bool
 
-	if s._empty() {
+	if s.iiempty() {
 		vind := rindirect(s.rootStruct)
 		tind := vind.Type()
-		lastone = s._push(&vind, tind, 0)
+		lastone = s.iipush(&vind, tind, 0)
 
 	} else {
 
 	uplevel:
-		lastone = s._top().incr()
+		lastone = s.iitop().incr()
 		if lastone.index >= lastone.NumField() {
 			if len(s.stack) <= 1 {
 				return // no more fields or children can be iterated
 			}
-			s._pop()
+			s.iipop()
 			goto uplevel
 		}
 
@@ -371,16 +371,17 @@ retry:
 			k1 := tind.Kind()
 			functorLog("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
 			if s.autonew {
-				//s._check_nil_ptr(lastone, field)
-				lastone.ensure_ptr_field()
+				lastone.ensurePtrField()
 			}
 			if k1 == reflect.Struct && !s.shouldIgnore(field, tind, k1) {
 				fvp := lastone.FieldValue()
-				lastone = s._push(fvp, tind, 0)
+				lastone = s.iipush(fvp, tind, 0)
 				functorLog("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
 				inretry = true
 				goto retry
 			}
+		} else if s.autonew {
+			lastone.ensurePtrField()
 		}
 
 	} else {
@@ -391,8 +392,8 @@ retry:
 			//
 			// NOTE that should be cared to prevent endless loop at this
 			// point.
-			s._pop()
-			lastone = s._top()
+			s.iipop()
+			lastone = s.iitop()
 		} else {
 			log.Warnf("cannot fetching field, empty struct ? ")
 		}

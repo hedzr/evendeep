@@ -58,10 +58,12 @@ func _parseSourceStruct(ownerParams, p *Params, st reflect.Type, index int) {
 		if ownerParams != nil {
 			idx += ownerParams.srcOffset
 		}
-		t := st.Field(idx)
-		p.srcFieldType = &t
-		p.fieldTags = parseFieldTags(t.Tag)
-		p.srcType = t.Type
+		if idx < st.NumField() {
+			t := st.Field(idx)
+			p.srcFieldType = &t
+			p.fieldTags = parseFieldTags(t.Tag)
+			p.srcType = t.Type
+		}
 		if ownerParams != nil {
 			if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
 				p.srcAnonymous = true
@@ -78,9 +80,11 @@ func _parseTargetStruct(ownerParams, p *Params, tt reflect.Type, index int) {
 		if ownerParams != nil {
 			idx += ownerParams.dstOffset
 		}
-		t := tt.Field(idx)
-		p.dstFieldType = &t
-		p.dstType = t.Type
+		if idx < tt.NumField() {
+			t := tt.Field(idx)
+			p.dstFieldType = &t
+			p.dstType = t.Type
+		}
 		if ownerParams != nil {
 			if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
 				p.dstAnonymous = true
@@ -94,25 +98,40 @@ func _parseTargetStruct(ownerParams, p *Params, tt reflect.Type, index int) {
 func withOwners(ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value, index int) paramsOpt {
 	return func(p *Params) {
 
+		p.index = index
 		p.srcOwner = ownerSource
 		p.dstOwner = ownerTarget
 		p.srcDecoded = osDecoded
 		p.dstDecoded = otDecoded
+
+		var st, tt reflect.Type
+
 		if p.srcDecoded == nil {
 			d, _ := rdecode(*p.srcOwner)
 			p.srcDecoded = &d
 		}
+
+		if p.srcDecoded.IsValid() {
+			st = p.srcDecoded.Type()
+		} else {
+			st = p.srcOwner.Type()
+			st = rindirectType(st)
+		}
+
+		_parseSourceStruct(ownerParams, p, st, index)
+
 		if p.dstDecoded == nil {
 			d, _ := rdecode(*p.dstOwner)
 			p.dstDecoded = &d
 		}
 
-		p.index = index
+		if p.dstDecoded.IsValid() {
+			tt = p.dstDecoded.Type()
+		} else {
+			tt = p.dstOwner.Type()
+			tt = rindirectType(tt)
+		}
 
-		st := p.srcDecoded.Type()
-		_parseSourceStruct(ownerParams, p, st, index)
-
-		tt := p.dstDecoded.Type()
 		_parseTargetStruct(ownerParams, p, tt, index)
 
 		ownerParams.addChildParams(p)
