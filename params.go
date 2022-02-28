@@ -14,24 +14,27 @@ type Params struct {
 	srcType    reflect.Type   // = field(i+parent.srcOffset).type, or srcOwner.type for non-struct
 	dstType    reflect.Type   // = field(i+parent.dstOffset).type, or dstOwner.type for non-struct
 
-	index     int // struct field or slice index,
-	srcOffset int // -1, or an offset of the embedded struct fields
-	dstOffset int // -1, or an offset of the embedded struct fields
+	// index     int // struct field or slice index,
+	//srcOffset int // -1, or an offset of the embedded struct fields
+	//dstOffset int // -1, or an offset of the embedded struct fields
 
 	//srcFieldType *reflect.StructField //
 	//dstFieldType *reflect.StructField //
 	//srcAnonymous bool                 //
 	//dstAnonymous bool                 //
+	//mergingMode    bool                 // base state
 
 	sourcefields   fieldstable          //
 	targetIterator structIterable       //
-	mergingMode    bool                 // base state
+	accessor       *fieldaccessor       //
+	srcIndex       int                  //
+	field          *reflect.StructField // source field type
 	fieldTags      *fieldTags           // tag of source field
-	fieldType      *reflect.StructField // source field type
 
 	children          map[string]*Params // children of struct fields
 	childrenAnonymous []*Params          // or children without name (non-struct)
 	owner             *Params            //
+	controller        *cpController      //
 }
 
 type paramsOpt func(p *Params)
@@ -56,10 +59,9 @@ func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	}
 }
 
-func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value, index int) paramsOpt {
+func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt {
 	return func(p *Params) {
 
-		p.index = index
 		p.srcOwner = ownerSource
 		p.dstOwner = ownerTarget
 		p.srcDecoded = osDecoded
@@ -79,7 +81,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			st = rindirectType(st)
 		}
 
-		p.parseSourceStruct(ownerParams, st, index)
+		p.parseSourceStruct(ownerParams, st)
 
 		if p.dstDecoded == nil {
 			d, _ := rdecode(*p.dstOwner)
@@ -93,84 +95,107 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			tt = rindirectType(tt)
 		}
 
-		p.parseTargetStruct(ownerParams, tt, index)
+		p.parseTargetStruct(ownerParams, tt)
 
 		//
 
-		p.mergingMode = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || ownerParams.isAnyFlagsOK(SliceMerge, MapMerge)
+		// p.mergingMode = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || ownerParams.isAnyFlagsOK(SliceMerge, MapMerge)
 
 		t := *p.dstDecoded
 		p.targetIterator = newStructIterator(t,
-			withStructPtrAutoExpand(c.autoExpandStuct),
+			withStructPtrAutoExpand(c.autoExpandStruct),
 			withStructFieldPtrAutoNew(true),
 		)
 
 		f := *p.srcDecoded
-		p.sourcefields = p.sourcefields.getallfields(f, c.autoExpandStuct)
+		p.sourcefields = p.sourcefields.getallfields(f, c.autoExpandStruct)
+		p.withIteratorIndex(0)
 
 		//
 
+		p.controller = c
 		ownerParams.addChildParams(p)
 
 	}
 }
 
-func (params *Params) withIteratorIndex(i int) {
-	params.index = i
+func (params *Params) withIteratorIndex(srcIndex int) (sourcefield tablerec) {
+	params.srcIndex = srcIndex
 
-	if i < params.srcType.NumField() {
-		t := params.srcType.Field(i)
-		params.fieldType = &t
-		params.fieldTags = parseFieldTags(t.Tag)
+	//if i < params.srcType.NumField() {
+	//	t := params.srcType.Field(i)
+	//	params.fieldType = &t
+	//	params.fieldTags = parseFieldTags(t.Tag)
+	//}
+
+	if srcIndex < len(params.sourcefields.tablerecords) {
+		sourcefield = params.sourcefields.tablerecords[srcIndex]
+		params.field = sourcefield.StructField()
+		params.fieldTags = parseFieldTags(params.field.Tag)
 	}
+	return
+}
+
+func (params *Params) nextTargetField() (ok bool) {
+	if params.targetIterator != nil {
+		params.accessor, ok = params.targetIterator.Next()
+	}
+	return
+}
+
+func (params *Params) inMergeMode() bool {
+	return params.controller.flags.isAnyFlagsOK(SliceMerge, MapMerge) ||
+		params.owner.isAnyFlagsOK(SliceMerge, MapMerge) ||
+		(params.fieldTags != nil &&
+			params.fieldTags.flags.isAnyFlagsOK(SliceMerge, MapMerge))
 }
 
 //func (params *Params) parseSourceFieldTag(i int) {
 //	params.index = i
 //}
 
-func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type, index int) {
+func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type) {
 	params.srcType = st
 	if kind := st.Kind(); kind == reflect.Struct {
-		idx := index
-		if ownerParams != nil {
-			idx += ownerParams.srcOffset
-		}
-		params.withIteratorIndex(idx)
-		//if idx < st.NumField() {
-		//	t := st.Field(idx)
-		//	p.srcFieldType = &t
-		//	p.fieldTags = parseFieldTags(t.Tag)
-		//	p.srcType = t.Type
-		//}
+		//idx := index
 		//if ownerParams != nil {
-		//	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		//		p.srcAnonymous = true
-		//		p.srcOffset = p.index
-		//	}
+		//	idx += ownerParams.srcOffset
 		//}
+		//params.withIteratorIndex(idx)
+		////if idx < st.NumField() {
+		////	t := st.Field(idx)
+		////	p.srcFieldType = &t
+		////	p.fieldTags = parseFieldTags(t.Tag)
+		////	p.srcType = t.Type
+		////}
+		////if ownerParams != nil {
+		////	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+		////		p.srcAnonymous = true
+		////		p.srcOffset = p.index
+		////	}
+		////}
 	}
 }
 
-func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type, index int) {
+func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 	params.dstType = tt
 	if kind := tt.Kind(); kind == reflect.Struct {
-		idx := index
-		if ownerParams != nil {
-			idx += ownerParams.dstOffset
-		}
-		//if idx < tt.NumField() {
-		//	t := tt.Field(idx)
-		//	p.dstFieldType = &t
-		//	p.dstType = t.Type
-		//}
+		//idx := index
 		//if ownerParams != nil {
-		//	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		//		p.dstAnonymous = true
-		//		p.dstOffset = p.index
-		//	}
+		//	idx += ownerParams.dstOffset
 		//}
-		//} else if ownerParams != nil && ownerParams.dstFieldType != nil {
+		////if idx < tt.NumField() {
+		////	t := tt.Field(idx)
+		////	p.dstFieldType = &t
+		////	p.dstType = t.Type
+		////}
+		////if ownerParams != nil {
+		////	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+		////		p.dstAnonymous = true
+		////		p.dstOffset = p.index
+		////	}
+		////}
+		////} else if ownerParams != nil && ownerParams.dstFieldType != nil {
 	}
 }
 
@@ -181,8 +206,8 @@ func (params *Params) addChildParams(pp *Params) {
 	}
 
 	// if struct
-	if pp.fieldType != nil {
-		fieldName := pp.fieldType.Name
+	if pp.field != nil {
+		fieldName := pp.field.Name
 
 		if pp.children == nil {
 			pp.children = make(map[string]*Params)
@@ -205,8 +230,8 @@ func (params *Params) addChildParams(pp *Params) {
 // revoke does revoke itself from parent params if necessary
 func (params *Params) revoke() {
 	if pp := params.owner; pp != nil {
-		if pp.fieldType != nil {
-			fieldName := pp.fieldType.Name
+		if pp.field != nil {
+			fieldName := pp.field.Name
 			delete(pp.children, fieldName)
 		} else {
 			for i := 0; i < len(pp.childrenAnonymous); i++ {

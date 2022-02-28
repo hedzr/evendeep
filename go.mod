@@ -1,6 +1,6 @@
 module github.com/hedzr/deepcopy
 
-go 1.17
+go 1.13
 
 //replace github.com/hedzr/cmdr-base => ../00.cmdr-base
 

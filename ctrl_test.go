@@ -2,7 +2,9 @@ package deepcopy_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"
@@ -10,6 +12,103 @@ import (
 	"time"
 	"unsafe"
 )
+
+func TestInvalidSourceOrTarget(t *testing.T) {
+
+	invalidObj := func() interface{} {
+		var x *deepcopy.X0
+		return x
+	}
+	t.Run("invalid source", func(t *testing.T) {
+		src := invalidObj()
+		tgt := invalidObj()
+		deepcopy.DeepCopy(src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+	t.Run("valid ptr to invalid source", func(t *testing.T) {
+		src := invalidObj()
+		tgt := invalidObj()
+		deepcopy.DeepCopy(&src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+
+	nilmap := func() interface{} {
+		var mm []map[string]struct{}
+		return mm
+	}
+	t.Run("nil map", func(t *testing.T) {
+		src := nilmap()
+		tgt := nilmap()
+		deepcopy.DeepCopy(src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+	t.Run("valid ptr to nil map", func(t *testing.T) {
+		src := nilmap()
+		tgt := nilmap()
+		deepcopy.DeepCopy(&src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+
+	nilslice := func() interface{} {
+		var mm []map[string]struct{}
+		return mm
+	}
+	t.Run("nil slice", func(t *testing.T) {
+		src := nilslice()
+		tgt := nilslice()
+		deepcopy.DeepCopy(src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+	t.Run("valid ptr to nil slice", func(t *testing.T) {
+		src := nilslice()
+		tgt := nilslice()
+		deepcopy.DeepCopy(&src, &tgt)
+		t.Logf("tgt: %+v", tgt)
+	})
+
+}
+
+type ccs struct {
+	string
+	int
+	*float64
+}
+
+func (s *ccs) Clone() interface{} {
+	return &ccs{
+		string:  s.string,
+		int:     s.int,
+		float64: &(*s.float64),
+	}
+}
+
+func TestCloneableSource(t *testing.T) {
+	cloneable := func() *ccs {
+		f := deepcopy.Randtool.NextFloat64()
+		return &ccs{
+			string:  deepcopy.Randtool.NextStringSimple(13),
+			int:     deepcopy.Randtool.NextIn(300),
+			float64: &f,
+		}
+	}
+
+	t.Run("valid ptr to nil slice", func(t *testing.T) {
+		src := cloneable()
+		tgt := cloneable()
+		sav := *tgt
+		deepcopy.DeepCopy(&src, &tgt)
+		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
+		if reflect.DeepEqual(src, tgt) == false {
+			var err error
+			diff, equal := messagediff.PrettyDiff(src, tgt)
+			if !equal {
+				fmt.Println(diff)
+				err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+			}
+			t.Fatalf("not equal. %v", err)
+		}
+	})
+}
 
 func TestSimple(t *testing.T) {
 
@@ -562,7 +661,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 		var ret interface{}
 		x2 := &deepcopy.X2{N: nn[1:3]}
 
-		ret = deepcopy.NewDeepCopier().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		ret = deepcopy.New().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
 
 	})

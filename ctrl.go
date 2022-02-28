@@ -13,8 +13,9 @@ type cpController struct {
 	//zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
 	//eachFieldAlways    bool
 
+	copyUnexportedFields       bool
 	copyFunctionResultToTarget bool
-	autoExpandStuct            bool
+	autoExpandStruct           bool
 
 	//mergeSlice bool
 	//mergeMap   bool
@@ -36,12 +37,12 @@ func (c *cpController) CopyTo(fromObjPtr, toObjPtr interface{}, opts ...Opt) (er
 	var (
 		from0 = reflect.ValueOf(fromObjPtr)
 		to0   = reflect.ValueOf(toObjPtr)
-		from  = c.indirect(from0)
-		to    = c.indirect(to0)
+		from  = rindirect(from0)
+		to    = rindirect(to0)
 	)
 
-	functorLog("from.type: %v | input: %v", from.Type().Kind(), from0.Type().Kind())
-	functorLog("  to.type: %v | input: %v", to.Type().Kind(), to0.Type().Kind())
+	functorLog("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
+	functorLog("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
 
 	//if !to.CanAddr() {
 	//	return errors.New("copy to value is unaddressable")
@@ -75,7 +76,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v]), causes: %v",
-				c.indirectType(from.Type()), c.indirectType(to.Type()), e).
+				rindirectType(from.Type()), rindirectType(to.Type()), e).
 				WithData(e).
 				WithTaggedData(errors.TaggedData{
 					"source": from,
@@ -143,29 +144,29 @@ func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {
 //	return to
 //}
 
-// decode decodes a value to its underlying type, if it was wrapped by
-// interface{} or pointer.
+//// decode decodes a value to its underlying type, if it was wrapped by
+//// interface{} or pointer.
+////
+////    var b = 11
+////    var i interface{} = &b
+////    var v = reflect.ValueOf(&i)
+////    var n = c.decode(v)
+////    println(n.Type())    // = int
+//func (c *cpController) decode(reflectValue reflect.Value) (ret, prev reflect.Value) {
+//	return rdecode(reflectValue)
+//}
 //
-//    var b = 11
-//    var i interface{} = &b
-//    var v = reflect.ValueOf(&i)
-//    var n = c.decode(v)
-//    println(n.Type())    // = int
-func (c *cpController) decode(reflectValue reflect.Value) (ret, prev reflect.Value) {
-	return rdecode(reflectValue)
-}
+//func (c *cpController) skip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
+//	return rskip(reflectValue, kinds...)
+//}
+//
+//func (c *cpController) want(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
+//	return rwant(reflectValue, kinds...)
+//}
 
-func (c *cpController) skip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
-	return rskip(reflectValue, kinds...)
-}
-
-func (c *cpController) want(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
-	return rwant(reflectValue, kinds...)
-}
-
-func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
-	return rindirect(reflectValue)
-}
+//func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
+//	return rindirect(reflectValue)
+//}
 
 //// indirectAnyAndPtr converts/follows Any/any/interface{} to its underlying type (with decoding)
 //func (c *cpController) indirectAnyAndPtr(reflectValue reflect.Value) reflect.Value {
@@ -182,7 +183,7 @@ func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
 //	}
 //	return reflectValue
 //}
-
-func (c *cpController) indirectType(reflectType reflect.Type) reflect.Type {
-	return rindirectType(reflectType)
-}
+//
+//func (c *cpController) indirectType(reflectType reflect.Type) reflect.Type {
+//	return rindirectType(reflectType)
+//}

@@ -15,6 +15,31 @@ func TestBytesBuffer(t *testing.T) {
 	t.Logf("%v.%v", vv.Type().PkgPath(), vv.Type().Name())
 }
 
+// canConvert reports whether the value v can be converted to type t.
+// If v.CanConvert(t) returns true then v.Convert(t) will not panic.
+func canConvert(v *reflect.Value, t reflect.Type) bool {
+	vt := v.Type()
+	if !vt.ConvertibleTo(t) {
+		return false
+	}
+	// Currently the only conversion that is OK in terms of type
+	// but that can panic depending on the value is converting
+	// from slice to pointer-to-array.
+	if vt.Kind() == reflect.Slice && t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Array {
+		n := t.Elem().Len()
+		type sliceHeader struct {
+			Data unsafe.Pointer
+			Len  int
+			Cap  int
+		}
+		h := (*sliceHeader)(unsafe.Pointer(v.Pointer()))
+		if n > h.Len {
+			return false
+		}
+	}
+	return true
+}
+
 func TestTimeStruct(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
@@ -29,7 +54,7 @@ func TestTimeStruct(t *testing.T) {
 
 	t.Logf("%v -> %v", vs.Type(), vd.Type())
 
-	if vs.CanConvert(vd.Type()) {
+	if canConvert(&vs, vd.Type()) {
 		if vd.Elem().CanSet() {
 			vd.Elem().Set(vs.Elem())
 			return

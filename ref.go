@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"unsafe"
 )
 
 //
@@ -34,7 +35,7 @@ import (
 // A interface{} will be unboxed to its underlying datatype after
 // rdecode invoked.
 func rdecode(reflectValue reflect.Value) (ret, prev reflect.Value) {
-	return rskip(reflectValue, reflect.Pointer, reflect.Interface)
+	return rskip(reflectValue, reflect.Ptr, reflect.Interface)
 }
 func rdecodesimple(reflectValue reflect.Value) (ret reflect.Value) {
 	ret, _ = rdecode(reflectValue)
@@ -56,7 +57,7 @@ retry:
 }
 
 func rdecodetype(reflectType reflect.Type) (ret, prev reflect.Type) {
-	return rskiptype(reflectType, reflect.Pointer, reflect.Interface)
+	return rskiptype(reflectType, reflect.Ptr, reflect.Interface)
 }
 func rdecodetypesimple(reflectType reflect.Type) (ret reflect.Type) {
 	ret, _ = rdecodetype(reflectType)
@@ -131,11 +132,19 @@ func valfmt(v *reflect.Value) string {
 	if isNil(*v) {
 		return "<nil>"
 	}
+	if v.Kind() == reflect.String {
+		return v.String()
+	}
+	if canConvert(v, stringType) {
+		return v.Convert(stringType).String()
+	}
 	if v.CanInterface() {
 		return fmt.Sprintf("%v", v.Interface())
 	}
 	return fmt.Sprintf("<%v>", v.Kind())
 }
+
+var stringType = reflect.TypeOf((*string)(nil)).Elem()
 
 // isZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
@@ -155,7 +164,7 @@ func isZero(v reflect.Value) bool {
 		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
 		return arrayIsZero(v)
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
 		return v.IsNil()
 	case reflect.String:
 		return v.Len() == 0
@@ -167,7 +176,7 @@ func isZero(v reflect.Value) bool {
 
 func structIsZero(v reflect.Value) bool {
 	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).IsZero() {
+		if !isZero(v.Field(i)) {
 			return false
 		}
 	}
@@ -176,7 +185,7 @@ func structIsZero(v reflect.Value) bool {
 
 func arrayIsZero(v reflect.Value) bool {
 	for i := 0; i < v.Len(); i++ {
-		if !v.Index(i).IsZero() {
+		if !isZero(v.Index(i)) {
 			return false
 		}
 	}
@@ -192,7 +201,7 @@ func isNil(v reflect.Value) bool {
 		if v.CanAddr() {
 			return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!
 		}
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.UnsafePointer:
 		return v.IsNil()
 	case reflect.Interface, reflect.Slice:
 		return v.IsNil()
@@ -223,3 +232,33 @@ func isNil(v reflect.Value) bool {
 //	}
 //	panic(&ValueError{"reflect.Value.IsNil", v.kind()})
 //}
+
+// isExported reports whether the field is exported.
+func isExported(f *reflect.StructField) bool {
+	return f.PkgPath == ""
+}
+
+// canConvert reports whether the value v can be converted to type t.
+// If v.CanConvert(t) returns true then v.Convert(t) will not panic.
+func canConvert(v *reflect.Value, t reflect.Type) bool {
+	vt := v.Type()
+	if !vt.ConvertibleTo(t) {
+		return false
+	}
+	// Currently the only conversion that is OK in terms of type
+	// but that can panic depending on the value is converting
+	// from slice to pointer-to-array.
+	if vt.Kind() == reflect.Slice && t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Array {
+		n := t.Elem().Len()
+		type sliceHeader struct {
+			Data unsafe.Pointer
+			Len  int
+			Cap  int
+		}
+		h := (*sliceHeader)(unsafe.Pointer(v.Pointer()))
+		if n > h.Len {
+			return false
+		}
+	}
+	return true
+}

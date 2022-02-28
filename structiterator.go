@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/cl"
 	"github.com/hedzr/log"
 	"reflect"
 	"strings"
@@ -23,8 +24,12 @@ type tablerec struct {
 
 type tablerecords []tablerec
 
-func (rec tablerec) Value() *reflect.Value {
+func (rec tablerec) FieldValue() *reflect.Value {
 	return rec.structFieldValue
+}
+
+func (rec tablerec) StructField() *reflect.StructField {
+	return rec.structField
 }
 
 func (rec tablerec) FieldName() string {
@@ -68,8 +73,13 @@ func (table *fieldstable) safegetstructfieldvalueind(structValue *reflect.Value,
 }
 
 func (table *fieldstable) getfields(structValue *reflect.Value, structType reflect.Type, fieldname string, fi int) (ret tablerecords) {
+	st := rdecodetypesimple(structType)
+	if st.Kind() != reflect.Struct {
+		return
+	}
+
 	var i, amount int
-	for i, amount = 0, structType.NumField(); i < amount; i++ {
+	for i, amount = 0, st.NumField(); i < amount; i++ {
 		var tr tablerec
 
 		sf := structType.Field(i)
@@ -79,7 +89,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 
 		functorLog("%d, %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
 
-		isStruct := sf.Anonymous || sftypind.Kind() == reflect.Struct
+		isStruct := sftypind.Kind() == reflect.Struct
 		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
 
 		if isStruct && table.autoexpandstruct && !shouldIgnored {
@@ -88,12 +98,14 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 				ret = append(ret, n...)
 			} else {
 				// add empty struct
-				ret = append(ret, tablerec{
-					names:            []string{sf.Name},
-					indexes:          sf.Index,
-					structFieldValue: svind,
-					structField:      &sf,
-				})
+				tr = table.tablerec(svind, &sf, sf.Index[0], 0, "")
+				ret = append(ret, tr)
+				//ret = append(ret, tablerec{
+				//	names:            []string{sf.Name},
+				//	indexes:          sf.Index,
+				//	structFieldValue: svind,
+				//	structField:      &sf,
+				//})
 			}
 		} else {
 			tr = table.tablerec(svind, &sf, i, fi, fieldname)
@@ -104,8 +116,13 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 }
 
 func (table *fieldstable) tablerec(svind *reflect.Value, sf *reflect.StructField, index, parentIndex int, parentFieldName string) (tr tablerec) {
-	tr.structFieldValue = svind
 	tr.structField = sf
+	if isExported(sf) {
+		tr.structFieldValue = svind
+	} else {
+		val := cl.GetUnexportedField(*svind)
+		tr.structFieldValue = &val
+	}
 	tr.names = append(tr.names, sf.Name)
 	if parentFieldName != "" {
 		tr.names = append(tr.names, parentFieldName)

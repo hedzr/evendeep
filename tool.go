@@ -84,7 +84,7 @@ func inspectStructV(val reflect.Value, level int) {
 		valueField, address := testFieldValue(valField)
 
 		var v interface{}
-		if valueField.IsValid() && !valueField.IsZero() && valueField.CanInterface() {
+		if valueField.IsValid() && !isZero(valueField) && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
 		fmt.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",

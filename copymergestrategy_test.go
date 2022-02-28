@@ -54,4 +54,10 @@ func TestFlags_testGroupedFlag(t *testing.T) {
 	t.Run("cleaning flags - testGroupedFlag returns the leader in a group", subtest2)
 	t.Run("cleaning flags - isGroupedFlagOK returns ok if testing a leader", subtest3)
 
+	t.Run("parse nonexisted flag", func(t *testing.T) {
+		Default.Parse("??")
+	})
+	t.Run("stringify nonexisted flag", func(t *testing.T) {
+		println(CopyMergeStrategy(99999).String())
+	})
 }

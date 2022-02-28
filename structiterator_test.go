@@ -35,7 +35,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 			if flags.isFlagExists(Ignore) || !ok {
 				continue
 			}
-			srcval, dstval := sourcefield.Value(), accessor.FieldValue()
+			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
 			if srcval == nil || dstval == nil {
 				t.Logf("%d. field info missed", i)
 				continue
@@ -60,7 +60,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 			if flags.isFlagExists(Ignore) || !ok {
 				continue
 			}
-			srcval, dstval := sourcefield.Value(), accessor.FieldValue()
+			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
 			if srcval == nil || dstval == nil {
 				t.Logf("%d. field info missed", i)
 				continue
@@ -103,7 +103,7 @@ func testgetallfieldsX1(t *testing.T) {
 	sourcefields = sourcefields.getallfields(t1, false)
 	for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
 		sourcefield := sourcefields.tablerecords[i]
-		srcval := sourcefield.Value()
+		srcval := sourcefield.FieldValue()
 		srctypstr := typfmtv(srcval)
 		functorLog("%d. %s (%v) %v -> %s (%v)", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), srctypstr, "", "")
 	}

@@ -22,10 +22,10 @@ func TestFieldTags_Parse(t *testing.T) {
 
 	var a A
 
-	c := newCopier()
+	// c := newCopier()
 
 	v := reflect.ValueOf(&a)
-	v = c.indirect(v)
+	v = rindirect(v)
 
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)

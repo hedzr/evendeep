@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/cl"
 	"github.com/hedzr/deepcopy/syscalls"
 	"math"
 	"reflect"
@@ -129,7 +130,7 @@ func rToUIntegerHex(s reflect.Value, desiredType reflect.Type) (ret reflect.Valu
 	switch k := desiredType.Kind(); k {
 	case reflect.Uintptr:
 		ret = reflect.ValueOf(vs)
-	case reflect.UnsafePointer, reflect.Pointer:
+	case reflect.UnsafePointer, reflect.Ptr:
 		ret = reflect.ValueOf(vs)
 		//u := getPointerAsUintptr(ret)
 	}
@@ -162,7 +163,7 @@ func rToFloat(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err
 			}
 		} else {
 			var cval complex128
-			cval, err = strconv.ParseComplex(str, bitSize)
+			cval, err = cl.ParseComplex(str)
 			if err == nil {
 				fval = real(cval)
 				if desiredType.Kind() == reflect.Float64 {
@@ -184,7 +185,7 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 		ret = reflect.Zero(desiredType)
 	}
 
-	if v.CanConvert(desiredType) {
+	if canConvert(&v, desiredType) {
 		ret = v.Convert(desiredType)
 	} else {
 		val := v.String()
@@ -209,7 +210,7 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 }
 
 func rForComplex(v reflect.Value) (ret reflect.Value) {
-	vs := strconv.FormatComplex(v.Complex(), 'g', -1, 128)
+	vs := cl.FormatComplex(v.Complex(), 'g', -1, 128)
 	ret = reflect.ValueOf(vs)
 	return
 }
@@ -217,7 +218,7 @@ func rForComplex(v reflect.Value) (ret reflect.Value) {
 func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err error) {
 	ret, err = toTypeConverter(v, desiredType, 10, func(str string, base int, bitSize int) (ret reflect.Value, err error) {
 		var cval complex128
-		cval, err = strconv.ParseComplex(str, bitSize)
+		cval, err = cl.ParseComplex(str)
 		if err == nil {
 			if desiredType.Kind() == reflect.Complex128 {
 				ret = reflect.ValueOf(cval)

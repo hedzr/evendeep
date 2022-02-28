@@ -3,6 +3,6 @@
 
 // for go1.18+
 
-package deepcopy
+package dctyp
 
 type Any = any

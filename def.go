@@ -42,6 +42,8 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 // Cloneable _
 // The native Clone algor of a Cloneable object can be adapted into DeepCopier.
 type Cloneable interface {
+	// Clone return a pointer to copy of source object.
+	// But you can return the copy itself with your will.
 	Clone() interface{}
 }
 
@@ -59,8 +61,8 @@ type DeepCopier interface {
 
 var (
 	// DefaultCopyController provides standard deepcopy feature.
-	// copy and merge slice or map to exist target
-	DefaultCopyController = newCopier()
+	// copy and merge slice or map to an existed target
+	DefaultCopyController = newDeepCopier()
 	// DefaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
 	DefaultCloneController = newCloner()
@@ -68,14 +70,12 @@ var (
 	// onceCpController sync.Once
 )
 
-// NewDeepCopier gets a new instance of DeepCopier (the underlying
+// New gets a new instance of DeepCopier (the underlying
 // is *cpController) different with DefaultCopyController and
 // DefaultCloneController.
-func NewDeepCopier(opts ...Opt) DeepCopier {
+func New(opts ...Opt) DeepCopier {
 	lazyInitRoutines()
-	var c = newCopier()
-	c.flags = newFlags(SliceMerge, MapMerge)
-	//c.autoExpandStuct = true
+	var c = newDeepCopier()
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -108,6 +108,18 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 //	}
 //	return c
 //}
+
+func newDeepCopier() *cpController {
+	return &cpController{
+		valueConverters:            defaultValueConverters(),
+		valueCopiers:               defaultValueCopiers(),
+		copyUnexportedFields:       true,
+		copyFunctionResultToTarget: true,
+		makeNewClone:               false,
+		autoExpandStruct:           true,
+		flags:                      newFlags(SliceMerge, MapMerge),
+	}
+}
 
 func newCopier() *cpController {
 	return &cpController{

@@ -77,8 +77,10 @@ func Test2(t *testing.T) {
 
 	var prev reflect.Value
 	v2 := reflect.ValueOf(&ii)
-	c := newCopier()
-	v2, prev = c.skip(v2, reflect.Interface, reflect.Ptr)
+
+	// c := newCopier()
+
+	v2, prev = rskip(v2, reflect.Interface, reflect.Ptr)
 	t.Logf("v2 (%v (%v)) : %v, prev (%v %v)", v2.Kind(), v2.Type(), v2.Interface(), prev.Kind(), prev.Type())
 
 	ii = &b

@@ -3,6 +3,7 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/deepcopy/cl"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
 )
@@ -45,7 +46,7 @@ func (c *bytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target
 func (c *bytesBufferConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	//st.PkgPath() . st.Name()
 	if yes = source.Kind() == reflect.Struct && source.String() == "bytes.Buffer"; yes {
-		ctx = &ValueConverterContext{}
+		ctx = &ValueConverterContext{params}
 		functorLog("    src: %v, tgt: %v | Matched", source, target)
 	} else {
 		functorLog("    src: %v, tgt: %v", source, target)
@@ -55,18 +56,40 @@ func (c *bytesBufferConverter) Match(params *Params, source, target reflect.Type
 
 type toStringConverter struct{}
 
+func (c *toStringConverter) processUnexportedField(ctx *ValueConverterContext, source, target, newval reflect.Value) (processed bool) {
+	if fld := ctx.Params.field; fld != nil && ctx.controller.copyUnexportedFields {
+		// in a struct
+		if !isExported(fld) {
+			functorLog("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, typfmt(fld.Type), valfmt(&target), valfmt(&newval))
+			cl.SetUnexportedField(target, newval)
+			processed = true
+		}
+	}
+	return
+}
+
 func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	if ret, e := c.Transform(ctx, source, target.Type()); e == nil {
+	tt := target.Type()
+	if ret, e := c.Transform(ctx, source, tt); e == nil {
+		if c.processUnexportedField(ctx, source, target, ret) {
+			return
+		}
 		target.Set(ret)
 		return
 	}
 
 	if source.IsValid() {
-		if source.CanConvert(target.Type()) {
+		if canConvert(&source, target.Type()) {
 			nv := source.Convert(target.Type())
+			if c.processUnexportedField(ctx, source, target, nv) {
+				return
+			}
 			target.Set(nv)
 		} else {
 			nv := fmt.Sprintf("%v", source.Interface())
+			if c.processUnexportedField(ctx, source, target, reflect.ValueOf(nv)) {
+				return
+			}
 			target.Set(reflect.ValueOf(nv))
 		}
 	}
@@ -87,8 +110,8 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 		case reflect.Uintptr:
 			target = rForUIntegerHex(source.Pointer())
 		case reflect.UnsafePointer:
-			target = rForUIntegerHex(uintptr(source.UnsafePointer()))
-		case reflect.Pointer:
+			target = rForUIntegerHex(uintptr(source.UnsafeAddr()))
+		case reflect.Ptr:
 			target = rForUIntegerHex(source.Pointer())
 
 		case reflect.Float32, reflect.Float64:
@@ -97,7 +120,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 			target = rForComplex(source)
 
 		case reflect.String:
-			target = source
+			target = reflect.ValueOf(source.String())
 
 		//reflect.Array
 		//reflect.Chan
@@ -108,7 +131,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 		//reflect.Struct
 
 		default:
-			if source.CanConvert(targetType) {
+			if canConvert(&source, targetType) {
 				nv := source.Convert(targetType)
 				// target.Set(nv)
 				target = nv
@@ -124,7 +147,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 
 func (c *toStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	if yes = target.Kind() == reflect.String; yes {
-		ctx = &ValueConverterContext{}
+		ctx = &ValueConverterContext{params}
 	}
 	return
 }
@@ -138,7 +161,7 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 	}
 
 	if source.IsValid() {
-		if source.CanConvert(target.Type()) {
+		if canConvert(&source, target.Type()) {
 			nv := source.Convert(target.Type())
 			target.Set(nv)
 		} else {
@@ -165,7 +188,7 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 		case reflect.UnsafePointer:
 			// target = rToUIntegerHex(source, targetType)
 			err = errors.InvalidArgument
-		case reflect.Pointer:
+		case reflect.Ptr:
 			//target = rToUIntegerHex(source, targetType)
 			err = errors.InvalidArgument
 
@@ -186,7 +209,7 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 		//reflect.Struct
 
 		default:
-			if source.CanConvert(targetType) {
+			if canConvert(&source, targetType) {
 				nv := source.Convert(targetType)
 				// target.Set(nv)
 				target = nv
@@ -202,7 +225,7 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 
 func (c *fromStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	if yes = source.Kind() == reflect.String; yes {
-		ctx = &ValueConverterContext{}
+		ctx = &ValueConverterContext{params}
 	}
 	return
 }

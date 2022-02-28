@@ -3,10 +3,15 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/deepcopy/cl"
 	"github.com/hedzr/localtest/deepdiff/d4l3k/messagediff"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
+	"math/big"
+	mrand "math/rand"
 	"reflect"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -42,6 +47,52 @@ func TestCpChan(t *testing.T) {
 
 }
 
+//func TestVisibleFields(t *testing.T) {
+//	var obj = new(Employee2)
+//	typ := reflect.TypeOf(obj)
+//	for _, sf := range reflect.VisibleFields(typ.Elem()) {
+//		fmt.Println(sf)
+//	}
+//}
+
+func TestUnexported(t *testing.T) {
+	var s = struct{ foo int }{42}
+	var i int
+
+	rs := reflect.ValueOf(&s).Elem() // s, but writable
+	rf := rs.Field(0)                // s.foo
+	ri := reflect.ValueOf(&i).Elem() // i, but writeable
+
+	// These both fail with "reflect.Value.Set using value obtained using unexported field":
+	// ri.Set(rf)
+	// rf.Set(ri)
+
+	// Cheat:
+	rf = reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem()
+
+	// Now these both work:
+	ri.Set(rf)
+	i = 9
+	rf.Set(ri)
+
+	fmt.Println(s, i, runtime.Version())
+
+	rf = rs.Field(0)
+	cl.SetUnexportedField(rf, reflect.ValueOf(123))
+	fmt.Println(s, i, runtime.Version())
+}
+
+//
+
+//
+
+//
+
+//
+
+//
+
+// Verifier _
 type Verifier func(src, dst, expect interface{}, e error) (err error)
 
 // TestCase _
@@ -171,6 +222,83 @@ func runtestcasesverifier(t *testing.T) Verifier {
 		return
 	}
 }
+
+//
+
+//
+
+//
+
+type randomizer struct {
+	lastErr error
+}
+
+// var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+const (
+	// Alphabets gets the a to z and A to Z
+	Alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	// Digits gets 0 to 9
+	Digits = "0123456789"
+	// AlphabetNumerics gets Alphabets and Digits
+	AlphabetNumerics = Alphabets + Digits
+	// Symbols gets the ascii symbols
+	Symbols = "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
+	// ASCII gets the ascii characters
+	ASCII = AlphabetNumerics + Symbols
+)
+
+var hundred = big.NewInt(100)
+var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano()))
+var mu sync.Mutex
+var Randtool = &randomizer{}
+
+func (r *randomizer) Next() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Int()
+}
+func (r *randomizer) NextIn(max int) int {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Intn(max)
+}
+func (r *randomizer) inRange(min, max int) int {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Intn(max-min) + min
+}
+func (r *randomizer) NextInRange(min, max int) int { return r.inRange(min, max) }
+func (r *randomizer) NextInt63n(n int64) int64 {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Int63n(n)
+}
+func (r *randomizer) NextIntn(n int) int {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Intn(n)
+}
+func (r *randomizer) NextFloat64() float64 {
+	mu.Lock()
+	defer mu.Unlock()
+	return seededRand.Float64()
+}
+
+// NextStringSimple returns a random string with specified length 'n', just in A..Z
+func (r *randomizer) NextStringSimple(n int) string {
+	b := make([]byte, n)
+	for i := 0; i < n; i++ {
+		n := seededRand.Intn(90-65) + 65
+		b[i] = byte(n) // 'a' .. 'z'
+	}
+	return string(b)
+}
+
+//
+
+//
+
+//
 
 // Employee type for testing
 type Employee struct {

@@ -42,7 +42,7 @@ func WithCopyStyle() Opt {
 // WithAutoExpandForInnerStruct does copy fields with flat struct.
 func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
 	return func(c *cpController) {
-		c.autoExpandStuct = autoexpand
+		c.autoExpandStruct = autoexpand
 	}
 }
 
@@ -83,6 +83,22 @@ var WithMergeStrategyOpt = WithStrategies(SliceMerge, MapMerge)
 func WithStrategiesReset() Opt {
 	return func(c *cpController) {
 		c.flags = newFlags()
+	}
+}
+
+// WithCopyUnexportedField try to copy the unexported fields
+// with special way.
+func WithCopyUnexportedField(b bool) Opt {
+	return func(c *cpController) {
+		c.copyUnexportedFields = b
+	}
+}
+
+// WithCopyFunctionResultToTarget invoke source function member and
+// pass the result to the responsible target field.
+func WithCopyFunctionResultToTarget(b bool) Opt {
+	return func(c *cpController) {
+		c.copyFunctionResultToTarget = b
 	}
 }
 
