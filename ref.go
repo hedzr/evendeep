@@ -165,7 +165,7 @@ func isZero(v reflect.Value) bool {
 	case reflect.Array:
 		return arrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		return v.IsNil()
+		return isNil(v)
 	case reflect.String:
 		return v.Len() == 0
 	case reflect.Struct:
@@ -201,8 +201,10 @@ func isNil(v reflect.Value) bool {
 		if v.CanAddr() {
 			return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!
 		}
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.UnsafePointer:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr:
 		return v.IsNil()
+	case reflect.UnsafePointer:
+		return v.Pointer() == 0 // for go1.11, this is a workaround even not bad
 	case reflect.Interface, reflect.Slice:
 		return v.IsNil()
 		//case reflect.Array:
