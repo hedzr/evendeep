@@ -14,39 +14,39 @@ func ptrOf(tgt reflect.Value) reflect.Value {
 	//	functorLog("tgt: %v, get pointer", tgt.Kind())
 	//	tgt = reflect.NewAt(tgt.Elem().Type(), unsafe.Pointer(tgt.UnsafeAddr()))
 	//}
-	tgt = reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.UnsafeAddr()))
-	return tgt
+	ret := reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.UnsafeAddr()))
+	return ret
 }
 
-func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
-	//return reflect.PtrTo(tgt)
-	//for tgt.Kind() != reflect.Ptr {
-	//functorLog("tgt: %v, get pointer", tgt.Kind())
-	//r = reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.Pointer()))
-	//}
-	if tgt.CanAddr() {
-		r = tgt.Addr()
-	} else {
-		// in hard way
-		if tgt.IsNil() {
-			tmp := reflect.New(want)
-			tgt.Set(tmp)
-			r = tmp
-		} else {
-			var v = tgt.Interface()
-			functorLog("     v: %v", v)
-			r = reflect.ValueOf(&v)
-			functorLog("   ret: %v, *%v", r.Kind(), r.Elem().Kind())
-		}
-	}
-	if r.Type() == want {
-		functorLog("ret: %v, *%v", r.Kind(), r.Elem().Kind())
-		return
-	}
-
-	functorLog("NOTE an temp pointer was created as *%v", want.Kind())
-	return reflect.New(want)
-}
+//func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
+//	//return reflect.PtrTo(tgt)
+//	//for tgt.Kind() != reflect.Ptr {
+//	//functorLog("tgt: %v, get pointer", tgt.Kind())
+//	//r = reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.Pointer()))
+//	//}
+//	if tgt.CanAddr() {
+//		r = tgt.Addr()
+//	} else {
+//		// in hard way
+//		if tgt.IsNil() {
+//			tmp := reflect.New(want)
+//			tgt.Set(tmp)
+//			r = tmp
+//		} else {
+//			var v = tgt.Interface()
+//			functorLog("     v: %v", v)
+//			r = reflect.ValueOf(&v)
+//			functorLog("   ret: %v, *%v", r.Kind(), r.Elem().Kind())
+//		}
+//	}
+//	if r.Type() == want {
+//		functorLog("ret: %v, *%v", r.Kind(), r.Elem().Kind())
+//		return
+//	}
+//
+//	functorLog("NOTE an temp pointer was created as *%v", want.Kind())
+//	return reflect.New(want)
+//}
 
 func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) {
 	addrStr = "not-addressable"

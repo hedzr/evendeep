@@ -151,19 +151,69 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 		to.Set(reflect.ValueOf(tt))
 		return
 	}
+	err = copyStructInternal(c, params, from, to,
+		func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
+			for i, amount = 0, len(paramsChild.sourcefields.tablerecords); i < amount; i++ {
+				sourcefield := paramsChild.withIteratorIndex(i)
+
+				if c.isIgnoreName(sourcefield.ShortFieldName()) {
+					continue
+				}
+
+				if !paramsChild.nextTargetField() {
+					continue
+				}
+
+				flags := parseFieldTags(sourcefield.structField.Tag) // todo pass and apply the flags in field tag
+				if flags.isFlagExists(Ignore) {
+					continue
+				}
+
+				srcval, dstval := sourcefield.FieldValue(), paramsChild.accessor.FieldValue()
+				functorLog("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
+
+				if srcval != nil && dstval != nil && srcval.IsValid() {
+					if err = invokeStructFieldTransformer(c, paramsChild, *srcval, *dstval, padding); err != nil {
+						ec.Attach(err)
+						log.Errorf("error: %v", err)
+					}
+
+				} else if paramsChild.inMergeMode() {
+
+					newtyp := paramsChild.accessor.FieldType()
+					functorLog("    new object for %v", typfmt(*newtyp))
+
+					// create new object and pointer
+					toobjcopyptrv := reflect.New(*newtyp)
+					functorLog("    toobjcopyptrv: %v", typfmtv(&toobjcopyptrv))
+
+					if err = invokeStructFieldTransformer(c, paramsChild, *srcval, toobjcopyptrv, padding); err != nil {
+						ec.Attach(err)
+						log.Errorf("error: %v", err)
+					} else {
+						paramsChild.accessor.Set(toobjcopyptrv.Elem())
+					}
+
+				} else {
+					functorLog("   ignore nil/zero/invalid source or nil target")
+				}
+			}
+
+		})
+	return
+}
+
+func copyStructInternal(
+	c *cpController, params *Params,
+	from, to reflect.Value,
+	fn func(paramsChild *Params, ec errors.Error, i, amount int, padding string),
+) (err error) {
 
 	var (
 		i, amount   int
 		padding     string
 		ec          = errors.New("copyStruct errors")
 		paramsChild = newParams(withOwners(c, params, &from, &to, nil, nil))
-		//accessor    *fieldaccessor
-		//ok          bool
-		//f, _        = rdecode(from)
-		//t, _        = rdecode(to)
-		// merging        = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
-		//targetIterator = newStructIterator(t, withStructPtrAutoExpand(c.autoExpandStruct), withStructFieldPtrAutoNew(true))
-		//sourcefields   fieldstable
 	)
 
 	//sourcefields = sourcefields.getallfields(f, c.autoExpandStruct)
@@ -172,13 +222,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 	defer paramsChild.revoke()
 
 	if functorLogValid {
-		padding = strings.Repeat("  ", params.depth()*2)
-		fromT, toT := paramsChild.srcDecoded.Type(), paramsChild.dstDecoded.Type()
-		//functorLog(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
-		fq := dbgMakeInfoString(fromT, params, true)
-		dq := dbgMakeInfoString(toT, params, false)
-		functorLog(" %s- (%v (%v)) -> dst (%v (%v))", padding, fromT, fromT.Kind(), toT, toT.Kind())
-		functorLog(" %s  %s -> %s", padding, fq, dq)
+		dbgFrontOfStruct(params, paramsChild, padding)
 	}
 
 	defer func() {
@@ -203,42 +247,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 		}
 	}()
 
-	for i, amount = 0, len(paramsChild.sourcefields.tablerecords); i < amount; i++ {
-		sourcefield := paramsChild.withIteratorIndex(i)
-		flags := parseFieldTags(sourcefield.structField.Tag) // todo pass and apply the flags in field tag
-		if flags.isFlagExists(Ignore) || !paramsChild.nextTargetField() {
-			continue
-		}
-
-		srcval, dstval := sourcefield.FieldValue(), paramsChild.accessor.FieldValue()
-		functorLog("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
-
-		if srcval != nil && dstval != nil && srcval.IsValid() {
-			if err = invokeStructFieldTransformer(c, paramsChild, *srcval, *dstval, padding); err != nil {
-				ec.Attach(err)
-				log.Errorf("error: %v", err)
-			}
-
-		} else if paramsChild.inMergeMode() {
-
-			newtyp := paramsChild.accessor.FieldType()
-			functorLog("    new object for %v", typfmt(*newtyp))
-
-			// create new object and pointer
-			toobjcopyptrv := reflect.New(*newtyp)
-			functorLog("    toobjcopyptrv: %v", typfmtv(&toobjcopyptrv))
-
-			if err = invokeStructFieldTransformer(c, paramsChild, *srcval, toobjcopyptrv, padding); err != nil {
-				ec.Attach(err)
-				log.Errorf("error: %v", err)
-			} else {
-				paramsChild.accessor.Set(toobjcopyptrv.Elem())
-			}
-
-		} else {
-			functorLog("   ignore nil/zero/invalid source or nil target")
-		}
-	}
+	fn(paramsChild, ec, i, amount, padding)
 
 	////inspectStructV(to)
 	//for i, amount = 0, f.NumField(); i < amount; i++ {
@@ -251,6 +260,16 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 	//	err = transformField(c, params, from, to, f, t, i, padding)
 	//}
 	return
+}
+
+func dbgFrontOfStruct(params, paramsChild *Params, padding string) {
+	padding = strings.Repeat("  ", params.depth()*2)
+	fromT, toT := paramsChild.srcDecoded.Type(), paramsChild.dstDecoded.Type()
+	//functorLog(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
+	fq := dbgMakeInfoString(fromT, params, true)
+	dq := dbgMakeInfoString(toT, params, false)
+	functorLog(" %s- (%v (%v)) -> dst (%v (%v))", padding, fromT, fromT.Kind(), toT, toT.Kind())
+	functorLog(" %s  %s -> %s", padding, fq, dq)
 }
 
 func dbgMakeInfoString(typ reflect.Type, params *Params, src bool) (qstr string) {

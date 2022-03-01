@@ -32,6 +32,13 @@ func (rec tablerec) StructField() *reflect.StructField {
 	return rec.structField
 }
 
+func (rec tablerec) ShortFieldName() string {
+	if len(rec.names) > 0 {
+		return rec.names[0]
+	}
+	return ""
+}
+
 func (rec tablerec) FieldName() string {
 	return strings.Join(reverseStringSlice(rec.names), ".")
 }
@@ -207,6 +214,7 @@ func (s *fieldaccessor) Set(v reflect.Value) {
 		sv.Set(v)
 	}
 }
+
 func (s *fieldaccessor) Type() reflect.Type { return s.structtype }
 func (s *fieldaccessor) ValueValid() bool   { return s.structvalue != nil && s.structvalue.IsValid() }
 func (s *fieldaccessor) FieldValue() *reflect.Value {
@@ -309,52 +317,53 @@ func (s *structIterator) iitop() *fieldaccessor {
 	}
 	return s.stack[len(s.stack)-1]
 }
-func (s *structIterator) iiprev() *fieldaccessor {
-	if len(s.stack) <= 1 {
-		return nil
-	}
-	return s.stack[len(s.stack)-1-1]
-}
 
-func (s *structIterator) iiSafegetFieldType() (sf *reflect.StructField) {
+//func (s *structIterator) iiprev() *fieldaccessor {
+//	if len(s.stack) <= 1 {
+//		return nil
+//	}
+//	return s.stack[len(s.stack)-1-1]
+//}
 
-	var reprev func(position int) (sf *reflect.StructField)
-	reprev = func(position int) (sf *reflect.StructField) {
-		if position >= 0 {
-			prev := s.stack[position]
-			var st reflect.Type
-			if prev.ValueValid() == false {
-				// try retrieve the field type from previous element in stack (i.e. the
-				// parent struct of the current field)
-				sf2 := reprev(position - 1)
-				if sf2 != nil {
-					//log.Printf("prev.index = %v, prev.sv.valid = %v, sf = %v", prev.index, prev.ValueValid(), sf2)
-					st = rdecodetypesimple(sf2.Type)
-					//log.Printf("sf2.Type/st = %v", st)
-					if prev.index < st.NumField() {
-						fld := st.Field(prev.index)
-						sf = &fld
-						//log.Printf("typ: %v, name: %v | %v", typfmt(sf.Type), sf.Name, sf)
-					}
-				}
-			} else {
-				st = prev.Type()
-				if prev.index < st.NumField() {
-					fld := st.Field(prev.index)
-					sf = &fld
-				}
-			}
-		}
-		return
-	}
-
-	sf = reprev(len(s.stack) - 1)
-	return nil
-}
-
-func (s *structIterator) iiCheckNilPtr(lastone *fieldaccessor, field *reflect.StructField) {
-	lastone.ensurePtrField()
-}
+//func (s *structIterator) iiSafegetFieldType() (sf *reflect.StructField) {
+//
+//	var reprev func(position int) (sf *reflect.StructField)
+//	reprev = func(position int) (sf *reflect.StructField) {
+//		if position >= 0 {
+//			prev := s.stack[position]
+//			var st reflect.Type
+//			if prev.ValueValid() == false {
+//				// try retrieve the field type from previous element in stack (i.e. the
+//				// parent struct of the current field)
+//				sf2 := reprev(position - 1)
+//				if sf2 != nil {
+//					//log.Printf("prev.index = %v, prev.sv.valid = %v, sf = %v", prev.index, prev.ValueValid(), sf2)
+//					st = rdecodetypesimple(sf2.Type)
+//					//log.Printf("sf2.Type/st = %v", st)
+//					if prev.index < st.NumField() {
+//						fld := st.Field(prev.index)
+//						sf = &fld
+//						//log.Printf("typ: %v, name: %v | %v", typfmt(sf.Type), sf.Name, sf)
+//					}
+//				}
+//			} else {
+//				st = prev.Type()
+//				if prev.index < st.NumField() {
+//					fld := st.Field(prev.index)
+//					sf = &fld
+//				}
+//			}
+//		}
+//		return
+//	}
+//
+//	sf = reprev(len(s.stack) - 1)
+//	return nil
+//}
+//
+//func (s *structIterator) iiCheckNilPtr(lastone *fieldaccessor, field *reflect.StructField) {
+//	lastone.ensurePtrField()
+//}
 
 func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 	var lastone *fieldaccessor

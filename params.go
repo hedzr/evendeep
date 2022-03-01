@@ -59,6 +59,13 @@ func withFlags(flags ...CopyMergeStrategy) paramsOpt {
 	}
 }
 
+func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt {
+	return func(p *Params) {
+		p.controller = c
+		ownerParams.addChildParams(p)
+	}
+}
+
 func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt {
 	return func(p *Params) {
 
@@ -204,31 +211,34 @@ func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 }
 
 // addChildParams does link this params into parent params
-func (params *Params) addChildParams(pp *Params) {
-	if params == nil {
+func (params *Params) addChildParams(ppChild *Params) {
+	if params == nil || ppChild == nil {
 		return
 	}
 
 	// if struct
-	if pp.field != nil {
-		fieldName := pp.field.Name
+	if ppChild.field != nil {
+		fieldName := ppChild.field.Name
 
-		if pp.children == nil {
-			pp.children = make(map[string]*Params)
+		if ppChild.children == nil {
+			ppChild.children = make(map[string]*Params)
 		}
-		if _, ok := pp.children[fieldName]; ok {
+		if params.children == nil {
+			params.children = make(map[string]*Params)
+		}
+		if _, ok := ppChild.children[fieldName]; ok {
 			log.Panicf("field %q exists, cannot iterate another field on the same name", fieldName)
 		}
-		if pp == nil {
-			log.Panicf("setting nil Params for field %q, r u kidding me?", fieldName)
-		}
+		//if ppChild == nil {
+		//	log.Panicf("setting nil Params for field %q, r u kidding me?", fieldName)
+		//}
 
-		pp.children[fieldName] = pp
+		params.children[fieldName] = ppChild
 	} else {
-		pp.childrenAnonymous = append(params.childrenAnonymous, params)
+		params.childrenAnonymous = append(params.childrenAnonymous, ppChild)
 	}
 
-	pp.owner = params
+	ppChild.owner = params
 }
 
 // revoke does revoke itself from parent params if necessary

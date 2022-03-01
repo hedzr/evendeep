@@ -106,6 +106,8 @@ func WithCopyFunctionResultToTarget(b bool) Opt {
 //
 // Use the filename wildcard match characters (aka. '*' and '?', and '**')
 // as your advantages, the algor is isWildMatch() and dir.IsWildMatch.
+//
+// These patterns will only be tested on struct fields.
 func WithIgnoreNames(names ...string) Opt {
 	return func(c *cpController) {
 		c.ignoreNames = append(c.ignoreNames, names...)

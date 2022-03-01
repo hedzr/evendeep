@@ -45,12 +45,18 @@ func rToBool(v reflect.Value) (ret reflect.Value) {
 	case reflect.Struct:
 		b = !structIsZero(v)
 	case reflect.String:
-		switch val := strings.ToLower(v.String()); val {
-		case "y", "t", "1", "yes", "true", "on", "ok", "m", "male":
-			b = true
-		}
+		b = internalToBool(v.String())
 	}
+
 	ret = reflect.ValueOf(b)
+	return
+}
+
+func internalToBool(s string) (b bool) {
+	switch val := strings.ToLower(s); val {
+	case "y", "t", "1", "yes", "true", "on", "ok", "m", "male":
+		b = true
+	}
 	return
 }
 

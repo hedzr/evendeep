@@ -51,8 +51,28 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 	err = c.copyTo(nil, from, to)
 	return
 }
-
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
+	err = c.copyToInternal(params, from, to,
+		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+			kind := from.Kind() //functorLog(" - from.type: %v", kind)
+			if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
+				if fn, ok := copyToRoutines[kind]; ok && fn != nil {
+					err = fn(c, params, from, to)
+					return
+				}
+			}
+
+			functorLog(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
+			err = copyDefaultHandler(c, params, from, to)
+			return
+		})
+	return
+}
+
+func (c *cpController) copyToInternal(
+	params *Params, from, to reflect.Value,
+	fn func(c *cpController, params *Params, from, to reflect.Value) (err error),
+) (err error) {
 
 	// Return is from value is invalid
 	if !from.IsValid() {
@@ -88,17 +108,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 		}
 	}()
 
-	kind := from.Kind() //functorLog(" - from.type: %v", kind)
-	if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
-		if fn, ok := copyToRoutines[kind]; ok && fn != nil {
-			err = fn(c, params, from, to)
-			return
-		}
-	}
-
-	functorLog(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
-	err = copyDefaultHandler(c, params, from, to)
-
+	err = fn(c, params, from, to)
 	return
 }
 
@@ -157,6 +167,15 @@ func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {
 		c.flags.withFlags(flags...)
 	}
 	return c
+}
+
+func (c *cpController) isIgnoreName(name string) (yes bool) {
+	for _, x := range c.ignoreNames {
+		if yes = isWildMatch(name, x); yes {
+			break
+		}
+	}
+	return
 }
 
 //func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {

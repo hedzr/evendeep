@@ -82,6 +82,298 @@ func TestUnexported(t *testing.T) {
 	fmt.Println(s, i, runtime.Version())
 }
 
+func TestPtrOf(t *testing.T) {
+
+	var i = 100
+	v := reflect.ValueOf(&i)
+	vind := rindirect(v)
+	vp := ptrOf(vind)
+	t.Logf("ptr of i: %v, &i: %v", vp.Interface(), &i)
+	vp.Elem().SetInt(99)
+	t.Logf("i: %v", i)
+
+}
+
+func TestMinInt(t *testing.T) {
+	t.Log(minInt(1, 9))
+	t.Log(minInt(9, 1))
+}
+
+func TestContainsStringSlice(t *testing.T) {
+	t.Log(contains([]string{"a", "b", "c"}, "c"))
+	t.Log(contains([]string{"a", "b", "c"}, "z"))
+
+	t.Log(containsPartialsOnly([]string{"ac", "could", "ldbe"}, "itcouldbe"))
+	t.Log(containsPartialsOnly([]string{"a", "b", "c"}, "z"))
+
+	t.Log(partialContainsShort([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "could"))
+	t.Log(partialContainsShort([]string{"a", "b", "c"}, "z"))
+
+	idx, matchedString, containsBool := partialContains([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "could")
+	t.Logf("%v,%v,%v", idx, matchedString, containsBool)
+
+	idx, matchedString, containsBool = partialContains([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "byebye")
+	t.Logf("%v,%v,%v", idx, matchedString, containsBool)
+
+}
+
+func TestReverseSlice(t *testing.T) {
+	var ss = []int{8, 9, 7, 9, 3, 5}
+	reverseAnySlice(ss)
+	t.Logf("ss: %v", ss)
+
+	ss = []int{8, 9, 7, 3, 5}
+	reverseAnySlice(ss)
+	t.Logf("ss: %v", ss)
+}
+
+func TestInspectStruct(t *testing.T) {
+	a4 := prepareDataA4()
+	InspectStruct(reflect.ValueOf(&a4))
+}
+
+func TestParamsBasics(t *testing.T) {
+
+	t.Run("basics 1", func(t *testing.T) {
+		p1 := newParams()
+		p1 = newParams(withOwnersSimple(nil, nil))
+
+		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
+		t.Logf("p2: %v", p2)
+		t.Logf("p1: %v", p1)
+		p2.revoke()
+		t.Logf("p2: %v", p2)
+		t.Logf("p1: %v", p1)
+	})
+
+	t.Run("basics 2", func(t *testing.T) {
+		p1 := newParams()
+		p1 = newParams(withOwnersSimple(nil, nil))
+
+		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
+		defer p2.revoke()
+
+		a, expects := prepareAFT()
+
+		v := reflect.ValueOf(&a)
+		v = rindirect(v)
+
+		for i := 0; i < v.NumField(); i++ {
+			fld := v.Type().Field(i)
+			p2.fieldTags = parseFieldTags(fld.Tag)
+			if !p2.isFlagExists(Ignore) {
+				t.Logf("%q flags: %v", fld.Tag, p2.fieldTags)
+			} else {
+				t.Logf("%q flags: %v", fld.Tag, p2.fieldTags)
+			}
+			testDeepEqual(t, p2.fieldTags.flags, expects[i])
+		}
+
+	})
+}
+
+func TestParamsBasics3(t *testing.T) {
+
+	t.Run("basics 3", func(t *testing.T) {
+		p1 := newParams()
+		p1 = newParams(withOwnersSimple(nil, nil))
+
+		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
+		defer p2.revoke()
+
+		type AFS1 struct {
+			flags     Flags           `copy:",cleareq,must"`
+			converter *ValueConverter `copy:",ignore"`
+			wouldbe   int             `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
+		}
+		var a AFS1
+		v := reflect.ValueOf(&a)
+		v = rindirect(v)
+		sf, _ := v.Type().FieldByName("wouldbe")
+		//sf0, _ := v.Type().FieldByName("flags")
+		//sf1, _ := v.Type().FieldByName("converter")
+
+		p2.fieldTags = parseFieldTags(sf.Tag)
+		//ft.Parse(sf.Tag)
+		//ft.Parse(sf0.Tag) // entering 'continue' branch
+		//ft.Parse(sf1.Tag) // entering 'delete' branch
+
+		var z *fieldTags
+		z = p2.fieldTags
+
+		z.isFlagExists(SliceCopy)
+		p2.isFlagExists(SliceCopy)
+		p2.isFlagExists(SliceCopyAppend)
+		p2.isFlagExists(SliceMerge)
+
+		p2.isAnyFlagsOK(SliceMerge, Ignore)
+		p2.isAllFlagsOK(SliceCopy, Default)
+
+		p2.isGroupedFlagOK(SliceCopy)
+		p2.isGroupedFlagOK(SliceCopyAppend)
+		p2.isGroupedFlagOK(SliceMerge)
+
+		p2.isGroupedFlagOKDeeply(SliceCopy)
+		p2.isGroupedFlagOKDeeply(SliceCopyAppend)
+		p2.isGroupedFlagOKDeeply(SliceMerge)
+
+		if p2.depth() != 2 {
+			t.Fail()
+		}
+
+		var p3 *Params
+		p3.isFlagExists(SliceCopy)
+		p3.isGroupedFlagOK(SliceCopy)
+		p3.isGroupedFlagOK(SliceCopyAppend)
+		p3.isGroupedFlagOK(SliceMerge)
+
+		p3.isGroupedFlagOKDeeply(SliceCopy)
+		p3.isGroupedFlagOKDeeply(SliceCopyAppend)
+		p3.isGroupedFlagOKDeeply(SliceMerge)
+
+		p3.isAnyFlagsOK(SliceMerge, Ignore)
+		p3.isAllFlagsOK(SliceCopy, Default)
+
+		var p4 Params
+		p4.isFlagExists(SliceCopy)
+		p4.isGroupedFlagOK(SliceCopy)
+		p4.isGroupedFlagOK(SliceCopyAppend)
+		p4.isGroupedFlagOK(SliceMerge)
+
+	})
+}
+
+func TestDeferCatchers(t *testing.T) {
+
+	type AAA struct {
+		X1 string `copy:"-"`
+		X2 string `copy:",-"`
+		Y  int
+	}
+	type BBB struct {
+		X1 string
+		X2 string
+		Y  int
+	}
+
+	t.Run("dbgFrontOfStruct", func(t *testing.T) {
+
+		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+
+		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
+		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		sf1, df1 := svv.Field(1), dvv.Field(1)
+
+		c := newCopier()
+
+		p1 := newParams()
+		p1 = newParams(withOwnersSimple(c, nil))
+
+		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
+		defer p2.revoke()
+
+		dbgFrontOfStruct(p1, p2, "    ")
+	})
+
+	slicePanic := func() {
+		n := []int{5, 7, 4}
+		fmt.Println(n[4])
+		fmt.Println("normally returned from a")
+	}
+
+	t.Run("defer in copyStructInternal", func(t *testing.T) {
+
+		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+
+		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
+		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		//sf1, df1 := svv.Field(1), dvv.Field(1)
+
+		c := newCopier()
+
+		//p1 := newParams()
+		//p1 = newParams(withOwnersSimple(c, nil))
+		//
+		//p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
+		//defer p2.revoke()
+		//
+		// ec := errors.New("error container")
+
+		err := copyStructInternal(c, nil, svv, dvv, func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
+
+			_ = paramsChild.withIteratorIndex(i)
+			paramsChild.nextTargetField()
+
+			slicePanic()
+			return
+		})
+		t.Log(err)
+
+	})
+
+	t.Run("defer in copyTo", func(t *testing.T) {
+
+		c := newCopier()
+
+		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+
+		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
+		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		//sf1, df1 := svv.Field(1), dvv.Field(1)
+
+		_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+
+			slicePanic()
+			return
+		})
+
+	})
+
+}
+
+func NewForTest() DeepCopier {
+	copier := New(
+		WithValueConverters(&toDurationFromString{}),
+		WithValueCopiers(&toDurationFromString{}),
+		WithCloneStyle(),
+		WithCopyStyle(),
+		WithAutoExpandStructOpt,
+		WithCopyStrategyOpt,
+		WithMergeStrategyOpt,
+		WithStrategiesReset(),
+		WithStrategies(SliceMerge, MapMerge),
+		WithCopyUnexportedField(true),
+		WithCopyFunctionResultToTarget(true),
+		WithIgnoreNamesReset(),
+		WithIgnoreNames("Bugs*", "Test*"),
+	)
+
+	lazyInitRoutines()
+	var c1 = newCopier()
+	WithStrategies(SliceMerge, MapMerge)(c1)
+
+	copier = NewFlatDeepCopier(
+		WithStrategies(SliceMerge, MapMerge),
+		WithValueConverters(&toDurationFromString{}),
+		WithValueCopiers(&toDurationFromString{}),
+		WithCloneStyle(),
+		WithCopyStyle(),
+		WithAutoExpandStructOpt,
+		WithCopyStrategyOpt,
+		WithStrategiesReset(),
+		WithMergeStrategyOpt,
+		WithCopyUnexportedField(true),
+		WithCopyFunctionResultToTarget(true),
+		WithIgnoreNamesReset(),
+		WithIgnoreNames("Bugs*", "Test*"),
+	)
+
+	return copier
+}
+
 //
 
 //

@@ -9,6 +9,37 @@ import (
 	"unsafe"
 )
 
+func TestIgnoredpackageprefixesContains(t *testing.T) {
+	_ignoredpackageprefixes.contains("abc")
+	_ignoredpackageprefixes.contains("golang.org/grpc")
+}
+
+func TestFieldaccessorOperations(t *testing.T) {
+	x1 := x1data()
+	v1 := reflect.ValueOf(&x1)
+	t1, _ := rdecode(v1)
+
+	//x2 := new(X1)
+	//t2 := rdecodesimple(reflect.ValueOf(&x2))
+
+	it := newStructIterator(t1)
+	for i := 0; ; i++ {
+		accessor, ok := it.Next()
+		if !ok {
+			break
+		}
+		field := accessor.StructField()
+		if field == nil {
+			t.Logf("%d. field info missed", i)
+			continue
+		}
+		if field.Name == "O" {
+			accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
+		}
+		t.Logf("%d. %q (%v) %v %q | %v", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath, accessor.FieldValue().Interface())
+	}
+}
+
 func TestStructIterator_Next_X1(t *testing.T) {
 
 	x1 := x1data()

@@ -126,11 +126,11 @@ func valfmt(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
-	if isZero(*v) {
-		return "<zero>"
-	}
 	if isNil(*v) {
 		return "<nil>"
+	}
+	if isZero(*v) {
+		return "<zero>"
 	}
 	if v.Kind() == reflect.String {
 		return v.String()
@@ -148,30 +148,30 @@ var stringType = reflect.TypeOf((*string)(nil)).Elem()
 
 // isZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
-func isZero(v reflect.Value) bool {
+func isZero(v reflect.Value) (ret bool) {
 	k := v.Kind()
 	switch k {
 	case reflect.Bool:
-		return !v.Bool()
+		ret = !v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
+		ret = v.Int() == 0
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
+		ret = v.Uint() == 0
 	case reflect.Float32, reflect.Float64:
-		return math.Float64bits(v.Float()) == 0
+		ret = math.Float64bits(v.Float()) == 0
 	case reflect.Complex64, reflect.Complex128:
 		c := v.Complex()
-		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
+		ret = math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
-		return arrayIsZero(v)
+		ret = arrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		return isNil(v)
+		ret = isNil(v)
 	case reflect.Struct:
-		return structIsZero(v)
+		ret = structIsZero(v)
 	case reflect.String:
-		return v.Len() == 0
+		ret = v.Len() == 0
 	}
-	return false
+	return
 }
 
 func structIsZero(v reflect.Value) bool {
@@ -240,27 +240,31 @@ func isExported(f *reflect.StructField) bool {
 	return f.PkgPath == ""
 }
 
+func canConvertHelper(v reflect.Value, t reflect.Type) bool {
+	return canConvert(&v, t)
+}
+
 // canConvert reports whether the value v can be converted to type t.
 // If v.CanConvert(t) returns true then v.Convert(t) will not panic.
 func canConvert(v *reflect.Value, t reflect.Type) bool {
 	vt := v.Type()
 	if !vt.ConvertibleTo(t) {
+
+		// Currently the only conversion that is OK in terms of type
+		// but that can panic depending on the value is converting
+		// from slice to pointer-to-array.
+		if vt.Kind() == reflect.Slice && t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Array {
+			n := t.Elem().Len()
+			type sliceHeader struct {
+				Data unsafe.Pointer
+				Len  int
+				Cap  int
+			}
+			h := (*sliceHeader)(unsafe.Pointer(v.Pointer()))
+			return n <= h.Len
+		}
+
 		return false
-	}
-	// Currently the only conversion that is OK in terms of type
-	// but that can panic depending on the value is converting
-	// from slice to pointer-to-array.
-	if vt.Kind() == reflect.Slice && t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Array {
-		n := t.Elem().Len()
-		type sliceHeader struct {
-			Data unsafe.Pointer
-			Len  int
-			Cap  int
-		}
-		h := (*sliceHeader)(unsafe.Pointer(v.Pointer()))
-		if n > h.Len {
-			return false
-		}
 	}
 	return true
 }

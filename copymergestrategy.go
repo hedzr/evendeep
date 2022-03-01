@@ -60,8 +60,12 @@ const (
 
 	// // --- Globally settings ---
 
+	// The following constants are reserved for the future purpose.
+	// All of them should NOT be used in your user-side codes.
+
 	// UnexportedToo _
 	UnexportedToo CopyMergeStrategy = iota + 90 // private
+
 	// ByOrdinal will be applied to struct, map and slice.
 	// As to slice, it is standard and unique choice.
 	ByOrdinal // byordinal

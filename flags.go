@@ -5,16 +5,23 @@ type Flags map[CopyMergeStrategy]bool
 
 func newFlags(ftf ...CopyMergeStrategy) Flags {
 	onceInitFieldTagsFlags()
-	flags := make(map[CopyMergeStrategy]bool)
-	for _, f := range ftf {
-		flags[f] = true
-	}
+	flags := make(Flags)
+	flags.withFlags(ftf...)
 	return flags
 }
 
 func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
 	for _, f := range flg {
 		flags[f] = true
+		if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
+			for fx := range m {
+				if fx != f {
+					if _, has := flags[fx]; has {
+						flags[fx] = false
+					}
+				}
+			}
+		}
 	}
 	return flags
 }
@@ -24,10 +31,10 @@ func (flags Flags) isFlagOK(ftf CopyMergeStrategy) bool {
 }
 
 func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrategy) {
-	var ok bool
+	var ok, val bool
 	result = InvalidStrategy
 
-	if _, ok = flags[ftf]; ok {
+	if val, ok = flags[ftf]; ok && val {
 		result = ftf
 		return
 	}
@@ -36,7 +43,7 @@ func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrat
 		// ftf is a leader
 		ok = false
 		for f := range mKnownFieldTagFlagsConflict[ftf] {
-			if _, ok = flags[f]; ok {
+			if val, ok = flags[f]; ok && val {
 				result = f
 				break
 			}
@@ -51,7 +58,7 @@ func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrat
 			if _, ok = mKnownFieldTagFlagsConflictLeaders[f]; ok {
 				leader = f
 			}
-			if _, ok = flags[f]; ok {
+			if val, ok = flags[f]; ok && val {
 				result = f
 				found = true
 				break
@@ -87,9 +94,9 @@ func (flags Flags) isGroupedFlagOK(ftf CopyMergeStrategy) (ok bool) {
 				leader = f
 			}
 		}
-		found := false
+		var found, val bool
 		for f := range vm {
-			if _, found = flags[f]; found {
+			if val, found = flags[f]; found && val {
 				break
 			}
 		}
@@ -110,7 +117,7 @@ func (flags Flags) isGroupedFlagOK(ftf CopyMergeStrategy) (ok bool) {
 
 func (flags Flags) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
 	for _, f := range ftf {
-		if flags[f] {
+		if val, ok := flags[f]; val && ok {
 			return true
 		}
 	}
@@ -119,7 +126,7 @@ func (flags Flags) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
 
 func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
 	for _, f := range ftf {
-		if !flags[f] {
+		if val, ok := flags[f]; !ok || !val {
 			return false
 		}
 	}

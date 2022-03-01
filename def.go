@@ -13,7 +13,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	lazyInitRoutines()
 
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
-		return toObj
+		result = toObj
 	}
 
 	return
@@ -22,14 +22,16 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 // MakeClone _
 func MakeClone(fromObj interface{}) (result interface{}) {
 	if fromObj == nil {
-		return
+		return fromObj
 	}
 
 	lazyInitRoutines()
 
 	from := reflect.ValueOf(fromObj)
-	find := rindirect(from)
-	toPtr := reflect.New(find.Type())
+	//find := rindirect(from)
+	fromtyp := from.Type()
+	findtyp := rdecodetypesimple(fromtyp)
+	toPtr := reflect.New(findtyp)
 	toPtrObj := toPtr.Interface()
 	functorLog("toPtrObj: %v", toPtrObj)
 	if err := DefaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {

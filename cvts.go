@@ -71,15 +71,24 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	return
 }
 
+func (c *toStringConverter) preprocess(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (processed bool, target reflect.Value, err error) {
+	if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
+		sourceType := source.Type()
+		if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
+			target, err = cvt.Transform(ctx, source, targetType)
+			processed = true
+			return
+		}
+	}
+	return
+}
+
 // Transform will transform source type (bool, int, ...) to target string
 func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
-		if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
-			sourceType := source.Type()
-			if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
-				target, err = cvt.Transform(ctx, source, targetType)
-				return
-			}
+		var processed bool
+		if processed, target, err = c.preprocess(ctx, source, targetType); processed {
+			return
 		}
 
 		switch k := source.Kind(); k {
@@ -163,15 +172,24 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 	return
 }
 
+func (c *fromStringConverter) preprocess(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (processed bool, target reflect.Value, err error) {
+	if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
+		sourceType := source.Type()
+		if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
+			target, err = cvt.Transform(ctx, source, targetType)
+			processed = true
+			return
+		}
+	}
+	return
+}
+
 // Transform will transform source string to target type (bool, int, ...)
 func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
-		if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
-			sourceType := source.Type()
-			if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
-				target, err = cvt.Transform(ctx, source, targetType)
-				return
-			}
+		var processed bool
+		if processed, target, err = c.preprocess(ctx, source, targetType); processed {
+			return
 		}
 
 		switch k := targetType.Kind(); k {
