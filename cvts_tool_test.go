@@ -533,3 +533,31 @@ func TestFromStringConverter_Transform(t *testing.T) {
 	}
 	t.Logf("res: %v", dur)
 }
+
+func TestWithXXX(t *testing.T) {
+	copier := New(
+		WithValueConverters(&toDurationFromString{}),
+		WithValueCopiers(&toDurationFromString{}),
+		WithCloneStyle(),
+		WithCopyStyle(),
+		WithAutoExpandStructOpt,
+		WithCopyStrategyOpt,
+		WithStrategiesReset(),
+		WithMergeStrategyOpt,
+		WithCopyUnexportedField(true),
+		WithCopyFunctionResultToTarget(true),
+		WithIgnoreNamesReset(),
+		WithIgnoreNames("Bugs*", "Test*"),
+	)
+
+	var dur time.Duration
+	var src = "9h71ms"
+	//var svv = reflect.ValueOf(src)
+	//var tvv = reflect.ValueOf(&dur) // .Elem()
+
+	err := copier.CopyTo(src, &dur)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("res: %v", dur)
+}

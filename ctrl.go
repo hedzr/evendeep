@@ -29,13 +29,13 @@ type cpController struct {
 }
 
 // CopyTo _
-func (c *cpController) CopyTo(fromObjPtr, toObjPtr interface{}, opts ...Opt) (err error) {
+func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
 	for _, opt := range opts {
 		opt(c)
 	}
 
 	var (
-		from0 = reflect.ValueOf(fromObjPtr)
+		from0 = reflect.ValueOf(fromObjOrPtr)
 		to0   = reflect.ValueOf(toObjPtr)
 		from  = rindirect(from0)
 		to    = rindirect(to0)

@@ -805,7 +805,10 @@ func copy2(c *cpController, params *Params, from, to reflect.Value) (err error) 
 
 func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 
-	k := params.dstDecoded.Kind()
+	k := reflect.Invalid
+	if params != nil && params.dstDecoded != nil {
+		k = params.dstDecoded.Kind()
+	}
 	if k == reflect.Struct && params.accessor != nil && !isExported(params.accessor.StructField()) {
 		if params.controller.copyUnexportedFields {
 			cl.SetUnexportedField(to, newval)
@@ -814,6 +817,9 @@ func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 	} else if to.CanSet() {
 		to.Set(newval)
 		return
+		//} else if newval.IsValid() {
+		//	to.Set(newval)
+		//	return
 	}
 
 	err = ErrUnknownState
@@ -834,6 +840,14 @@ func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error
 }
 
 func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if c != nil {
+		sourceType, targetType := from.Type(), to.Type()
+		if cvt, ctx := c.findCopiers(params, sourceType, targetType); cvt != nil {
+			err = cvt.CopyTo(ctx, from, to)
+			return
+		}
+	}
+
 	fromind := rdecodesimple(from)
 	toind := rdecodesimple(to)
 
