@@ -166,10 +166,10 @@ func isZero(v reflect.Value) bool {
 		return arrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
 		return isNil(v)
-	case reflect.String:
-		return v.Len() == 0
 	case reflect.Struct:
 		return structIsZero(v)
+	case reflect.String:
+		return v.Len() == 0
 	}
 	return false
 }

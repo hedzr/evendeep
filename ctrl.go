@@ -104,10 +104,14 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 
 func (c *cpController) findCopiers(params *Params, from, to reflect.Type) (copier ValueCopier, ctx *ValueConverterContext) {
 	var yes bool
-	for _, cpr := range c.valueCopiers {
-		if ctx, yes = cpr.Match(params, from, to); yes {
-			copier = cpr
-			break
+	for i := len(c.valueCopiers) - 1; i >= 0; i-- {
+		// FILO: the last added converter has the first priority
+		cpr := c.valueCopiers[i]
+		if cpr != nil {
+			if ctx, yes = cpr.Match(params, from, to); yes {
+				copier = cpr
+				break
+			}
 		}
 	}
 	return
@@ -115,13 +119,35 @@ func (c *cpController) findCopiers(params *Params, from, to reflect.Type) (copie
 
 func (c *cpController) findConverters(params *Params, from, to reflect.Type) (converter ValueConverter, ctx *ValueConverterContext) {
 	var yes bool
-	for _, cvt := range c.valueConverters {
-		if ctx, yes = cvt.Match(params, from, to); yes {
-			converter = cvt
-			break
+	for i := len(c.valueConverters) - 1; i >= 0; i-- {
+		// FILO: the last added converter has the first priority
+		cvt := c.valueConverters[i]
+		if cvt != nil {
+			if ctx, yes = cvt.Match(params, from, to); yes {
+				converter = cvt
+				break
+			}
 		}
 	}
 	return
+}
+
+func (c *cpController) withConverters(cvt ...ValueConverter) *cpController {
+	for _, cc := range cvt {
+		if cc != nil {
+			c.valueConverters = append(c.valueConverters, cc)
+		}
+	}
+	return c
+}
+
+func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController {
+	for _, cc := range cvt {
+		if cc != nil {
+			c.valueCopiers = append(c.valueCopiers, cc)
+		}
+	}
+	return c
 }
 
 func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {

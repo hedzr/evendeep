@@ -28,6 +28,7 @@ func UintptrFromString(s string) uintptr {
 	}
 }
 
+func UintptrToUint(u uintptr) uint64 { return uintptrToUint(u) }
 func uintptrToUint(u uintptr) uint64 {
 	size := unsafe.Sizeof(u)
 	switch size {

@@ -66,6 +66,13 @@ func a2complex(s string) (v complex128, err error) {
 		return r == ')'
 	}))
 
+	var sign float64
+	if s[0] == '-' {
+		sign, s = -1, s[1:]
+	} else {
+		sign = 1
+	}
+
 	if i := strings.IndexAny(s, "+-"); i >= 0 {
 		rr, ii := s[0:i], s[i:]
 		if j := strings.Index(ii, "i"); j >= 0 {
@@ -79,7 +86,7 @@ func a2complex(s string) (v complex128, err error) {
 				return
 			}
 
-			v = complex(ff, fi)
+			v = complex(ff*sign, fi)
 			return
 		}
 		err = errors.New("for a complex number, the imaginary part should end with 'i', such as '3+4i'")

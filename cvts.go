@@ -4,59 +4,34 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
-	"gopkg.in/hedzr/errors.v3"
 	"reflect"
+	"time"
 )
 
 func defaultValueConverters() []ValueConverter {
 	return []ValueConverter{
-		&bytesBufferConverter{},
-		&toStringConverter{},
 		&fromStringConverter{},
+		&toStringConverter{},
+		&fromBytesBufferConverter{},
+		&toDurationFromString{},
 	}
 }
 
 func defaultValueCopiers() []ValueCopier {
 	return []ValueCopier{
-		&bytesBufferConverter{},
-		&toStringConverter{},
 		&fromStringConverter{},
+		&toStringConverter{},
+		&fromBytesBufferConverter{},
+		&toDurationFromString{},
 	}
-}
-
-type bytesBufferConverter struct{}
-
-func (c *bytesBufferConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-	//TO/DO implement me
-	//panic("implement me")
-	from := source.Interface().(bytes.Buffer)
-	var to bytes.Buffer
-	to.Write(from.Bytes())
-	target = reflect.ValueOf(&to)
-	return
-}
-
-func (c *bytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	from, to := source.Interface().(bytes.Buffer), target.Interface().(bytes.Buffer)
-	to.Reset()
-	to.Write(from.Bytes())
-	return
-}
-
-func (c *bytesBufferConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
-	//st.PkgPath() . st.Name()
-	if yes = source.Kind() == reflect.Struct && source.String() == "bytes.Buffer"; yes {
-		ctx = &ValueConverterContext{params}
-		functorLog("    src: %v, tgt: %v | Matched", source, target)
-	} else {
-		functorLog("    src: %v, tgt: %v", source, target)
-	}
-	return
 }
 
 type toStringConverter struct{}
 
 func (c *toStringConverter) processUnexportedField(ctx *ValueConverterContext, source, target, newval reflect.Value) (processed bool) {
+	if ctx == nil || ctx.Params == nil || ctx.controller == nil {
+		return
+	}
 	if fld := ctx.Params.field; fld != nil && ctx.controller.copyUnexportedFields {
 		// in a struct
 		if !isExported(fld) {
@@ -99,6 +74,14 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 // Transform will transform source type (bool, int, ...) to target string
 func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+		if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
+			sourceType := source.Type()
+			if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
+				target, err = cvt.Transform(ctx, source, targetType)
+				return
+			}
+		}
+
 		switch k := source.Kind(); k {
 		case reflect.Bool:
 			target = rForBool(source)
@@ -108,11 +91,11 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 			target = rForUInteger(source)
 
 		case reflect.Uintptr:
-			target = rForUIntegerHex(source.Pointer())
-		case reflect.UnsafePointer:
-			target = rForUIntegerHex(uintptr(source.UnsafeAddr()))
-		case reflect.Ptr:
-			target = rForUIntegerHex(source.Pointer())
+			target = rForUIntegerHex(uintptr(source.Uint()))
+		//case reflect.UnsafePointer:
+		//	target = rForUIntegerHex(uintptr(source.Uint()))
+		//case reflect.Ptr:
+		//	target = rForUIntegerHex(source.Pointer())
 
 		case reflect.Float32, reflect.Float64:
 			target = rForFloat(source)
@@ -136,11 +119,19 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 				// target.Set(nv)
 				target = nv
 			} else {
-				nv := fmt.Sprintf("%v", source.Interface())
-				// target.Set(reflect.ValueOf(nv))
-				target = reflect.ValueOf(nv)
+				val := source.Interface()
+				if ss, ok := val.(interface{ String() string }); ok {
+					nv := ss.String()
+					target = reflect.ValueOf(nv)
+				} else {
+					nv := fmt.Sprintf("%v", val)
+					// target.Set(reflect.ValueOf(nv))
+					target = reflect.ValueOf(nv)
+				}
 			}
 		}
+	} else {
+		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
 	}
 	return
 }
@@ -175,6 +166,14 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 // Transform will transform source string to target type (bool, int, ...)
 func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+		if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
+			sourceType := source.Type()
+			if cvt, ctx := ctx.controller.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != c {
+				target, err = cvt.Transform(ctx, source, targetType)
+				return
+			}
+		}
+
 		switch k := targetType.Kind(); k {
 		case reflect.Bool:
 			target = rToBool(source)
@@ -185,12 +184,12 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 
 		case reflect.Uintptr:
 			target = rToUIntegerHex(source, targetType)
-		case reflect.UnsafePointer:
-			// target = rToUIntegerHex(source, targetType)
-			err = errors.InvalidArgument
-		case reflect.Ptr:
-			//target = rToUIntegerHex(source, targetType)
-			err = errors.InvalidArgument
+		//case reflect.UnsafePointer:
+		//	// target = rToUIntegerHex(source, targetType)
+		//	err = errors.InvalidArgument
+		//case reflect.Ptr:
+		//	//target = rToUIntegerHex(source, targetType)
+		//	err = errors.InvalidArgument
 
 		case reflect.Float32, reflect.Float64:
 			target, err = rToFloat(source, targetType)
@@ -219,6 +218,8 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 				target = reflect.ValueOf(nv)
 			}
 		}
+	} else {
+		target = reflect.Zero(targetType)
 	}
 	return
 }
@@ -226,6 +227,80 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 func (c *fromStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	if yes = source.Kind() == reflect.String; yes {
 		ctx = &ValueConverterContext{params}
+	}
+	return
+}
+
+//
+
+//
+
+//
+
+type fromBytesBufferConverter struct{}
+
+func (c *fromBytesBufferConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	//TO/DO implement me
+	//panic("implement me")
+	from := source.Interface().(bytes.Buffer)
+	var to bytes.Buffer
+	to.Write(from.Bytes())
+	target = reflect.ValueOf(to)
+	return
+}
+
+func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	from, to := source.Interface().(bytes.Buffer), target.Interface().(bytes.Buffer)
+	to.Reset()
+	to.Write(from.Bytes())
+	return
+}
+
+func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+	//st.PkgPath() . st.Name()
+	if yes = source.Kind() == reflect.Struct && source.String() == "bytes.Buffer"; yes {
+		ctx = &ValueConverterContext{params}
+		functorLog("    src: %v, tgt: %v | Matched", source, target)
+	} else {
+		functorLog("    src: %v, tgt: %v", source, target)
+	}
+	return
+}
+
+//
+
+//
+
+//
+
+type toDurationFromString struct {
+}
+
+func (c *toDurationFromString) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	if ret, e := c.Transform(ctx, source, target.Type()); e == nil {
+		target.Set(ret)
+		return
+	}
+
+	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
+	target.Set(reflect.Zero(tgtType))
+	return
+}
+
+func (c *toDurationFromString) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	var dur time.Duration
+	dur, err = time.ParseDuration(source.String())
+	if err == nil {
+		target = reflect.ValueOf(dur)
+	}
+	return
+}
+
+func (c *toDurationFromString) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+	if sk, tk := source.Kind(), target.Kind(); sk == reflect.String && tk == reflect.Int64 {
+		if yes = target.Name() == "Duration" && target.PkgPath() == "time"; yes {
+			ctx = &ValueConverterContext{params}
+		}
 	}
 	return
 }

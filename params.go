@@ -69,47 +69,51 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 
 		var st, tt reflect.Type
 
-		if p.srcDecoded == nil {
+		if p.srcDecoded == nil && p.srcOwner != nil {
 			d, _ := rdecode(*p.srcOwner)
 			p.srcDecoded = &d
 		}
 
-		if p.srcDecoded.IsValid() {
+		if p.srcDecoded != nil && p.srcDecoded.IsValid() {
 			st = p.srcDecoded.Type()
-		} else {
+			p.parseSourceStruct(ownerParams, st)
+		} else if p.srcOwner != nil {
 			st = p.srcOwner.Type()
 			st = rindirectType(st)
+			p.parseSourceStruct(ownerParams, st)
 		}
 
-		p.parseSourceStruct(ownerParams, st)
-
-		if p.dstDecoded == nil {
+		if p.dstDecoded == nil && p.dstOwner != nil {
 			d, _ := rdecode(*p.dstOwner)
 			p.dstDecoded = &d
 		}
 
-		if p.dstDecoded.IsValid() {
+		if p.dstDecoded != nil && p.dstDecoded.IsValid() {
 			tt = p.dstDecoded.Type()
-		} else {
+			p.parseTargetStruct(ownerParams, tt)
+		} else if p.dstOwner != nil {
 			tt = p.dstOwner.Type()
 			tt = rindirectType(tt)
+			p.parseTargetStruct(ownerParams, tt)
 		}
-
-		p.parseTargetStruct(ownerParams, tt)
 
 		//
 
 		// p.mergingMode = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || ownerParams.isAnyFlagsOK(SliceMerge, MapMerge)
 
-		t := *p.dstDecoded
-		p.targetIterator = newStructIterator(t,
-			withStructPtrAutoExpand(c.autoExpandStruct),
-			withStructFieldPtrAutoNew(true),
-		)
+		if p.dstDecoded != nil {
+			t := *p.dstDecoded
+			p.targetIterator = newStructIterator(t,
+				withStructPtrAutoExpand(c.autoExpandStruct),
+				withStructFieldPtrAutoNew(true),
+			)
+		}
 
-		f := *p.srcDecoded
-		p.sourcefields = p.sourcefields.getallfields(f, c.autoExpandStruct)
-		p.withIteratorIndex(0)
+		if p.srcDecoded != nil {
+			f := *p.srcDecoded
+			p.sourcefields = p.sourcefields.getallfields(f, c.autoExpandStruct)
+			p.withIteratorIndex(0)
+		}
 
 		//
 
