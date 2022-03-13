@@ -1,7 +1,9 @@
 package deepcopy_test
 
 import (
+	"fmt"
 	"github.com/hedzr/deepcopy"
+	"reflect"
 	"testing"
 	"time"
 	"unsafe"
@@ -189,6 +191,71 @@ func TestDeepCopyGenerally(t *testing.T) {
 		ret = deepcopy.New().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
 
+	})
+
+}
+
+func TestPlainCopyFuncField(t *testing.T) {
+
+	type AA struct {
+		Fn func()
+	}
+
+	t.Run("copy func field", func(t *testing.T) {
+
+		var a = AA{func() {
+			println("yes")
+		}}
+		var b AA
+
+		err := deepcopy.New().CopyTo(&a, &b, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if b.Fn != nil {
+			b.Fn()
+		} else {
+			t.Fatalf("bad")
+		}
+
+	})
+
+	type BB struct {
+		fn func()
+	}
+
+	t.Run("copy private func field", func(t *testing.T) {
+
+		var a = BB{func() {
+			println("yes")
+		}}
+		var b BB
+
+		err := deepcopy.New().CopyTo(&a, &b, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if b.fn != nil {
+			b.fn()
+		} else {
+			t.Fatalf("bad")
+		}
+
+	})
+
+	type CC struct {
+		Jx func(i1, i2 int) (i3 string)
+	}
+
+	t.Run("copy private func field", func(t *testing.T) {
+		var a = CC{func(i1, i2 int) (i3 string) {
+			return fmt.Sprintf("%v+%v", i1, i2)
+		}}
+
+		var v = reflect.ValueOf(&a)
+		var vf = v.Elem().Field(0)
+		var vft = vf.Type()
+		t.Logf("out: %v, %v", vft.NumOut(), vft.Out(0))
 	})
 
 }

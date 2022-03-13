@@ -48,7 +48,7 @@ func subtest3(t *testing.T) {
 
 func TestFlags_testGroupedFlag(t *testing.T) {
 
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 
 	t.Run("dirty flags - testGroupedFlag returns the dirty flag when testing any flags of its group", subtest1)
 	t.Run("cleaning flags - testGroupedFlag returns the leader in a group", subtest2)
@@ -64,7 +64,7 @@ func TestFlags_testGroupedFlag(t *testing.T) {
 
 func TestFlags1(t *testing.T) {
 
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
 		flags := newFlags(SliceMerge, MapMerge)
@@ -99,7 +99,7 @@ func TestFlags1(t *testing.T) {
 
 func TestFlags2(t *testing.T) {
 
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
 		flags := newFlags(SliceMerge, MapMerge)

@@ -96,6 +96,8 @@ func WithCopyUnexportedField(b bool) Opt {
 
 // WithCopyFunctionResultToTarget invoke source function member and
 // pass the result to the responsible target field.
+//
+// It just works when target field is acceptable.
 func WithCopyFunctionResultToTarget(b bool) Opt {
 	return func(c *cpController) {
 		c.copyFunctionResultToTarget = b

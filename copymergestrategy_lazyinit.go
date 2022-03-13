@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-func onceInitFieldTagsFlags() {
+func lazyInitFieldTagsFlags() {
 	onceFieldTagsEquip.Do(func() {
 		//add := func(s string) { mKnownFieldTagFlags[fieldTagFlag.Parse(s)] = struct{}{} }
 		conflictsAdd := func(s string) {

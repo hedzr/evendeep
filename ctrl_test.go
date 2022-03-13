@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hedzr/deepcopy"
-	"github.com/hedzr/localtest/deepdiff/d4l3k/messagediff"
+	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"
@@ -92,9 +92,51 @@ func TestCloneableSource(t *testing.T) {
 		}
 	}
 
-	t.Run("valid ptr to nil slice", func(t *testing.T) {
+	t.Run("Cloneable interface", func(t *testing.T) {
 		src := cloneable()
 		tgt := cloneable()
+		sav := *tgt
+		deepcopy.DeepCopy(&src, &tgt)
+		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
+		if reflect.DeepEqual(src, tgt) == false {
+			var err error
+			diff, equal := messagediff.PrettyDiff(src, tgt)
+			if !equal {
+				fmt.Println(diff)
+				err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+			}
+			t.Fatalf("not equal. %v", err)
+		}
+	})
+}
+
+type dcs struct {
+	string
+	int
+	*float64
+}
+
+func (s *dcs) DeepCopy() interface{} {
+	return &dcs{
+		string:  s.string,
+		int:     s.int,
+		float64: &(*s.float64),
+	}
+}
+
+func TestDeepCopyableSource(t *testing.T) {
+	copyable := func() *dcs {
+		f := deepcopy.Randtool.NextFloat64()
+		return &dcs{
+			string:  deepcopy.Randtool.NextStringSimple(13),
+			int:     deepcopy.Randtool.NextIn(300),
+			float64: &f,
+		}
+	}
+
+	t.Run("DeepCopyable interface", func(t *testing.T) {
+		src := copyable()
+		tgt := copyable()
 		sav := *tgt
 		deepcopy.DeepCopy(&src, &tgt)
 		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)

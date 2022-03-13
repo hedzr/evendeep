@@ -31,34 +31,6 @@ type fieldTags struct {
 	targetNameRule string // first section in struct field tag, such as: "someName,must,..."
 }
 
-// ValueConverter _
-type ValueConverter interface {
-	Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error)
-	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
-}
-
-// ValueCopier _
-type ValueCopier interface {
-	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
-	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
-}
-
-// NameConverter _
-type NameConverter interface {
-	ToGoName(ctx *NameConverterContext, fieldName string) (goName string)
-	ToFieldName(ctx *NameConverterContext, goName string) (fieldName string)
-}
-
-// NameConverterContext _
-type NameConverterContext struct {
-	*Params
-}
-
-// ValueConverterContext _
-type ValueConverterContext struct {
-	*Params
-}
-
 func (f *fieldTags) String() string {
 	var a []string
 	if f != nil && f.flags != nil {
@@ -77,7 +49,7 @@ func (f *fieldTags) isFlagExists(ftf CopyMergeStrategy) bool {
 }
 
 func (f *fieldTags) Parse(s reflect.StructTag) {
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 
 	if f.flags == nil {
 		f.flags = newFlags()

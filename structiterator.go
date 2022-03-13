@@ -10,10 +10,13 @@ import (
 
 //
 
+// fieldstable is an accessor to struct fields.
 type fieldstable struct {
 	tablerecords
 	autoexpandstruct bool
 }
+
+type tablerecords []tablerec
 
 type tablerec struct {
 	names            []string // the path from root struct, in reverse order
@@ -22,25 +25,14 @@ type tablerec struct {
 	structField      *reflect.StructField
 }
 
-type tablerecords []tablerec
-
-func (rec tablerec) FieldValue() *reflect.Value {
-	return rec.structFieldValue
-}
-
-func (rec tablerec) StructField() *reflect.StructField {
-	return rec.structField
-}
-
+func (rec tablerec) FieldValue() *reflect.Value        { return rec.structFieldValue }
+func (rec tablerec) StructField() *reflect.StructField { return rec.structField }
+func (rec tablerec) FieldName() string                 { return strings.Join(reverseStringSlice(rec.names), ".") }
 func (rec tablerec) ShortFieldName() string {
 	if len(rec.names) > 0 {
 		return rec.names[0]
 	}
 	return ""
-}
-
-func (rec tablerec) FieldName() string {
-	return strings.Join(reverseStringSlice(rec.names), ".")
 }
 
 func (table *fieldstable) shouldIgnore(field reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
@@ -94,7 +86,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 		sftypind := rindirectType(sftyp)
 		svind := table.safegetstructfieldvalueind(structValue, i)
 
-		functorLog("%d, %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
+		functorLog(" field %d: %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
 
 		isStruct := sftypind.Kind() == reflect.Struct
 		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
@@ -167,8 +159,8 @@ type structIterableOpt func(s *structIterator)
 // The structIterable.Next() will enumerate all children fields.
 func newStructIterator(structValue reflect.Value, opts ...structIterableOpt) structIterable {
 	s := &structIterator{
-		rootStruct: structValue,
-		stack:      nil,
+		dstStruct: structValue,
+		stack:     nil,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -192,13 +184,26 @@ func withStructFieldPtrAutoNew(create bool) structIterableOpt {
 	}
 }
 
+// withStructSource _
+func withStructSource(srcstructval *reflect.Value, autoexpand bool) structIterableOpt {
+	return func(s *structIterator) {
+		if srcstructval != nil {
+			s.srcFields = s.srcFields.getallfields(*srcstructval, autoexpand)
+			s.withSourceIteratorIndexIncrease(-10000) // reset srcIndex to 0
+		}
+	}
+}
+
 //
 
 type structIterator struct {
-	rootStruct       reflect.Value
-	stack            []*fieldaccessor
-	autoexpandstruct bool // Next will expand *struct to struct and get inside loop deeply
-	autonew          bool // create new inner objects for the child ptr,map,chan,..., if necessary
+	srcFields                fieldstable      // source struct fields accessors
+	srcIndex                 int              // source field index
+	dstStruct                reflect.Value    // target struct
+	stack                    []*fieldaccessor // target fields accessors
+	autoexpandstruct         bool             // Next will expand *struct to struct and get inside loop deeply
+	noexpandifsrcfieldisfunc bool             //
+	autonew                  bool             // create new inner objects for the child ptr,map,chan,..., if necessary
 }
 
 type fieldaccessor struct {
@@ -206,6 +211,10 @@ type fieldaccessor struct {
 	structtype  reflect.Type
 	index       int
 	structfield *reflect.StructField
+
+	sourceTableRec tablerec             // a copy of structIterator.sourcefields
+	srcStructField *reflect.StructField // source field type
+	fieldTags      *fieldTags           // tag of source field
 }
 
 func (s *fieldaccessor) Set(v reflect.Value) {
@@ -288,7 +297,7 @@ func (s *fieldaccessor) ensurePtrField() {
 		switch kind {
 		case reflect.Ptr:
 			if isNil(fv) {
-				functorLog("    autonew")
+				functorLog("   autonew")
 				typ := sf.Type.Elem()
 				nv := reflect.New(typ)
 				fv.Set(nv)
@@ -302,7 +311,7 @@ func (s *fieldaccessor) ensurePtrField() {
 //
 
 func (s *structIterator) iipush(structvalue *reflect.Value, structtype reflect.Type, index int) *fieldaccessor {
-	s.stack = append(s.stack, &fieldaccessor{structvalue, structtype, index, nil})
+	s.stack = append(s.stack, &fieldaccessor{structvalue: structvalue, structtype: structtype, index: index})
 	return s.iitop()
 }
 func (s *structIterator) iiempty() bool { return len(s.stack) == 0 }
@@ -365,12 +374,68 @@ func (s *structIterator) iitop() *fieldaccessor {
 //	lastone.ensurePtrField()
 //}
 
+// sourceStructFieldsTable _
+type sourceStructFieldsTable interface {
+	gettablerecords() tablerecords
+	getcurrrecord() tablerec
+	gettablerec(index int) tablerec
+}
+
+func (s *structIterator) gettablerecords() tablerecords  { return s.srcFields.tablerecords }
+func (s *structIterator) getcurrrecord() tablerec        { return s.srcFields.tablerecords[s.srcIndex] }
+func (s *structIterator) gettablerec(index int) tablerec { return s.srcFields.tablerecords[index] }
+
+func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sourcefield tablerec, ok bool) {
+	if s.srcIndex < 0 {
+		s.srcIndex = 0
+	}
+
+	//if i < params.srcType.NumField() {
+	//	t := params.srcType.Field(i)
+	//	params.fieldType = &t
+	//	params.fieldTags = parseFieldTags(t.Tag)
+	//}
+
+	if s.srcIndex < len(s.srcFields.tablerecords) {
+		sourcefield, ok = s.srcFields.tablerecords[s.srcIndex], true
+	}
+
+	s.srcIndex += srcIndexDelta
+	if s.srcIndex < 0 {
+		s.srcIndex = 0
+	}
+
+	return
+}
+
 func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
+	var sourceTableRec tablerec
+	sourceTableRec, ok = s.withSourceIteratorIndexIncrease(+1)
+	if ok {
+		srcStructField := sourceTableRec.StructField()
+		isfn := srcStructField.Type.Kind() == reflect.Func
+
+		accessor, ok = s.doNext(isfn && !s.noexpandifsrcfieldisfunc)
+		if ok {
+			accessor.sourceTableRec = sourceTableRec
+			accessor.srcStructField = srcStructField
+			accessor.fieldTags = parseFieldTags(accessor.srcStructField.Tag)
+
+			functorLog("   | Next %d | src field: %v (%v) -> %v (%v)",
+				s.srcIndex, accessor.sourceTableRec.FieldName(),
+				typfmt(accessor.srcStructField.Type),
+				accessor.StructFieldName(), typfmt(accessor.Type()))
+		}
+	}
+	return
+}
+
+func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (accessor *fieldaccessor, ok bool) {
 	var lastone *fieldaccessor
 	var inretry bool
 
 	if s.iiempty() {
-		vind := rindirect(s.rootStruct)
+		vind := rindirect(s.dstStruct)
 		tind := vind.Type()
 		lastone = s.iipush(&vind, tind, 0)
 
@@ -388,7 +453,7 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 
 	}
 
-retry:
+retryExpand:
 	field := lastone.getStructField()
 	if field != nil {
 		tind := field.Type // rindirectType(field.Type)
@@ -399,12 +464,16 @@ retry:
 			if s.autonew {
 				lastone.ensurePtrField()
 			}
-			if k1 == reflect.Struct && !s.shouldIgnore(field, tind, k1) {
+			if k1 == reflect.Struct &&
+				!srcFieldIsFuncAndTargetShouldNotExpand &&
+				!s.shouldIgnore(field, tind, k1) {
+
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
 				functorLog("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
 				inretry = true
-				goto retry
+				goto retryExpand
+
 			}
 		} else if s.autonew {
 			lastone.ensurePtrField()

@@ -20,16 +20,20 @@ type cpController struct {
 	//mergeSlice bool
 	//mergeMap   bool
 
-	makeNewClone bool     // make a new clone by copying to a fresh new object
-	flags        Flags    //
-	ignoreNames  []string //
+	makeNewClone bool      // make a new clone by copying to a fresh new object
+	flags        Flags     // CopyMergeStrategies globally
+	ignoreNames  []string  // optional ignored names with wild-matching
+	funcInputs   []log.Any // preset input args for function invoking
 
-	valueConverters []ValueConverter
-	valueCopiers    []ValueCopier
+	valueConverters ValueConverters
+	valueCopiers    ValueCopiers
 }
 
 // CopyTo _
 func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
+
+	lazyInitRoutines()
+
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -39,6 +43,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 		to0   = reflect.ValueOf(toObjPtr)
 		from  = rindirect(from0)
 		to    = rindirect(to0)
+		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
 	functorLog("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
@@ -48,9 +53,10 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 	//	return errors.New("copy to value is unaddressable")
 	//}
 
-	err = c.copyTo(nil, from, to)
+	err = c.copyTo(root, from, to)
 	return
 }
+
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -71,7 +77,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 
 func (c *cpController) copyToInternal(
 	params *Params, from, to reflect.Value,
-	fn func(c *cpController, params *Params, from, to reflect.Value) (err error),
+	cb func(c *cpController, params *Params, from, to reflect.Value) (err error),
 ) (err error) {
 
 	// Return is from value is invalid
@@ -79,15 +85,8 @@ func (c *cpController) copyToInternal(
 		return
 	}
 
-	if from.CanInterface() {
-		if dc, ok := from.Interface().(Cloneable); ok {
-			to.Set(reflect.ValueOf(dc.Clone()))
-			return
-		}
-		if dc, ok := from.Interface().(DeepCopyable); ok {
-			to.Set(reflect.ValueOf(dc.DeepCopy()))
-			return
-		}
+	if c.testCloneables(params, from, to) {
+		return
 	}
 
 	//fromType := c.indirectType(from.Type())
@@ -108,36 +107,39 @@ func (c *cpController) copyToInternal(
 		}
 	}()
 
-	err = fn(c, params, from, to)
+	err = cb(c, params, from, to)
 	return
 }
 
-func (c *cpController) findCopiers(params *Params, from, to reflect.Type) (copier ValueCopier, ctx *ValueConverterContext) {
-	var yes bool
-	for i := len(c.valueCopiers) - 1; i >= 0; i-- {
-		// FILO: the last added converter has the first priority
-		cpr := c.valueCopiers[i]
-		if cpr != nil {
-			if ctx, yes = cpr.Match(params, from, to); yes {
-				copier = cpr
-				break
+func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (processed bool) {
+	if from.CanInterface() {
+		var fromObj interface{}
+		if params != nil && params.srcOwner != nil {
+			f, t := *params.srcOwner, *params.dstOwner
+		retry:
+			fromObj = f.Interface()
+			if c.testCloneables1(params, fromObj, t) {
+				return true
+			}
+			if k := f.Kind(); k == reflect.Ptr {
+				f = f.Elem()
+				if k = t.Kind(); k == reflect.Ptr {
+					t = t.Elem()
+				}
+				goto retry
 			}
 		}
 	}
 	return
 }
 
-func (c *cpController) findConverters(params *Params, from, to reflect.Type) (converter ValueConverter, ctx *ValueConverterContext) {
-	var yes bool
-	for i := len(c.valueConverters) - 1; i >= 0; i-- {
-		// FILO: the last added converter has the first priority
-		cvt := c.valueConverters[i]
-		if cvt != nil {
-			if ctx, yes = cvt.Match(params, from, to); yes {
-				converter = cvt
-				break
-			}
-		}
+func (c *cpController) testCloneables1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) {
+	if dc, ok := fromObj.(Cloneable); ok {
+		to.Set(reflect.ValueOf(dc.Clone()))
+		processed = true
+	} else if dc, ok := fromObj.(DeepCopyable); ok {
+		to.Set(reflect.ValueOf(dc.DeepCopy()))
+		processed = true
 	}
 	return
 }

@@ -56,7 +56,7 @@ func Test1(t *testing.T) {
 	//t.Logf("up = %v", up)
 }
 
-func Test2(t *testing.T) {
+func TestRskipRdecodeAndSoOn(t *testing.T) {
 	b := &Employee{Name: "Bob"}
 
 	vb := reflect.ValueOf(b)
@@ -90,4 +90,78 @@ func Test2(t *testing.T) {
 
 	//var up = vi.Addr()
 	//t.Logf("up = %v", up)
+}
+
+func assertYes(t *testing.T, b bool, expect, got interface{}) {
+	if !b {
+		t.Fatalf("expecting %v but got %v", expect, got)
+	}
+}
+
+func TestIsNumXXX(t *testing.T) {
+	var x1 interface{} = 9527 + 0i
+	var v1 = reflect.ValueOf(x1)
+
+	assertYes(t, isNumericType(v1.Type()) == true, true, false)
+	assertYes(t, isNumComplexKind(v1.Kind()) == true, true, false)
+
+	x1 = "ok"
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumericType(v1.Type()) != true, false, true)
+
+	//
+
+	x1 = 13
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumIntegerType(v1.Type()) == true, true, false)
+
+	x1 = uint(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumIntegerType(v1.Type()) == true, true, false)
+
+	x1 = float32(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumIntegerType(v1.Type()) != true, false, true)
+
+	//
+
+	x1 = 13
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumSIntegerKind(v1.Kind()) == true, true, false)
+
+	x1 = uint(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumSIntegerKind(v1.Kind()) != true, false, true)
+
+	x1 = float32(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumSIntegerKind(v1.Kind()) != true, false, true)
+
+	//
+
+	x1 = uint(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumUIntegerKind(v1.Kind()) == true, true, false)
+
+	x1 = int(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumUIntegerKind(v1.Kind()) != true, false, true)
+
+	x1 = float32(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumUIntegerKind(v1.Kind()) != true, false, true)
+
+	//
+
+	x1 = 13
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumFloatKind(v1.Kind()) != true, false, true)
+
+	x1 = float32(13)
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumFloatKind(v1.Kind()) == true, true, false)
+
+	x1 = "ok"
+	v1 = reflect.ValueOf(x1)
+	assertYes(t, isNumericType(v1.Type()) != true, false, true)
 }

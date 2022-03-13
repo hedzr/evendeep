@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
 	"github.com/hedzr/deepcopy/syscalls"
+	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"
 	"strconv"
@@ -341,5 +342,192 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 		}
 		ret, err = converter(val, base, bitSize)
 	}
+	return
+}
+
+func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.Value, err error) {
+	if source.IsValid() {
+
+		switch k := source.Kind(); k {
+		case reflect.Bool:
+			target = rForBool(source)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			target = rForInteger(source)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			target = rForUInteger(source)
+
+		case reflect.Uintptr:
+			target = rForUIntegerHex(uintptr(source.Uint()))
+		//case reflect.UnsafePointer:
+		//	target = rForUIntegerHex(uintptr(source.Uint()))
+		//case reflect.Ptr:
+		//	target = rForUIntegerHex(source.Pointer())
+
+		case reflect.Float32, reflect.Float64:
+			target = rForFloat(source)
+		case reflect.Complex64, reflect.Complex128:
+			target = rForComplex(source)
+
+		case reflect.String:
+			target = reflect.ValueOf(source.String())
+
+		//reflect.Array
+		//reflect.Chan
+		//reflect.Func
+		//reflect.Interface
+		//reflect.Map
+		//reflect.Slice
+		//reflect.Struct
+
+		default:
+			if canConvert(&source, desiredType) {
+				nv := source.Convert(desiredType)
+				// target.Set(nv)
+				target = nv
+			} else {
+				val := source.Interface()
+				if ss, ok := val.(interface{ String() string }); ok {
+					nv := ss.String()
+					target = reflect.ValueOf(nv)
+				} else {
+					nv := fmt.Sprintf("%v", val)
+					// target.Set(reflect.ValueOf(nv))
+					target = reflect.ValueOf(nv)
+				}
+			}
+		}
+	} else {
+		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
+	}
+	return
+}
+
+func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
+	eltyp := desiredType.Elem() // length := desiredType.Len()
+	functorLog("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+
+	count, length := sources.Len(), targetLength
+	if length <= 0 {
+		length = count
+	}
+	if count > length {
+		count = length
+	}
+
+	target = reflect.New(reflect.ArrayOf(length, eltyp)).Elem()
+
+	for ix := 0; ix < count; ix++ {
+		src := sources.Index(ix)
+		if ix < length && src.IsValid() {
+			if src.Type().AssignableTo(eltyp) {
+				target.Index(ix).Set(src)
+			} else if src.Type().ConvertibleTo(eltyp) {
+				target.Index(ix).Set(src.Convert(eltyp))
+			}
+		}
+	}
+	return
+}
+
+func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
+	eltyp := desiredType.Elem() // length := desiredType.Len()
+	functorLog("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+
+	count, length := sources.Len(), targetLength
+	if length <= 0 {
+		length = count
+	}
+	if count > length {
+		count = length
+	}
+
+	target = reflect.MakeSlice(desiredType, length, length)
+	for ix := 0; ix < count; ix++ {
+		src := sources.Index(ix)
+		if ix < length && src.IsValid() {
+			if src.Type().AssignableTo(eltyp) {
+				target.Index(ix).Set(src)
+			} else if src.Type().ConvertibleTo(eltyp) {
+				target.Index(ix).Set(src.Convert(eltyp))
+			}
+		}
+	}
+	return
+}
+
+func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
+	ec := errors.New("cannot transform item into map")
+	defer ec.Defer(&err)
+
+	dtyp := desiredType.Elem()
+	styp := source.Type()
+	//srceltyp := styp.Elem()
+	target = reflect.MakeMap(desiredType)
+
+	if source.IsValid() {
+		for ix, key := range source.MapKeys() {
+			val := source.MapIndex(key)
+			if err = rSetMapValue(ix, target, key, val, styp, dtyp); err != nil {
+				ec.Attach(err)
+				continue
+			}
+		}
+	}
+
+	//for i := 0; i < fromFuncType.NumOut(); i++ {
+	//	if i >= len(sources) {
+	//		continue
+	//	}
+	//
+	//	styp := fromFuncType.Out(i)
+	//	sname := styp.Name()
+	//	var key reflect.Value
+	//	if key, err = nameToMapKey(sname, desiredType); err != nil {
+	//		ec.Attach(err)
+	//		continue
+	//	}
+	//
+	//	if err = rSetMapValue(target, key, sources[i], styp, dtyp); err != nil {
+	//		ec.Attach(err)
+	//		continue
+	//	}
+	//}
+	return
+}
+
+func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.Type) (err error) {
+	if sTyp.AssignableTo(dTyp) {
+		target.SetMapIndex(key, srcVal)
+	} else if sTyp.ConvertibleTo(dTyp) {
+		target.SetMapIndex(key, srcVal.Convert(dTyp))
+	} else {
+		dstval := target.MapIndex(key)
+		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v", valfmt(&key), valfmt(&srcVal), valfmt(&dstval))
+	}
+	return
+}
+
+func nameToMapKey(name string, mapType reflect.Type) (key reflect.Value, err error) {
+	nameval := reflect.ValueOf(name)
+	nametyp := nameval.Type()
+	keytyp := mapType.Key()
+	if nametyp.AssignableTo(keytyp) {
+		key = nameval
+	} else if nametyp.ConvertibleTo(keytyp) {
+		key = nameval.Convert(keytyp)
+	} else {
+		cvt := fromStringConverter{}
+		key, err = cvt.Transform(nil, nameval, keytyp)
+	}
+	return
+}
+
+func rToStruct(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
+	// result (source) -> struct (target)
+
+	return
+}
+
+func rToFunc(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	return
 }

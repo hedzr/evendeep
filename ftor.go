@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -59,66 +60,6 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 	return
 }
 
-func copyUintptr(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if to.CanSet() {
-		to.Set(from)
-	} else {
-		//to.SetPointer(from.Pointer())
-		functorLog("    copy uintptr not support: %v -> %v", from.Kind(), to.Kind())
-	}
-	return
-}
-
-func copyUnsafePointer(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if to.CanSet() {
-		to.Set(from)
-	} else {
-		functorLog("    copy unsafe pointer not support: %v -> %v", from.Kind(), to.Kind())
-	}
-	return
-
-	////src := c.indirect(from)
-	////rv := reflect.NewAt(src.Type(), unsafe.Pointer(from.UnsafeAddr())).Elem()
-	////to.SetPointer(unsafe.Pointer(rv.UnsafeAddr()))
-	//if to.Kind() == reflect.UnsafePointer {
-	//	ptrTo := ptrOf(to)
-	//	ptrFrom := ptrOf(from)
-	//	ptrTo.SetPointer(unsafe.Pointer(ptrFrom.UnsafeAddr()))
-	//	return
-	//}
-	//return errors.New("target type is %v, want reflect.UnsafePointer", to.Kind())
-}
-
-func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if to.CanSet() {
-		to.Set(from)
-	} else {
-		//to.SetPointer(from.Pointer())
-		functorLog("    todo copy function: %v -> %v", from.Kind(), to.Kind())
-	}
-	return
-}
-
-func copyChan(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if to.CanSet() {
-		functorLog("    copy chan: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
-		to.Set(from)
-		//functorLog("        after: %v -> %v", from.Interface(), to.Interface())
-	} else {
-		//to.SetPointer(from.Pointer())
-		functorLog("    copy chan not support: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
-	}
-	// v := reflect.MakeChan(from.Type(), from.Cap())
-	//ft := from.Type()
-	//p := ptr(to, ft)
-	//if from.Type().ConvertibleTo(to.Type()) {
-	//	p.Set(v.Convert(to.Type()))
-	//} else {
-	//	p.Set(v)
-	//}
-	return
-}
-
 func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	if from.IsNil() {
 		return // TODO omitempty,...
@@ -153,8 +94,11 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 	}
 	err = copyStructInternal(c, params, from, to,
 		func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
-			for i, amount = 0, len(paramsChild.sourcefields.tablerecords); i < amount; i++ {
-				sourcefield := paramsChild.withIteratorIndex(i)
+
+			srcstructtable := paramsChild.targetIterator.(sourceStructFieldsTable)
+
+			for i, amount = 0, len(srcstructtable.gettablerecords()); i < amount; i++ {
+				sourcefield := srcstructtable.getcurrrecord()
 
 				if c.isIgnoreName(sourcefield.ShortFieldName()) {
 					continue
@@ -221,13 +165,11 @@ func copyStructInternal(
 	defer ec.Defer(&err)
 	defer paramsChild.revoke()
 
-	if functorLogValid {
-		dbgFrontOfStruct(params, paramsChild, padding)
-	}
-
 	defer func() {
 		if e := recover(); e != nil {
-			ff := paramsChild.sourcefields.tablerecords[i].FieldValue()
+			srcstructtable := paramsChild.targetIterator.(sourceStructFieldsTable)
+
+			ff := srcstructtable.gettablerec(i).FieldValue()
 			tf := paramsChild.accessor.FieldValue()
 			tft := paramsChild.accessor.FieldType()
 
@@ -247,6 +189,10 @@ func copyStructInternal(
 		}
 	}()
 
+	if functorLogValid {
+		dbgFrontOfStruct(params, paramsChild, padding, func(msg string, args ...interface{}) { functorLog(msg, args...) })
+	}
+
 	fn(paramsChild, ec, i, amount, padding)
 
 	////inspectStructV(to)
@@ -262,19 +208,22 @@ func copyStructInternal(
 	return
 }
 
-func dbgFrontOfStruct(params, paramsChild *Params, padding string) {
+func dbgFrontOfStruct(params, paramsChild *Params, padding string, fn func(msg string, args ...interface{})) {
+	if fn == nil {
+		fn = functorLog
+	}
 	padding = strings.Repeat("  ", params.depth()*2)
 	fromT, toT := paramsChild.srcDecoded.Type(), paramsChild.dstDecoded.Type()
 	//functorLog(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
-	fq := dbgMakeInfoString(fromT, params, true)
-	dq := dbgMakeInfoString(toT, params, false)
-	functorLog(" %s- (%v (%v)) -> dst (%v (%v))", padding, fromT, fromT.Kind(), toT, toT.Kind())
-	functorLog(" %s  %s -> %s", padding, fq, dq)
+	fq := dbgMakeInfoString(fromT, params, true, fn)
+	dq := dbgMakeInfoString(toT, params, false, fn)
+	fn(" %s- (%v (%v)) -> dst (%v (%v))", padding, fromT, fromT.Kind(), toT, toT.Kind())
+	fn(" %s  %s -> %s", padding, fq, dq)
 }
 
-func dbgMakeInfoString(typ reflect.Type, params *Params, src bool) (qstr string) {
+func dbgMakeInfoString(typ reflect.Type, params *Params, src bool, fn func(msg string, args ...interface{})) (qstr string) {
 	// var ft = typ // params.dstType
-	if typ.Kind() == reflect.Struct && params != nil {
+	if typ.Kind() == reflect.Struct && params != nil && params.accessor != nil && params.accessor.srcStructField != nil {
 		//ofs := params.dstOffset
 		//if src {
 		//	ofs = params.srcOffset
@@ -282,14 +231,14 @@ func dbgMakeInfoString(typ reflect.Type, params *Params, src bool) (qstr string)
 		//idx := params.index + ofs
 		//field := typ.Field(idx)
 		//v := val.Field(idx)
-		qstr = dbgMakeFieldInfoString(params.field, params)
+		qstr = dbgMakeFieldInfoString(params.accessor.srcStructField, params, fn)
 	} else {
 		qstr = fmt.Sprintf("%v (%v)", typ, typ.Kind())
 	}
 	return
 }
 
-func dbgMakeFieldInfoString(fld *reflect.StructField, params *Params) (qstr string) {
+func dbgMakeFieldInfoString(fld *reflect.StructField, params *Params, fn func(msg string, args ...interface{})) (qstr string) {
 	ft := fld.Type
 	ftk := ft.Kind()
 	if params != nil {
@@ -328,10 +277,12 @@ func dbgMakeFieldInfoString(fld *reflect.StructField, params *Params) (qstr stri
 func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, padding string) (err error) {
 	fft, dft := ff.Type(), df.Type()
 
-	if cvt, ctx := c.findCopiers(params, fft, dft); ctx != nil {
+	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft); ctx != nil {
+		functorLog("-> using Copier %v", reflect.ValueOf(cvt).Type())
 		err = cvt.CopyTo(ctx, ff, df) // use user-defined copy-n-merger to merge or copy source to destination
 
-	} else if cvt, ctx := c.findConverters(params, fft, dft); ctx != nil {
+	} else if cvt, ctx := c.valueConverters.findConverters(params, fft, dft); ctx != nil {
+		functorLog("-> using Converter %v", reflect.ValueOf(cvt).Type())
 		var result reflect.Value
 		result, err = cvt.Transform(ctx, ff, dft) // use user-defined value converter to transform from source to destination
 		df.Set(result)
@@ -354,6 +305,7 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 	return
 }
 
+// copySlice transforms from slice to target with slice or other types
 func copySlice(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	if from.IsNil() { // an empty slice found
 		//TODO omitempty, omitnil, omitzero, ...
@@ -367,24 +319,27 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 		return
 	}
 
+	if params.controller != c {
+		log.Panicf("c *cpController != params.controller, what's up??")
+	}
+
 	tk := tgt.Kind()
 	if tk != reflect.Slice {
-		functorLog("from slice -> %v", typfmtv(&tgt))
-		// todo from slice to other types
+		log.Panicf("unsupported transforming: from slice -> %v,", typfmtv(&tgt))
 	}
 
 	ec := errors.New("slice copy/merge errors")
 	defer ec.Defer(&err)
 
 	for _, flag := range []CopyMergeStrategy{SliceMerge, SliceCopyAppend, SliceCopy} {
-		if c.flags.isGroupedFlagOK(flag) || params.isGroupedFlagOKDeeply(flag) {
+		if params.isGroupedFlagOKDeeply(flag) {
 
-			if !to.CanAddr() {
-				if params != nil && !params.isStruct() {
-					to = *params.dstOwner
-					functorLog("use dstOwner to get a ptr to slice, new to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
-				}
-			}
+			//if !to.CanAddr() {
+			//	if params != nil && !params.isStruct() {
+			//		to = *params.dstOwner
+			//		functorLog("use dstOwner to get a ptr to slice, new to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
+			//	}
+			//}
 
 			// src, _ = c.decode(from)
 
@@ -419,10 +374,10 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 	return
 }
 
-type fnSliceOper func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error)
-type mapSliceOper map[CopyMergeStrategy]fnSliceOper
+type fnSliceOperator func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error)
+type mSliceOperations map[CopyMergeStrategy]fnSliceOperator
 
-var mSliceOper = mapSliceOper{
+var mSliceOper = mSliceOperations{
 	// SliceCopy: target elements will be given up, and source copied to.
 	SliceCopy: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
 		sl := src.Len()
@@ -447,7 +402,7 @@ var mSliceOper = mapSliceOper{
 					ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
 				)
 				if el.Type() != tgtelemtype {
-					if cc, ctx := c.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
 						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 							ec.Attach(err)
 							ecTotal.Attach(ec)
@@ -507,7 +462,7 @@ var mSliceOper = mapSliceOper{
 				)
 				//elv := el.Interface()
 				if el.Type() != tgtelemtype {
-					if cc, ctx := c.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
 						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 							ec.Attach(err)
 							ecTotal.Attach(ec)
@@ -571,7 +526,7 @@ var mSliceOper = mapSliceOper{
 					ec    = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
 				)
 				if el.Type() != tgtelemtype {
-					if cc, ctx := c.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
 						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 							var ve *strconv.NumError
 							if !errors.As(err, &ve) {
@@ -621,35 +576,46 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 	tgt, tgtptr := rdecode(to)
 	sl, tl := src.Len(), tgt.Len()
 
-	if !to.CanAddr() && params != nil {
-		if !params.isStruct() {
-			to = *params.dstOwner
-			functorLog("use dstOwner to get a ptr to array, new to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
-		}
-	}
+	//if !to.CanAddr() && params != nil {
+	//	if !params.isStruct() {
+	//		//to = *params.dstOwner
+	//		functorLog("    !! use dstOwner to get a ptr to array, new to.type: %v, canAddr: %v, canSet: %v", to.Type().Kind(), to.CanAddr(), to.CanSet())
+	//	}
+	//}
+
+	//if tgt.CanAddr() == false && tgtptr.CanAddr() {
+	//	tgt = tgtptr
+	//}
 
 	//functorLog("    tgt.%v: %v", params.dstOwner.Type().Field(params.index).Name, params.dstOwner.Type().Field(params.index))
 	functorLog("    from.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
-	functorLog("      to.type: %v, len: %v, cap: %v, tgtptr.canSet: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgtptr.CanSet())
+	functorLog("      to.type: %v, len: %v, cap: %v, tgtptr.canSet: %v, tgtptr.canaddr: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgtptr.CanSet(), tgtptr.CanAddr())
 
-	set := src.Index(0).Type()
-	if set != tgt.Index(0).Type() {
-		return errors.New("cannot copy %v to %v", from.Interface(), to.Interface())
-	}
+	eltyp := tgt.Type().Elem()
+	//set := src.Index(0).Type()
+	//if set != tgt.Index(0).Type() {
+	//	return errors.New("cannot copy %v to %v", from.Interface(), to.Interface())
+	//}
 
-	cnt := sl
-	if sl > tl {
-		cnt = tl
-	}
-
+	cnt := minInt(sl, tl)
 	for i := 0; i < cnt; i++ {
-		tgt.Index(i).Set(src.Index(i))
+		se := src.Index(i)
+		setyp := se.Type()
+		functorLog("src.el.typ: %v, tgt.el.typ: %v", typfmt(setyp), eltyp)
+		if se.IsValid() {
+			if setyp.AssignableTo(eltyp) {
+				tgt.Index(i).Set(se)
+			} else if setyp.ConvertibleTo(eltyp) {
+				tgt.Index(i).Set(src.Convert(eltyp))
+			}
+		}
+		//tgt.Index(i).Set(src.Index(i))
 	}
 
 	for i := cnt; i < tl; i++ {
-		v := tgt.Index(i)
+		v := tgtptr.Elem().Index(i)
 		if !v.IsValid() {
-			tgt.Index(i).Set(reflect.Zero(v.Type()))
+			tgtptr.Elem().Index(i).Set(reflect.Zero(eltyp))
 			functorLog("set [%v] to zero value", i)
 		}
 	}
@@ -683,7 +649,7 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 	defer ec.Defer(&err)
 
 	for _, flag := range []CopyMergeStrategy{MapMerge, MapCopy} {
-		if c.flags.isGroupedFlagOK(flag) || params.isGroupedFlagOKDeeply(flag) {
+		if params.isGroupedFlagOKDeeply(flag) {
 			if fn, ok := getMapOper()[flag]; ok {
 				ec.Attach(fn(c, params, from, tgt))
 			} else {
@@ -749,12 +715,20 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 			return
 		}
 		tgtval = tgtval.Elem()
-		functorLog("Update Map: %v -> %v", ck.Interface(), tgtval.Interface())
+		functorLog("  Update Map: %v -> %v", ck.Interface(), tgtval.Interface())
 	} else {
 		eltyp := tgt.Type().Elem()
 		eltypind, _ := rskiptype(eltyp, reflect.Ptr)
+		if eltypind.Kind() == reflect.Interface {
+			//
+			//srctyp := originalValue.Type()
+			//srctyp = rdecodetypesimple(srctyp)
+			srcind := rdecodesimple(originalValue)
+			srctyp := srcind.Type()
+			eltypind = srctyp
+		}
 		ptrToCopyValue := reflect.New(eltypind)
-		functorLog("ptrToCopyValue.type: %v", typfmtv(&ptrToCopyValue))
+		functorLog("  ptrToCopyValue.type: %v, eltypind: %v", typfmtv(&ptrToCopyValue), typfmt(eltypind))
 		cv := ptrToCopyValue.Elem()
 		if err = c.copyTo(params, tgtval, ptrToCopyValue); err != nil {
 			return
@@ -764,10 +738,10 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 		}
 		if cv.Type() == eltyp {
 			tgt.SetMapIndex(ck, cv)
-			functorLog("SetMapIndex: %v -> %v", ck.Interface(), cv.Interface())
+			functorLog("  SetMapIndex: %v -> %v", ck.Interface(), cv.Interface())
 		} else {
-			tgt.SetMapIndex(ck, ptrToCopyValue)
-			functorLog("SetMapIndex: %v -> %v", ck.Interface(), ptrToCopyValue.Interface())
+			tgt.SetMapIndex(ck, cv)
+			functorLog("  SetMapIndex: %v -> %v", ck.Interface(), cv.Interface())
 		}
 	}
 
@@ -795,6 +769,87 @@ func ensureMapPtrValue(tgt, key reflect.Value) (val reflect.Value, ptr bool) {
 	}
 	return
 }
+
+//
+
+//
+
+//
+
+func copyUintptr(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if to.CanSet() {
+		to.Set(from)
+	} else {
+		//to.SetPointer(from.Pointer())
+		functorLog("    copy uintptr not support: %v -> %v", from.Kind(), to.Kind())
+	}
+	return
+}
+
+func copyUnsafePointer(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if to.CanSet() {
+		to.Set(from)
+	} else {
+		functorLog("    copy unsafe pointer not support: %v -> %v", from.Kind(), to.Kind())
+	}
+	return
+
+	////src := c.indirect(from)
+	////rv := reflect.NewAt(src.Type(), unsafe.Pointer(from.UnsafeAddr())).Elem()
+	////to.SetPointer(unsafe.Pointer(rv.UnsafeAddr()))
+	//if to.Kind() == reflect.UnsafePointer {
+	//	ptrTo := ptrOf(to)
+	//	ptrFrom := ptrOf(from)
+	//	ptrTo.SetPointer(unsafe.Pointer(ptrFrom.UnsafeAddr()))
+	//	return
+	//}
+	//return errors.New("target type is %v, want reflect.UnsafePointer", to.Kind())
+}
+
+func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if to.CanSet() {
+		to.Set(from)
+		return
+	}
+
+	toind := rindirect(to)
+	if k := toind.Kind(); k != reflect.Func && c.copyFunctionResultToTarget {
+		// from.
+		return
+
+	} else if k == reflect.Func {
+
+		if !params.processUnexportedField(to, from) {
+			ptr := from.Pointer()
+			to.SetPointer(unsafe.Pointer(ptr))
+		}
+		functorLog("    function pointer copied: %v (%v) -> %v", from.Kind(), from.Interface(), to.Kind())
+	}
+
+	return
+}
+
+func copyChan(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if to.CanSet() {
+		functorLog("    copy chan: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
+		to.Set(from)
+		//functorLog("        after: %v -> %v", from.Interface(), to.Interface())
+	} else {
+		//to.SetPointer(from.Pointer())
+		functorLog("    copy chan not support: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
+	}
+	// v := reflect.MakeChan(from.Type(), from.Cap())
+	//ft := from.Type()
+	//p := ptr(to, ft)
+	//if from.Type().ConvertibleTo(to.Type()) {
+	//	p.Set(v.Convert(to.Type()))
+	//} else {
+	//	p.Set(v)
+	//}
+	return
+}
+
+//
 
 func copy1(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	return
@@ -861,7 +916,7 @@ func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error
 func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	if c != nil {
 		sourceType, targetType := from.Type(), to.Type()
-		if cvt, ctx := c.findCopiers(params, sourceType, targetType); cvt != nil {
+		if cvt, ctx := c.valueCopiers.findCopiers(params, sourceType, targetType); cvt != nil {
 			err = cvt.CopyTo(ctx, from, to)
 			return
 		}
@@ -881,7 +936,17 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	}
 
 	functorLog("  copyDefaultHandler: %v -> %v | %v", typfmtv(&fromind), typfmtv(&toind), typfmtv(&to))
-	if canConvert(&fromind, toind.Type()) {
+
+	sourceType, targetType := from.Type(), to.Type()
+	if sourceType.AssignableTo(targetType) {
+		if to.CanSet() {
+			to.Set(fromind)
+		} else if toind.CanSet() {
+			toind.Set(fromind)
+		} else {
+			err = ErrCannotSet.FormatWith(fromind, typfmtv(&fromind), toind, typfmtv(&toind))
+		}
+	} else if canConvert(&fromind, toind.Type()) {
 		var val = fromind.Convert(toind.Type())
 		err = setTargetValue1(params, to, toind, val)
 	} else if canConvert(&from, to.Type()) && to.CanSet() {
@@ -893,9 +958,3 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	}
 	return
 }
-
-// ErrCannotSet error
-var ErrCannotSet = errors.New("cannot set: %v (%v) -> %v (%v)")
-
-// ErrUnknownState error
-var ErrUnknownState = errors.New("unknown state, cannot copy to")

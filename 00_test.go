@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
-	"github.com/hedzr/localtest/deepdiff/d4l3k/messagediff"
 	"github.com/hedzr/log"
+	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math/big"
 	mrand "math/rand"
@@ -17,8 +17,8 @@ import (
 	"unsafe"
 )
 
-// TestNormal _
-func TestNormal(t *testing.T) {
+// TestLogNormal _
+func TestLogNormal(t *testing.T) {
 	// config := log.NewLoggerConfigWith(true, "logrus", "trace")
 	// logger := logrus.NewWithConfig(config)
 	log.Printf("hello")
@@ -29,6 +29,45 @@ func TestNormal(t *testing.T) {
 	log.Tracef("hello trace")
 
 	functorLog("but again")
+}
+
+// TestErrorsTmpl _
+func TestErrorsTmpl(t *testing.T) {
+	var errTmpl = errors.New("expecting %v but got %v")
+
+	var err error
+	err = errTmpl.FormatWith("789", "123")
+	t.Logf("The error is: %v", err)
+	err = errTmpl.FormatWith(true, false)
+	t.Logf("The error is: %v", err)
+}
+
+func TestSliceLen(t *testing.T) {
+	var str []string
+	var v reflect.Value = reflect.ValueOf(&str)
+
+	// make value to adopt element's type - in this case string type
+
+	v = v.Elem()
+
+	v = reflect.Append(v, reflect.ValueOf("abc"))
+	v = reflect.Append(v, reflect.ValueOf("def"))
+	v = reflect.Append(v, reflect.ValueOf("ghi"), reflect.ValueOf("jkl"))
+
+	fmt.Println("Our value is a type of :", v.Kind())
+	fmt.Printf("len : %v, %v\n", v.Len(), typfmtv(&v))
+
+	vSlice := v.Slice(0, v.Len())
+	vSliceElems := vSlice.Interface()
+
+	fmt.Println("With the elements of : ", vSliceElems)
+
+	v = reflect.AppendSlice(v, reflect.ValueOf([]string{"mno", "pqr", "stu"}))
+
+	vSlice = v.Slice(0, v.Len())
+	vSliceElems = vSlice.Interface()
+
+	fmt.Println("After AppendSlice : ", vSliceElems)
 }
 
 // TestCpChan _
@@ -160,13 +199,13 @@ func TestParamsBasics(t *testing.T) {
 
 		for i := 0; i < v.NumField(); i++ {
 			fld := v.Type().Field(i)
-			p2.fieldTags = parseFieldTags(fld.Tag)
+			fldTags := parseFieldTags(fld.Tag)
 			if !p2.isFlagExists(Ignore) {
-				t.Logf("%q flags: %v", fld.Tag, p2.fieldTags)
+				t.Logf("%q flags: %v", fld.Tag, fldTags)
 			} else {
-				t.Logf("%q flags: %v", fld.Tag, p2.fieldTags)
+				t.Logf("%q flags: %v", fld.Tag, fldTags)
 			}
-			testDeepEqual(t, p2.fieldTags.flags, expects[i])
+			testDeepEqual(t, fldTags.flags, expects[i])
 		}
 
 	})
@@ -193,13 +232,13 @@ func TestParamsBasics3(t *testing.T) {
 		//sf0, _ := v.Type().FieldByName("flags")
 		//sf1, _ := v.Type().FieldByName("converter")
 
-		p2.fieldTags = parseFieldTags(sf.Tag)
+		fldTags := parseFieldTags(sf.Tag)
 		//ft.Parse(sf.Tag)
 		//ft.Parse(sf0.Tag) // entering 'continue' branch
 		//ft.Parse(sf1.Tag) // entering 'delete' branch
 
 		var z *fieldTags
-		z = p2.fieldTags
+		z = fldTags
 
 		z.isFlagExists(SliceCopy)
 		p2.isFlagExists(SliceCopy)
@@ -273,7 +312,7 @@ func TestDeferCatchers(t *testing.T) {
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
 
-		dbgFrontOfStruct(p1, p2, "    ")
+		dbgFrontOfStruct(p1, p2, "    ", func(msg string, args ...interface{}) { functorLog(msg, args...) })
 	})
 
 	slicePanic := func() {
@@ -303,7 +342,6 @@ func TestDeferCatchers(t *testing.T) {
 
 		err := copyStructInternal(c, nil, svv, dvv, func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
 
-			_ = paramsChild.withIteratorIndex(i)
 			paramsChild.nextTargetField()
 
 			slicePanic()

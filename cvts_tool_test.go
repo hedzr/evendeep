@@ -3,6 +3,7 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/deepcopy/cl"
 	"math"
 	"reflect"
 	"strconv"
@@ -450,18 +451,19 @@ func TestToStringConverter_Transform(t *testing.T) {
 	}
 }
 
+var tgtTypes = map[reflect.Kind]reflect.Type{
+	reflect.String:     reflect.TypeOf((*string)(nil)).Elem(),
+	reflect.Bool:       reflect.TypeOf((*bool)(nil)).Elem(),
+	reflect.Uint:       reflect.TypeOf((*uint)(nil)).Elem(),
+	reflect.Int:        reflect.TypeOf((*int)(nil)).Elem(),
+	reflect.Float64:    reflect.TypeOf((*float64)(nil)).Elem(),
+	reflect.Complex128: reflect.TypeOf((*complex128)(nil)).Elem(),
+	reflect.Ptr:        reflect.TypeOf((*int)(nil)).Elem(),
+	reflect.Uintptr:    reflect.TypeOf((*uintptr)(nil)).Elem(),
+}
+
 func TestFromStringConverter_Transform(t *testing.T) {
 	var bbc fromStringConverter
-	tgtTypes := map[reflect.Kind]reflect.Type{
-		reflect.String:     reflect.TypeOf((*string)(nil)).Elem(),
-		reflect.Bool:       reflect.TypeOf((*bool)(nil)).Elem(),
-		reflect.Uint:       reflect.TypeOf((*uint)(nil)).Elem(),
-		reflect.Int:        reflect.TypeOf((*int)(nil)).Elem(),
-		reflect.Float64:    reflect.TypeOf((*float64)(nil)).Elem(),
-		reflect.Complex128: reflect.TypeOf((*complex128)(nil)).Elem(),
-		reflect.Ptr:        reflect.TypeOf((*int)(nil)).Elem(),
-		reflect.Uintptr:    reflect.TypeOf((*uintptr)(nil)).Elem(),
-	}
 
 	for src, tgtm := range map[string]map[reflect.Kind]interface{}{
 		"sss":    {reflect.String: "sss"},
@@ -498,7 +500,12 @@ func TestFromStringConverter_Transform(t *testing.T) {
 		}
 	}
 
+}
+
+func TestToDurationConverter_Transform(t *testing.T) {
+	var bbc fromStringConverter
 	var dur = 3 * time.Second
+
 	var v = reflect.ValueOf(dur)
 	t.Logf("dur: %v (%v, kind: %v, name: %v, pkgpath: %v)", dur, typfmtv(&v), v.Kind(), v.Type().Name(), v.Type().PkgPath())
 
@@ -511,12 +518,9 @@ func TestFromStringConverter_Transform(t *testing.T) {
 	}
 	t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
 
-	// todo parseDuration, parseDateTime, ...
 	var c = newDeepCopier()
 	c.withConverters(&toDurationFromString{})
-	var ctx = &ValueConverterContext{
-		Params: newParams(withOwners(c, nil, nil, nil, nil, nil)),
-	}
+	var ctx = newValueConverterContextForTest(c)
 	src = "71ms"
 	svv = reflect.ValueOf(src)
 	tgt, err = bbc.Transform(ctx, svv, tgtType)
@@ -532,4 +536,257 @@ func TestFromStringConverter_Transform(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	t.Logf("res: %v", dur)
+
+	//
+
+	c = newDeepCopier()
+	c.withCopiers(&toDurationFromString{})
+	ctx = newValueConverterContextForTest(c)
+	src = "71ms"
+	svv = reflect.ValueOf(src)
+	tgt, err = bbc.Transform(ctx, svv, tgtType)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+
+	src = "9h71ms"
+	svv = reflect.ValueOf(src)
+	err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("res: %v", dur)
+
+	//
+
+	c = newCopier()
+	c.withFlags(SliceMerge)
+	c.withFlags(MapMerge)
+}
+
+func TestToDurationConverter_fallback(t *testing.T) {
+	var tdfs toDurationFromString
+	var dur = 3 * time.Second
+	var v = reflect.ValueOf(&dur)
+	_ = tdfs.fallback(v)
+	t.Logf("dur: %v", dur)
+}
+
+func TestFromStringConverter_defaultTypes(t *testing.T) {
+	var fss fromStringConverter
+	var src = "987"
+	var dst = 3.3
+	var svv = reflect.ValueOf(src)
+	var dvv = reflect.ValueOf(&dst)
+
+	ret, err := fss.defaultTypes(svv, dvv.Type().Elem())
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("ret: %v (%v)", ret.Interface(), typfmtv(&ret))
+}
+
+func TestFromStringConverter_postCopyTo(t *testing.T) {
+	var fss fromStringConverter
+	var src = "987"
+	var dst = 3.3
+	var svv = reflect.ValueOf(src)
+	var dvv = reflect.ValueOf(&dst)
+
+	err := fss.postCopyTo(svv, dvv.Elem())
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("ret: %v (%v)", dst, typfmtv(&dvv))
+}
+
+func TestToStringConverter_postCopyTo(t *testing.T) {
+	var fss toStringConverter
+	var src = struct {
+		fval float64
+	}{3.3}
+	var dst = struct {
+		fval string
+	}{}
+	var svv = reflect.ValueOf(&src)
+	var dvv = reflect.ValueOf(&dst)
+	var sf1 = rindirect(svv).Field(0)
+	var df1 = rindirect(dvv).Field(0)
+	//var sft = reflect.TypeOf(src).Field(0)
+
+	ctx := &ValueConverterContext{
+		Params: &Params{
+			srcOwner: &svv,
+			dstOwner: &dvv,
+			//field:      &sft,
+			//fieldTags:  parseFieldTags(sft.Tag),
+			controller: newDeepCopier(),
+		},
+	}
+
+	sf2 := cl.GetUnexportedField(sf1)
+
+	err := fss.postCopyTo(ctx, sf2, df1)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("ret: %v (%v)", dst, typfmtv(&dvv))
+}
+
+type si1 struct{}
+type si2 struct{}
+
+func (*si2) String() string { return "i2" }
+
+func TestHasStringer(t *testing.T) {
+	var i1 si1
+	var i2 si2
+
+	v := reflect.ValueOf(i1)
+	t.Logf("si1: %v", hasStringer(&v))
+	v = reflect.ValueOf(i2)
+	t.Logf("si2: %v", hasStringer(&v))
+	v = reflect.ValueOf(&i2)
+	t.Logf("*si2: %v", hasStringer(&v))
+}
+
+func TestNameToMapKey(t *testing.T) {
+	name := "9527"
+	//value := 789
+	mapslice := []interface{}{
+		map[int]interface{}{
+			111: 333,
+		},
+		map[int]interface{}{
+			9527: 333,
+		},
+		map[float32]interface{}{
+			9527: 333,
+		},
+		map[complex128]interface{}{
+			9527: 333,
+		},
+		map[string]interface{}{
+			"my": 12,
+		},
+		map[string]interface{}{
+			"9527": 33,
+		},
+	}
+
+	for _, m := range mapslice {
+		mv := reflect.ValueOf(&m)
+		mvind := rdecodesimple(mv)
+		t.Logf("    target map is %v", typfmtv(&mvind))
+		mt := rdecodetypesimple(mvind.Type())
+		key, err := nameToMapKey(name, mt)
+		if err != nil {
+			t.Errorf("nameToMapKey, has error: %v", err)
+		} else {
+			t.Logf("for target map %v, got key from nameToMapKey: %v %v", typfmt(mt), valfmt(&key), typfmt(key.Type()))
+		}
+	}
+}
+
+func TestFromFuncConverterAlongMainEntry(t *testing.T) {
+	type A1 struct {
+		Bv func() (int, error)
+	}
+	type B1 struct {
+		Bv int
+	}
+
+	var a1 = A1{func() (int, error) { return 3, nil }}
+	var b1 = B1{1}
+
+	// test for fromFuncConverter along Copy -> cpController.findConverters
+	Copy(&a1, &b1)
+
+	if b1.Bv != 3 {
+		t.Fatalf("expect %v but got %v", 3, b1.Bv)
+	}
+}
+
+func TestFromFuncConverter(t *testing.T) {
+	fn0 := func() string { return "hello" }
+
+	type C struct {
+		A int
+		B bool
+	}
+	type A struct {
+		A func() C
+		B func() bool
+	}
+	type B struct {
+		C *C
+		B bool
+	}
+	var a0 = A{
+		func() C { return C{7, true} },
+		func() bool { return false },
+	}
+	var b0 = B{nil, true}
+	var b1 = B{&C{7, true}, false}
+
+	var boolTgt bool
+	var intTgt int = 1
+	var stringTgt string = "world"
+
+	lazyInitRoutines()
+
+	for ix, fncase := range []struct {
+		fn     interface{}
+		target interface{}
+		expect interface{}
+	}{
+		{func() A { return a0 },
+			&b0,
+			b1,
+		},
+
+		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
+			&map[string]interface{}{"k": 1, "hello": "2"},
+			map[string]interface{}{"hello": "world", "k": 1},
+		},
+
+		{func() string { return "hello" }, &stringTgt, "hello"},
+		{func() string { return "hello" }, &intTgt, 1},
+		{func() string { return "789" }, &intTgt, 789},
+		{&fn0, &stringTgt, "hello"},
+
+		{func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
+		{func() ([2]int, error) { return [2]int{2, 3}, nil }, &[3]int{1}, [3]int{2, 3}},
+		{func() ([3]int, error) { return [3]int{2, 3, 5}, nil }, &[2]int{1}, [2]int{2, 3}},
+		{func() ([]int, error) { return []int{2, 3}, nil }, &[]int{1}, []int{1, 2, 3}},
+
+		{func() bool { return true }, &boolTgt, true},
+		{func() int { return 3 }, &intTgt, 3},
+		{func() (int, error) { return 5, nil }, &intTgt, 5},
+	} {
+		if fncase.fn != nil {
+			fnv := reflect.ValueOf(&fncase.fn)
+			tgtv := reflect.ValueOf(&fncase.target)
+			ff, tt := rdecodesimple(fnv), rdecodesimple(tgtv)
+			t.Logf("---- CASE %d. %v -> %v", ix, typfmtv(&ff), typfmtv(&tt))
+
+			c := fromFuncConverter{}
+			ctx := newValueConverterContextForTest(nil)
+			err := c.CopyTo(ctx, fnv, tgtv)
+
+			if err != nil {
+				t.Fatalf("has error: %v", err)
+			} else if reflect.DeepEqual(tt.Interface(), fncase.expect) == false {
+				t.Fatalf("unexpect result: expect %v but got %v", fncase.expect, tt.Interface())
+			}
+		}
+	}
+}
+
+func newValueConverterContextForTest(c *cpController) *ValueConverterContext {
+	if c == nil {
+		c = newDeepCopier()
+	}
+	return &ValueConverterContext{newParams(withOwnersSimple(c, nil))}
 }

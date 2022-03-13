@@ -4,7 +4,7 @@ package deepcopy
 type Flags map[CopyMergeStrategy]bool
 
 func newFlags(ftf ...CopyMergeStrategy) Flags {
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 	flags := make(Flags)
 	flags.withFlags(ftf...)
 	return flags
@@ -27,7 +27,10 @@ func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
 }
 
 func (flags Flags) isFlagOK(ftf CopyMergeStrategy) bool {
-	return flags[ftf]
+	if flags != nil {
+		return flags[ftf]
+	}
+	return false
 }
 
 func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrategy) {
@@ -116,18 +119,22 @@ func (flags Flags) isGroupedFlagOK(ftf CopyMergeStrategy) (ok bool) {
 }
 
 func (flags Flags) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
-	for _, f := range ftf {
-		if val, ok := flags[f]; val && ok {
-			return true
+	if flags != nil {
+		for _, f := range ftf {
+			if val, ok := flags[f]; val && ok {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
-	for _, f := range ftf {
-		if val, ok := flags[f]; !ok || !val {
-			return false
+	if flags != nil {
+		for _, f := range ftf {
+			if val, ok := flags[f]; !ok || !val {
+				return false
+			}
 		}
 	}
 	return true

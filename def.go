@@ -4,13 +4,16 @@ import (
 	"reflect"
 )
 
+// Copy _
+func Copy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
+	return DeepCopy(fromObj, toObj, opts...)
+}
+
 // DeepCopy _
 func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	if fromObj == nil {
 		return toObj
 	}
-
-	lazyInitRoutines()
 
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
 		result = toObj
@@ -24,8 +27,6 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	if fromObj == nil {
 		return fromObj
 	}
-
-	lazyInitRoutines()
 
 	from := reflect.ValueOf(fromObj)
 	//find := rindirect(from)
@@ -64,10 +65,10 @@ type DeepCopier interface {
 var (
 	// DefaultCopyController provides standard deepcopy feature.
 	// copy and merge slice or map to an existed target
-	DefaultCopyController = newDeepCopier()
+	DefaultCopyController *cpController
 	// DefaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
-	DefaultCloneController = newCloner()
+	DefaultCloneController *cpController
 
 	// onceCpController sync.Once
 )
@@ -76,7 +77,7 @@ var (
 // is *cpController) different with DefaultCopyController and
 // DefaultCloneController.
 func New(opts ...Opt) DeepCopier {
-	lazyInitRoutines()
+	//lazyInitRoutines()
 	var c = newDeepCopier()
 	for _, opt := range opts {
 		opt(c)
@@ -88,7 +89,7 @@ func New(opts ...Opt) DeepCopier {
 // is *cpController) like NewDeepCopier but no merge strategies
 // (SliceMerge and MapMerge).
 func NewFlatDeepCopier(opts ...Opt) DeepCopier {
-	lazyInitRoutines()
+	//lazyInitRoutines()
 	var c = newCopier()
 	c.flags = newFlags()
 	for _, opt := range opts {

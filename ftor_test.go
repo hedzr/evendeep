@@ -38,7 +38,7 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	c := newCloner()
 
-	onceInitFieldTagsFlags()
+	lazyInitFieldTagsFlags()
 
 	var so = []int{9, 77}
 	var to = []int{}

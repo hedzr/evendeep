@@ -56,9 +56,24 @@ retry:
 	return
 }
 
+// rdecodetype try to strip off ptr and interface{} from a type.
+//
+// It might not work properly on some cases because interface{} cannot
+// be stripped with calling typ.Elem().
+//
+// In this case, use rdecodesimple(value).Type() instead
+// of rdecodetypesimple(value.Type()).
 func rdecodetype(reflectType reflect.Type) (ret, prev reflect.Type) {
 	return rskiptype(reflectType, reflect.Ptr, reflect.Interface)
 }
+
+// rdecodetypesimple try to strip off ptr and interface{} from a type.
+//
+// It might not work properly on some cases because interface{} cannot
+// be stripped with calling typ.Elem().
+//
+// In this case, use rdecodesimple(value).Type() instead
+// of rdecodetypesimple(value.Type()).
 func rdecodetypesimple(reflectType reflect.Type) (ret reflect.Type) {
 	ret, _ = rdecodetype(reflectType)
 	return
@@ -70,12 +85,22 @@ retry:
 	k := ret.Kind()
 	for _, kk := range kinds {
 		if k == kk {
-			prev = ret
-			ret = ret.Elem()
-			goto retry
+			if canElem(k) {
+				prev = ret
+				ret = ret.Elem()
+				goto retry
+			}
 		}
 	}
 	return
+}
+
+func canElem(k reflect.Kind) bool {
+	switch k {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Ptr, reflect.Slice:
+		return true
+	}
+	return false
 }
 
 func rindirect(reflectValue reflect.Value) reflect.Value {
@@ -110,6 +135,15 @@ retry:
 	return reflectValue
 }
 
+func isNumericType(t reflect.Type) bool     { return isNumericKind(t.Kind()) }
+func isNumIntegerType(t reflect.Type) bool  { return isNumIntegerKind(t.Kind()) }
+func isNumericKind(k reflect.Kind) bool     { return k >= reflect.Int && k < reflect.Array }
+func isNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }
+func isNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 }
+func isNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= reflect.Uint64 }
+func isNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }
+func isNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 }
+
 func typfmtv(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
@@ -135,6 +169,13 @@ func valfmt(v *reflect.Value) string {
 	if v.Kind() == reflect.String {
 		return v.String()
 	}
+	if hasStringer(v) {
+		res := v.MethodByName("String").Call(nil)
+		return res[0].String()
+	}
+	if isNumericKind(v.Kind()) {
+		return fmt.Sprintf("%v", v.Interface())
+	}
 	if canConvert(v, stringType) {
 		return v.Convert(stringType).String()
 	}
@@ -144,6 +185,7 @@ func valfmt(v *reflect.Value) string {
 	return fmt.Sprintf("<%v>", v.Kind())
 }
 
+var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem()
 var stringType = reflect.TypeOf((*string)(nil)).Elem()
 
 // isZero for go1.12+, the difference is it never panic on unavailable kinds.
@@ -247,6 +289,10 @@ func canConvertHelper(v reflect.Value, t reflect.Type) bool {
 // canConvert reports whether the value v can be converted to type t.
 // If v.CanConvert(t) returns true then v.Convert(t) will not panic.
 func canConvert(v *reflect.Value, t reflect.Type) bool {
+	if !v.IsValid() {
+		return false
+	}
+
 	vt := v.Type()
 	if !vt.ConvertibleTo(t) {
 
@@ -267,4 +313,13 @@ func canConvert(v *reflect.Value, t reflect.Type) bool {
 		return false
 	}
 	return true
+}
+
+func hasImplements(v *reflect.Value, interfaceType reflect.Type) bool {
+	vt := v.Type()
+	return vt.Implements(interfaceType)
+}
+
+func hasStringer(v *reflect.Value) bool {
+	return hasImplements(v, stringerType)
 }
