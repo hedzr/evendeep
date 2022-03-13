@@ -13,7 +13,7 @@ import (
 // fieldstable is an accessor to struct fields.
 type fieldstable struct {
 	tablerecords
-	autoexpandstruct bool
+	autoExpandStruct bool
 }
 
 type tablerecords []tablerec
@@ -41,7 +41,7 @@ func (table *fieldstable) shouldIgnore(field reflect.StructField, typ reflect.Ty
 }
 
 func (table *fieldstable) getallfields(structValue reflect.Value, autoexpandstruct bool) fieldstable {
-	table.autoexpandstruct = autoexpandstruct
+	table.autoExpandStruct = autoexpandstruct
 
 	structValue, _ = rdecode(structValue)
 	if structValue.Kind() != reflect.Struct {
@@ -91,7 +91,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 		isStruct := sftypind.Kind() == reflect.Struct
 		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
 
-		if isStruct && table.autoexpandstruct && !shouldIgnored {
+		if isStruct && table.autoExpandStruct && !shouldIgnored {
 			n := table.getfields(svind, sftypind, sf.Name, i)
 			if len(n) > 0 {
 				ret = append(ret, n...)
@@ -172,7 +172,7 @@ func newStructIterator(structValue reflect.Value, opts ...structIterableOpt) str
 // in iterating a parent struct
 func withStructPtrAutoExpand(expand bool) structIterableOpt {
 	return func(s *structIterator) {
-		s.autoexpandstruct = expand
+		s.autoExpandStruct = expand
 	}
 }
 
@@ -180,7 +180,7 @@ func withStructPtrAutoExpand(expand bool) structIterableOpt {
 // in iterating a parent struct
 func withStructFieldPtrAutoNew(create bool) structIterableOpt {
 	return func(s *structIterator) {
-		s.autonew = create
+		s.autoNew = create
 	}
 }
 
@@ -201,9 +201,9 @@ type structIterator struct {
 	srcIndex                 int              // source field index
 	dstStruct                reflect.Value    // target struct
 	stack                    []*fieldaccessor // target fields accessors
-	autoexpandstruct         bool             // Next will expand *struct to struct and get inside loop deeply
-	noexpandifsrcfieldisfunc bool             //
-	autonew                  bool             // create new inner objects for the child ptr,map,chan,..., if necessary
+	autoExpandStruct         bool             // Next will expand *struct to struct and get inside loop deeply
+	noExpandIfSrcFieldIsFunc bool             //
+	autoNew                  bool             // create new inner objects for the child ptr,map,chan,..., if necessary
 }
 
 type fieldaccessor struct {
@@ -297,7 +297,7 @@ func (s *fieldaccessor) ensurePtrField() {
 		switch kind {
 		case reflect.Ptr:
 			if isNil(fv) {
-				functorLog("   autonew")
+				functorLog("   autoNew")
 				typ := sf.Type.Elem()
 				nv := reflect.New(typ)
 				fv.Set(nv)
@@ -415,7 +415,7 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 		srcStructField := sourceTableRec.StructField()
 		isfn := srcStructField.Type.Kind() == reflect.Func
 
-		accessor, ok = s.doNext(isfn && !s.noexpandifsrcfieldisfunc)
+		accessor, ok = s.doNext(isfn && !s.noExpandIfSrcFieldIsFunc)
 		if ok {
 			accessor.sourceTableRec = sourceTableRec
 			accessor.srcStructField = srcStructField
@@ -457,11 +457,11 @@ retryExpand:
 	field := lastone.getStructField()
 	if field != nil {
 		tind := field.Type // rindirectType(field.Type)
-		if s.autoexpandstruct {
+		if s.autoExpandStruct {
 			tind = rindirectType(field.Type)
 			k1 := tind.Kind()
 			functorLog("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
-			if s.autonew {
+			if s.autoNew {
 				lastone.ensurePtrField()
 			}
 			if k1 == reflect.Struct &&
@@ -475,7 +475,7 @@ retryExpand:
 				goto retryExpand
 
 			}
-		} else if s.autonew {
+		} else if s.autoNew {
 			lastone.ensurePtrField()
 		}
 
