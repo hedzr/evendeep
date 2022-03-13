@@ -9,5 +9,6 @@ var (
 	// ErrCannotSet error
 	ErrCannotSet = errors.New("cannot set: %v (%v) -> %v (%v)")
 
-	errCannotConvertTo = errors.New("cannot convert: %v -> %v")
+	// ErrCannotConvertTo error
+	ErrCannotConvertTo = errors.New("cannot convert/set: %v (%v) -> %v (%v)")
 )

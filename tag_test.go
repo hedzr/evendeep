@@ -46,7 +46,7 @@ func subtestParse(t *testing.T) {
 		} else {
 			t.Logf("%q flags: %v", fld.Tag, ft)
 		}
-		testDeepEqual(t, ft.flags, expects[i])
+		testDeepEqual(t.Errorf, ft.flags, expects[i])
 	}
 }
 

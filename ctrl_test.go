@@ -272,11 +272,11 @@ func TestTypeConvert(t *testing.T) {
 			nil,
 		),
 		deepcopy.NewTestCase(
-			"complex -> int - ErrCannotSet test",
+			"complex -> int - ErrCannotConvertTo test",
 			complex64(8.1+3i), &i5, int(8),
 			nil,
 			func(src, dst, expect interface{}, e error) (err error) {
-				if e == deepcopy.ErrCannotSet {
+				if errors.IsDescended(deepcopy.ErrCannotConvertTo, e) {
 					return
 				}
 				return e

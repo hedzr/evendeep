@@ -185,6 +185,8 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 	}
 
 	var sb strings.Builder
+	defer func() { t.Log(sb.String()) }()
+
 	v1 := reflect.ValueOf(&src)
 	t1, _ := rdecode(v1)
 	it := newStructIterator(t1)
@@ -234,6 +236,8 @@ func teststructiteratorNextEmployee2Exp(t *testing.T) {
 	}
 
 	var sb strings.Builder
+	defer func() { t.Log(sb.String()) }()
+
 	v1 := reflect.ValueOf(&src)
 	t1, _ := rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))

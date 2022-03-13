@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func testDeepEqual(t *testing.T, got, expect interface{}) {
+func testDeepEqual(print func(msg string, args ...interface{}), got, expect interface{}) {
 	//a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
 	//switch kind:=a.Kind();kind {
 	//case reflect.Map:
@@ -13,7 +13,7 @@ func testDeepEqual(t *testing.T, got, expect interface{}) {
 	//}
 
 	if !reflect.DeepEqual(got, expect) {
-		t.Errorf("expecting %v but got %v", expect, got)
+		print("expecting %v but got %v", expect, got)
 	}
 }
 
@@ -30,13 +30,14 @@ func TestTestDeepEqual(t *testing.T) {
 		}
 	}
 
-	testDeepEqual(t, mm[0], mm[1])
+	testDeepEqual(t.Errorf, mm[0], mm[1])
 }
 
 func TestCopySlice_differModes(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
 	c := newCloner()
+	params := newParams(withOwnersSimple(c, nil))
 
 	lazyInitFieldTagsFlags()
 
@@ -47,74 +48,74 @@ func TestCopySlice_differModes(t *testing.T) {
 	var src = reflect.ValueOf(&so)
 	var tgt = reflect.ValueOf(&to)
 
-	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, params, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{9, 77})
+		testDeepEqual(t.Errorf, to, []int{9, 77})
 	}
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, params, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{9, 77})
+		testDeepEqual(t.Errorf, to, []int{9, 77})
 	}
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{1, 9, 77})
+		testDeepEqual(t.Errorf, to, []int{1, 9, 77})
 	}
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{9, 77})
+		testDeepEqual(t.Errorf, to, []int{9, 77})
 	}
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{2, 9, 1, 9, 77})
+		testDeepEqual(t.Errorf, to, []int{2, 9, 1, 9, 77})
 	}
 
 	so = []int{15, 2}
 	src = reflect.ValueOf(&so)
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{2, 9, 1, 15})
+		testDeepEqual(t.Errorf, to, []int{2, 9, 1, 15})
 	}
 
 	to = []int{3, 77, 2, 15}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{3, 77, 2, 15})
+		testDeepEqual(t.Errorf, to, []int{3, 77, 2, 15})
 	}
 
 }
@@ -123,6 +124,7 @@ func TestCopySlice_mergeMode(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
 	c := newCopier().withFlags(SliceMerge, MapMerge)
+	params := newParams(withOwnersSimple(c, nil))
 
 	var so = []int{9, 77}
 	var to = []int{}
@@ -131,22 +133,22 @@ func TestCopySlice_mergeMode(t *testing.T) {
 	var src = reflect.ValueOf(&so)
 	var tgt = reflect.ValueOf(&to)
 
-	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, params, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{9, 77})
+		testDeepEqual(t.Errorf, to, []int{9, 77})
 	}
 
 	to = []int{2, 77}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, nil, rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, params, rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, []int{2, 77, 9})
+		testDeepEqual(t.Errorf, to, []int{2, 77, 9})
 	}
 
 }
@@ -155,6 +157,7 @@ func TestCopyArray(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
 	c := newCopier().withFlags()
+	params := newParams(withOwnersSimple(c, nil))
 
 	var so = [3]int{9, 77, 13}
 	var to = [5]int{}
@@ -168,25 +171,25 @@ func TestCopyArray(t *testing.T) {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		testDeepEqual(t, to, [5]int{9, 77, 13})
+		testDeepEqual(t.Errorf, to, [5]int{9, 77, 13})
 	}
 
 	to2 := [2]int{77, 2}
-	err = copyArray(c, nil, src, reflect.ValueOf(&to2))
+	err = copyArray(c, params, src, reflect.ValueOf(&to2))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to2)
-		testDeepEqual(t, to2, [2]int{9, 77})
+		testDeepEqual(t.Errorf, to2, [2]int{9, 77})
 	}
 
 	to2 = [2]int{}
-	err = copyArray(c, nil, src, reflect.ValueOf(&to2))
+	err = copyArray(c, params, src, reflect.ValueOf(&to2))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to2)
-		testDeepEqual(t, to2, [2]int{9, 77})
+		testDeepEqual(t.Errorf, to2, [2]int{9, 77})
 	}
 
 }
@@ -194,6 +197,7 @@ func TestCopyArray(t *testing.T) {
 func TestCopyChan(t *testing.T) {
 
 	c := newCopier()
+	//params := newParams(withOwnersSimple(c, nil))
 
 	var err error
 	var so = make(chan struct{})
@@ -212,6 +216,7 @@ func TestCopyUnsafePointer(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
 	//c := newDeepCopier()
+	//params := newParams(withOwnersSimple(c, nil))
 	//
 	//var so = struct{ foo int }{42}
 	//var to int

@@ -200,8 +200,9 @@ type structIterator struct {
 	srcFields                fieldstable      // source struct fields accessors
 	srcIndex                 int              // source field index
 	dstStruct                reflect.Value    // target struct
+	dstIndex                 int              // counter for Next()
 	stack                    []*fieldaccessor // target fields accessors
-	autoExpandStruct         bool             // Next will expand *struct to struct and get inside loop deeply
+	autoExpandStruct         bool             // Next() will expand *struct to struct and get inside loop deeply
 	noExpandIfSrcFieldIsFunc bool             //
 	autoNew                  bool             // create new inner objects for the child ptr,map,chan,..., if necessary
 }
@@ -379,11 +380,13 @@ type sourceStructFieldsTable interface {
 	gettablerecords() tablerecords
 	getcurrrecord() tablerec
 	gettablerec(index int) tablerec
+	step(delta int)
 }
 
 func (s *structIterator) gettablerecords() tablerecords  { return s.srcFields.tablerecords }
 func (s *structIterator) getcurrrecord() tablerec        { return s.srcFields.tablerecords[s.srcIndex] }
 func (s *structIterator) gettablerec(index int) tablerec { return s.srcFields.tablerecords[index] }
+func (s *structIterator) step(delta int)                 { s.withSourceIteratorIndexIncrease(delta) }
 
 func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sourcefield tablerec, ok bool) {
 	if s.srcIndex < 0 {
@@ -425,6 +428,15 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 				s.srcIndex, accessor.sourceTableRec.FieldName(),
 				typfmt(accessor.srcStructField.Type),
 				accessor.StructFieldName(), typfmt(accessor.Type()))
+			s.dstIndex++
+		}
+	} else {
+		accessor, ok = s.doNext(false)
+		if ok {
+			functorLog("   | Next %d | -> %v (%v)",
+				s.dstIndex,
+				accessor.StructFieldName(), typfmt(accessor.Type()))
+			s.dstIndex++
 		}
 	}
 	return

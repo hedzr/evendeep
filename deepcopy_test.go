@@ -38,24 +38,24 @@ func TestWithXXX(t *testing.T) {
 
 	t.Run("ignore names test", func(t *testing.T) {
 
-		src1 := &AA{X: "ok", TestString: "well"}
+		src1 := &AA{TestString: "well", X: "ok"}
 		tgt1 := &BB{X: "no"}
 		err := copier.CopyTo(src1, &tgt1)
+		t.Logf("res bb: %+v", tgt1)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
 		if tgt1.X != src1.X {
 			t.Fatalf("err: after 'TestString' field was ignored, AA.X should be copied as BB.X")
 		}
-		t.Logf("res bb: %+v", tgt1)
 
 	})
 
-	t.Run("ignore names test", func(t *testing.T) {
+	t.Run("non-ignore names test", func(t *testing.T) {
 
 		copier = deepcopy.New()
 
-		src1 := &AA{X: "ok", TestString: "well"}
+		src1 := &AA{TestString: "well", X: "ok"}
 		tgt1 := &BB{X: "no"}
 		err := copier.CopyTo(src1, &tgt1)
 		if err != nil {
@@ -247,7 +247,7 @@ func TestPlainCopyFuncField(t *testing.T) {
 		Jx func(i1, i2 int) (i3 string)
 	}
 
-	t.Run("copy private func field", func(t *testing.T) {
+	t.Run("copy private func field (complex)", func(t *testing.T) {
 		var a = CC{func(i1, i2 int) (i3 string) {
 			return fmt.Sprintf("%v+%v", i1, i2)
 		}}

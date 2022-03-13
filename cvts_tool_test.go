@@ -621,15 +621,25 @@ func TestToStringConverter_postCopyTo(t *testing.T) {
 			dstOwner: &dvv,
 			//field:      &sft,
 			//fieldTags:  parseFieldTags(sft.Tag),
+			targetIterator: newStructIterator(dvv,
+				withStructPtrAutoExpand(true),
+				withStructFieldPtrAutoNew(true),
+				withStructSource(&svv, true),
+			),
 			controller: newDeepCopier(),
 		},
 	}
+
+	ctx.nextTargetField() // call ctx.targetIterator.Next() to locate the first field
 
 	sf2 := cl.GetUnexportedField(sf1)
 
 	err := fss.postCopyTo(ctx, sf2, df1)
 	if err != nil {
 		t.Fatalf("err: %v", err)
+	}
+	if dst.fval != "3.3" {
+		t.Fatalf("want '3.3' but got %v", dst.fval)
 	}
 	t.Logf("ret: %v (%v)", dst, typfmtv(&dvv))
 }
@@ -741,14 +751,14 @@ func TestFromFuncConverter(t *testing.T) {
 		target interface{}
 		expect interface{}
 	}{
+		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
+			&map[string]interface{}{"k": 1, "hello": "bob"},
+			map[string]interface{}{"hello": "world", "k": 1},
+		},
+
 		{func() A { return a0 },
 			&b0,
 			b1,
-		},
-
-		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
-			&map[string]interface{}{"k": 1, "hello": "2"},
-			map[string]interface{}{"hello": "world", "k": 1},
 		},
 
 		{func() string { return "hello" }, &stringTgt, "hello"},

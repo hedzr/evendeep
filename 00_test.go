@@ -205,7 +205,7 @@ func TestParamsBasics(t *testing.T) {
 			} else {
 				t.Logf("%q flags: %v", fld.Tag, fldTags)
 			}
-			testDeepEqual(t, fldTags.flags, expects[i])
+			testDeepEqual(t.Errorf, fldTags.flags, expects[i])
 		}
 
 	})

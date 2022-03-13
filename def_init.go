@@ -11,7 +11,7 @@ func init() {
 		initConverters()
 
 		DefaultCopyController = newDeepCopier()
-		DefaultCloneController = newCloner()
+		defaultCloneController = newCloner()
 
 	})
 }

@@ -101,6 +101,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 				sourcefield := srcstructtable.getcurrrecord()
 
 				if c.isIgnoreName(sourcefield.ShortFieldName()) {
+					srcstructtable.step(1) // skip this source field
 					continue
 				}
 
@@ -717,32 +718,42 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 		tgtval = tgtval.Elem()
 		functorLog("  Update Map: %v -> %v", ck.Interface(), tgtval.Interface())
 	} else {
-		eltyp := tgt.Type().Elem()
+		eltyp := tgt.Type().Elem() // get map value type
 		eltypind, _ := rskiptype(eltyp, reflect.Ptr)
+
+		var ptrToCopyValue, cv reflect.Value
 		if eltypind.Kind() == reflect.Interface {
-			//
-			//srctyp := originalValue.Type()
-			//srctyp = rdecodetypesimple(srctyp)
-			srcind := rdecodesimple(originalValue)
-			srctyp := srcind.Type()
-			eltypind = srctyp
+			tgtvalind, _ := rdecode(tgtval)
+			functorLog("  tgtval: [%v] %v, ind: %v", typfmtv(&tgtval), tgtval.Interface(), typfmtv(&tgtvalind))
+			ptrToCopyValue = reflect.New(tgtvalind.Type())
+			cv = ptrToCopyValue.Elem()
+			defer func() {
+				tgt.SetMapIndex(ck, cv)
+				functorLog("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
+			}()
+
+		} else {
+			ptrToCopyValue = reflect.New(eltypind)
+			cv = ptrToCopyValue.Elem()
+			defer func() {
+				if cv.Type() == eltyp {
+					tgt.SetMapIndex(ck, cv)
+					functorLog("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
+				} else {
+					functorLog("  SetMapIndex: %v -> [%v] %v", ck.Interface(), ptrToCopyValue.Type(), ptrToCopyValue.Interface())
+					tgt.SetMapIndex(ck, ptrToCopyValue)
+				}
+			}()
 		}
-		ptrToCopyValue := reflect.New(eltypind)
+
 		functorLog("  ptrToCopyValue.type: %v, eltypind: %v", typfmtv(&ptrToCopyValue), typfmt(eltypind))
-		cv := ptrToCopyValue.Elem()
 		if err = c.copyTo(params, tgtval, ptrToCopyValue); err != nil {
 			return
 		}
 		if err = c.copyTo(params, originalValue, ptrToCopyValue); err != nil {
 			return
 		}
-		if cv.Type() == eltyp {
-			tgt.SetMapIndex(ck, cv)
-			functorLog("  SetMapIndex: %v -> %v", ck.Interface(), cv.Interface())
-		} else {
-			tgt.SetMapIndex(ck, cv)
-			functorLog("  SetMapIndex: %v -> %v", ck.Interface(), cv.Interface())
-		}
+
 	}
 
 	return
@@ -938,22 +949,22 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	functorLog("  copyDefaultHandler: %v -> %v | %v", typfmtv(&fromind), typfmtv(&toind), typfmtv(&to))
 
 	sourceType, targetType := from.Type(), to.Type()
-	if sourceType.AssignableTo(targetType) {
-		if to.CanSet() {
-			to.Set(fromind)
-		} else if toind.CanSet() {
-			toind.Set(fromind)
-		} else {
-			err = ErrCannotSet.FormatWith(fromind, typfmtv(&fromind), toind, typfmtv(&toind))
-		}
-	} else if canConvert(&fromind, toind.Type()) {
+	if canConvert(&fromind, toind.Type()) {
 		var val = fromind.Convert(toind.Type())
 		err = setTargetValue1(params, to, toind, val)
 	} else if canConvert(&from, to.Type()) && to.CanSet() {
 		var val = from.Convert(to.Type())
 		err = setTargetValue1(params, to, toind, val)
+	} else if sourceType.AssignableTo(targetType) {
+		if toind.CanSet() {
+			toind.Set(fromind)
+		} else if to.CanSet() {
+			to.Set(fromind)
+		} else {
+			err = ErrCannotSet.FormatWith(fromind, typfmtv(&fromind), toind, typfmtv(&toind))
+		}
 	} else {
-		err = ErrCannotSet.WithData(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
+		err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
 		log.Errorf("    %v", err)
 	}
 	return

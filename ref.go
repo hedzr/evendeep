@@ -185,6 +185,12 @@ func valfmt(v *reflect.Value) string {
 	return fmt.Sprintf("<%v>", v.Kind())
 }
 
+var errtyp = reflect.TypeOf((*error)(nil)).Elem()
+
+func iserrortype(typ reflect.Type) bool {
+	return typ.Implements(errtyp)
+}
+
 var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem()
 var stringType = reflect.TypeOf((*string)(nil)).Elem()
 

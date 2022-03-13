@@ -1,4 +1,4 @@
-//go:generate stringer -type=CopyMergeStrategy -linecomment
+//go: generate stringer -type=CopyMergeStrategy -linecomment
 
 package deepcopy
 

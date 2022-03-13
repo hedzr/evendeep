@@ -35,7 +35,7 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	toPtr := reflect.New(findtyp)
 	toPtrObj := toPtr.Interface()
 	functorLog("toPtrObj: %v", toPtrObj)
-	if err := DefaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
+	if err := defaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
 		result = toPtr.Elem().Interface()
 	}
 
@@ -66,16 +66,31 @@ var (
 	// DefaultCopyController provides standard deepcopy feature.
 	// copy and merge slice or map to an existed target
 	DefaultCopyController *cpController
-	// DefaultCloneController provides standard clone feature.
+
+	// defaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
-	DefaultCloneController *cpController
+	defaultCloneController *cpController
 
 	// onceCpController sync.Once
 )
 
 // New gets a new instance of DeepCopier (the underlying
-// is *cpController) different with DefaultCopyController and
-// DefaultCloneController.
+// is *cpController) different with DefaultCopyController.
+//
+// Use New:
+//
+//     src, tgt := 123, 0
+//     deepcopy.New().CopyTo(src, &tgt)
+//
+// Use package functions:
+//
+//     deepcopy.Copy(src, &tgt) // or synonym: deepcopy.DeepCopy(src, &tgt)
+//     tgt = deepcopy.MakeClone(src)
+//
+// Use DefaultCopyController:
+//
+//     deepcopy.DefaultCopyController.CopyTo(src, &tgt)
+//
 func New(opts ...Opt) DeepCopier {
 	//lazyInitRoutines()
 	var c = newDeepCopier()
@@ -118,9 +133,9 @@ func newDeepCopier() *cpController {
 		valueCopiers:               defaultValueCopiers(),
 		copyUnexportedFields:       true,
 		copyFunctionResultToTarget: true,
-		makeNewClone:               false,
 		autoExpandStruct:           true,
 		flags:                      newFlags(SliceMerge, MapMerge),
+		makeNewClone:               false,
 	}
 }
 

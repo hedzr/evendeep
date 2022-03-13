@@ -7,7 +7,6 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
 	"time"
-	"unsafe"
 )
 
 func initConverters() {
@@ -141,11 +140,12 @@ func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, targe
 			}
 			target.Set(nv)
 		} else {
-			nv := fmt.Sprintf("%v", source.Interface())
-			if c.processUnexportedField(ctx, target, reflect.ValueOf(nv)) {
+			newVal := fmt.Sprintf("%v", source.Interface())
+			nv := reflect.ValueOf(newVal)
+			if c.processUnexportedField(ctx, target, nv) {
 				return
 			}
-			target.Set(reflect.ValueOf(nv))
+			target.Set(nv)
 		}
 	} else {
 		target = reflect.Zero(target.Type())
@@ -211,8 +211,12 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
 			tgtptr.Set(ret)
-		} else {
+		} else if tgtptr.Kind() == reflect.Ptr {
 			tgtptr.Elem().Set(ret)
+		} else if tgt.CanSet() {
+			tgt.Set(ret)
+		} else {
+			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
 		}
 		functorLog("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
 	} else {
@@ -425,8 +429,10 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	} else if k == reflect.Func {
 
 		if c.processUnexportedField(ctx, tgt, src) {
-			ptr := source.Pointer()
-			target.SetPointer(unsafe.Pointer(ptr))
+			//ptr := source.Pointer()
+			//target.SetPointer(unsafe.Pointer(ptr))
+		} else {
+			tsetter.Set(src)
 		}
 		functorLog("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
 	}
@@ -494,12 +500,6 @@ func (c *fromFuncConverter) processUnexportedField(ctx *ValueConverterContext, t
 	}
 	processed = ctx.Params.processUnexportedField(target, newval)
 	return
-}
-
-var errtyp = reflect.TypeOf((*error)(nil)).Elem()
-
-func iserrortype(typ reflect.Type) bool {
-	return typ.Implements(errtyp)
 }
 
 func (c *fromFuncConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {

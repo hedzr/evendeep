@@ -7,18 +7,9 @@ import (
 )
 
 type cpController struct {
-	//keepIfSourceIsNil  bool // 源字段值为nil指针时，目标字段的值保持不变
-	//keepIfSourceIsZero bool // 源字段值为未初始化的零值时，目标字段的值保持不变 // 此条尚未实现
-	//keepIfNotEqual     bool // keep target field value if not equals to source
-	//zeroIfEquals       bool // 源和目标字段值相同时，目标字段被清除为未初始化的零值
-	//eachFieldAlways    bool
-
 	copyUnexportedFields       bool
 	copyFunctionResultToTarget bool
 	autoExpandStruct           bool
-
-	//mergeSlice bool
-	//mergeMap   bool
 
 	makeNewClone bool      // make a new clone by copying to a fresh new object
 	flags        Flags     // CopyMergeStrategies globally
@@ -48,10 +39,6 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 
 	functorLog("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
 	functorLog("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
-
-	//if !to.CanAddr() {
-	//	return errors.New("copy to value is unaddressable")
-	//}
 
 	err = c.copyTo(root, from, to)
 	return
@@ -179,58 +166,3 @@ func (c *cpController) isIgnoreName(name string) (yes bool) {
 	}
 	return
 }
-
-//func (c *cpController) ensureIsSlicePtr(to reflect.Value) reflect.Value {
-//	// sliceValue = from.Elem()
-//	// typeKindOfSliceElem = sliceValue.Type().Elem().Kind()
-//	if to.Kind() != reflect.Ptr || to.Elem().Kind() != reflect.Slice {
-//		x := reflect.New(c.indirect(to).Type())
-//		x.Elem().Set(to)
-//		return x
-//	}
-//	return to
-//}
-
-//// decode decodes a value to its underlying type, if it was wrapped by
-//// interface{} or pointer.
-////
-////    var b = 11
-////    var i interface{} = &b
-////    var v = reflect.ValueOf(&i)
-////    var n = c.decode(v)
-////    println(n.Type())    // = int
-//func (c *cpController) decode(reflectValue reflect.Value) (ret, prev reflect.Value) {
-//	return rdecode(reflectValue)
-//}
-//
-//func (c *cpController) skip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
-//	return rskip(reflectValue, kinds...)
-//}
-//
-//func (c *cpController) want(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
-//	return rwant(reflectValue, kinds...)
-//}
-
-//func (c *cpController) indirect(reflectValue reflect.Value) reflect.Value {
-//	return rindirect(reflectValue)
-//}
-
-//// indirectAnyAndPtr converts/follows Any/any/interface{} to its underlying type (with decoding)
-//func (c *cpController) indirectAnyAndPtr(reflectValue reflect.Value) reflect.Value {
-//	for k := reflectValue.Kind(); k == reflect.Interface || k == reflect.Ptr; k = reflectValue.Kind() {
-//		reflectValue = reflectValue.Elem()
-//	}
-//	return reflectValue
-//}
-//
-//// indirectAny converts/follows Any/any/interface{} to its underlying type (with decoding)
-//func (c *cpController) indirectAny(reflectValue reflect.Value) reflect.Value {
-//	for reflectValue.Kind() == reflect.Interface {
-//		reflectValue = reflectValue.Elem()
-//	}
-//	return reflectValue
-//}
-//
-//func (c *cpController) indirectType(reflectType reflect.Type) reflect.Type {
-//	return rindirectType(reflectType)
-//}
