@@ -4,7 +4,7 @@ go 1.11
 
 //replace github.com/hedzr/cmdr-base => ../00.cmdr-base
 
-replace gopkg.in/hedzr/errors.v3 => ../05.errors
+//replace gopkg.in/hedzr/errors.v3 => ../05.errors
 
 //replace github.com/hedzr/log => ../10.log
 
@@ -13,7 +13,7 @@ replace gopkg.in/hedzr/errors.v3 => ../05.errors
 //replace gitlab.com/hedzr/localtest => ../29.localtest
 
 require (
-	github.com/hedzr/log v1.5.31
+	github.com/hedzr/log v1.5.32
 	gitlab.com/gopriv/localtest v1.0.0
-	gopkg.in/hedzr/errors.v3 v3.0.11
+	gopkg.in/hedzr/errors.v3 v3.0.13
 )
