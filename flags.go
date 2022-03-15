@@ -1,5 +1,7 @@
 package deepcopy
 
+import "strings"
+
 // Flags is an efficient manager for a group of CopyMergeStrategy items.
 type Flags map[CopyMergeStrategy]bool
 
@@ -8,6 +10,25 @@ func newFlags(ftf ...CopyMergeStrategy) Flags {
 	flags := make(Flags)
 	flags.withFlags(ftf...)
 	return flags
+}
+
+func (flags Flags) String() string {
+	var sb, sbfinal strings.Builder
+
+	for fx, ok := range flags {
+		if ok {
+			if sb.Len() > 0 {
+				sb.WriteRune(',')
+			}
+			sb.WriteString(fx.String())
+		}
+	}
+
+	sbfinal.WriteRune('[')
+	sbfinal.WriteString(sb.String())
+	sbfinal.WriteRune(']')
+
+	return sbfinal.String()
 }
 
 func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
