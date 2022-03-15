@@ -15,6 +15,9 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 		return toObj
 	}
 
+	var saved = DefaultCopyController.flags
+	defer func() { DefaultCopyController.flags = saved }()
+
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
 		result = toObj
 	}
@@ -35,6 +38,10 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	toPtr := reflect.New(findtyp)
 	toPtrObj := toPtr.Interface()
 	functorLog("toPtrObj: %v", toPtrObj)
+
+	var saved = defaultCloneController.flags
+	defer func() { defaultCloneController.flags = saved }()
+
 	if err := defaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
 		result = toPtr.Elem().Interface()
 	}
@@ -64,12 +71,12 @@ type DeepCopier interface {
 
 var (
 	// DefaultCopyController provides standard deepcopy feature.
-	// copy and merge slice or map to an existed target
-	DefaultCopyController *cpController
+	// copy and merge slice or map to an existed target.
+	DefaultCopyController *cpController // by newDeepCopier()
 
 	// defaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
-	defaultCloneController *cpController
+	defaultCloneController *cpController // by newCloner()
 
 	// onceCpController sync.Once
 )
