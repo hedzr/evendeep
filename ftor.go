@@ -186,7 +186,11 @@ func copyStructInternal(
 			ec.Attach(err)
 			//n := log.CalcStackFrames(1)   // skip defer-recover frame at first
 			//log.Skip(n).Errorf("%v", err) // skip golib frames and defer-recover frame, back to the point throwing panic
-			log.Errorf("%+v", err)
+			if c.rethrow {
+				log.Panicf("%+v", err)
+			} else {
+				log.Errorf("%+v", err)
+			}
 		}
 	}()
 
@@ -614,9 +618,9 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 	}
 
 	for i := cnt; i < tl; i++ {
-		v := tgtptr.Elem().Index(i)
+		v := tgt.Index(i)
 		if !v.IsValid() {
-			tgtptr.Elem().Index(i).Set(reflect.Zero(eltyp))
+			tgt.Index(i).Set(reflect.Zero(eltyp))
 			functorLog("set [%v] to zero value", i)
 		}
 	}

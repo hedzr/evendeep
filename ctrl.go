@@ -15,6 +15,7 @@ type cpController struct {
 	flags        Flags     // CopyMergeStrategies globally
 	ignoreNames  []string  // optional ignored names with wild-matching
 	funcInputs   []log.Any // preset input args for function invoking
+	rethrow      bool      // panic when error occurs
 
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
@@ -88,9 +89,15 @@ func (c *cpController) copyToInternal(
 					"source": from,
 					"target": to,
 				})
-			n := log.CalcStackFrames(1)   // skip defer-recover frame at first
-			log.Skip(n).Errorf("%v", err) // skip go-lib frames and defer-recover frame, back to the point throwing panic
 
+			// skip go-lib frames and defer-recover frame, back to the point throwing panic
+			n := log.CalcStackFrames(1) // skip defer-recover frame at first
+
+			if c.rethrow {
+				log.Skip(n).Panicf("%+v", err)
+			} else {
+				log.Skip(n).Errorf("%+v", err)
+			}
 		}
 	}()
 

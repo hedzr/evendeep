@@ -13,7 +13,7 @@ import (
 	"unsafe"
 )
 
-func TestInvalidSourceOrTarget(t *testing.T) {
+func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
 
 	invalidObj := func() interface{} {
 		var x *deepcopy.X0
@@ -92,7 +92,7 @@ func TestCloneableSource(t *testing.T) {
 		}
 	}
 
-	t.Run("Cloneable interface", func(t *testing.T) {
+	t.Run("invoke Cloneable interface", func(t *testing.T) {
 		src := cloneable()
 		tgt := cloneable()
 		sav := *tgt
@@ -134,7 +134,7 @@ func TestDeepCopyableSource(t *testing.T) {
 		}
 	}
 
-	t.Run("DeepCopyable interface", func(t *testing.T) {
+	t.Run("invoke DeepCopyable interface", func(t *testing.T) {
 		src := copyable()
 		tgt := copyable()
 		sav := *tgt

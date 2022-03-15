@@ -331,6 +331,7 @@ func TestDeferCatchers(t *testing.T) {
 		//sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
+		c.rethrow = false
 
 		//p1 := newParams()
 		//p1 = newParams(withOwnersSimple(c, nil))
@@ -354,6 +355,7 @@ func TestDeferCatchers(t *testing.T) {
 	t.Run("defer in copyTo", func(t *testing.T) {
 
 		c := newCopier()
+		c.rethrow = false
 
 		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
@@ -372,17 +374,34 @@ func TestDeferCatchers(t *testing.T) {
 
 }
 
+//
+
+//
+
+//
+
+//
+
+//
+
+//
+
+// NewForTest creates a new copier with most common options.
 func NewForTest() DeepCopier {
 	copier := New(
 		WithValueConverters(&toDurationFromString{}),
 		WithValueCopiers(&toDurationFromString{}),
+
 		WithCloneStyle(),
 		WithCopyStyle(),
+
 		WithAutoExpandStructOpt,
 		WithCopyStrategyOpt,
 		WithMergeStrategyOpt,
+
 		WithStrategiesReset(),
 		WithStrategies(SliceMerge, MapMerge),
+
 		WithCopyUnexportedField(true),
 		WithCopyFunctionResultToTarget(true),
 		WithIgnoreNamesReset(),
@@ -392,6 +411,19 @@ func NewForTest() DeepCopier {
 	lazyInitRoutines()
 	var c1 = newCopier()
 	WithStrategies(SliceMerge, MapMerge)(c1)
+	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceMerge, MapMerge, OmitIfEmpty, Default) == false {
+		log.Panicf("except flag set with optional values but not matched, 1")
+	}
+	c1 = newDeepCopier()
+	WithStrategies(SliceCopyAppend, MapCopy)(c1)
+	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceCopyAppend, MapCopy, OmitIfEmpty, Default) == false {
+		log.Panicf("except flag set with optional values but not matched, 2")
+	}
+	c1 = newCloner()
+	WithStrategies(SliceCopy)(c1)
+	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceCopy, MapCopy, OmitIfEmpty, Default) == false {
+		log.Panicf("except flag set with optional values but not matched, 3")
+	}
 
 	copier = NewFlatDeepCopier(
 		WithStrategies(SliceMerge, MapMerge),
@@ -709,10 +741,12 @@ type X2 struct {
 	Q [3]string `copy:",slicecopy"`
 }
 
+// Attr _
 type Attr struct {
 	Attrs []string `copy:",slicemerge"`
 }
 
+// Base _
 type Base struct {
 	Name      string
 	Birthday  *time.Time
@@ -720,6 +754,7 @@ type Base struct {
 	EmployeID int64
 }
 
+// Employee2 _
 type Employee2 struct {
 	Base
 	Avatar  string
@@ -729,6 +764,7 @@ type Employee2 struct {
 	Deleted bool
 }
 
+// User _
 type User struct {
 	Name      string
 	Birthday  *time.Time

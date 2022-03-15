@@ -135,6 +135,7 @@ func newDeepCopier() *cpController {
 		copyFunctionResultToTarget: true,
 		autoExpandStruct:           true,
 		flags:                      newFlags(SliceMerge, MapMerge),
+		rethrow:                    true,
 		makeNewClone:               false,
 	}
 }
@@ -144,6 +145,7 @@ func newCopier() *cpController {
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
+		rethrow:                    true,
 		makeNewClone:               false,
 	}
 }
@@ -153,6 +155,7 @@ func newCloner() *cpController {
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
+		rethrow:                    true,
 		makeNewClone:               true,
 	}
 }

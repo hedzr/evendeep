@@ -128,3 +128,10 @@ func WithIgnoreNamesReset() Opt {
 func isWildMatch(s, pattern string) bool {
 	return dir.IsWildMatch(s, pattern)
 }
+
+// WithoutPanic disable panic() call internally
+func WithoutPanic() Opt {
+	return func(c *cpController) {
+		c.rethrow = false
+	}
+}
