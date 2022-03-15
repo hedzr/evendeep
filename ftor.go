@@ -61,8 +61,19 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 }
 
 func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if from.IsNil() {
-		return // TODO omitempty,...
+	if isNil(from) {
+		if params.isGroupedFlagOKDeeply(OmitIfNil, OmitIfEmpty) {
+			return
+		}
+		to.Set(reflect.Zero(to.Type()))
+		return
+	}
+	if isZero(from) {
+		if params.isGroupedFlagOKDeeply(OmitIfZero, OmitIfEmpty) {
+			return
+		}
+		to.Set(reflect.Zero(to.Type()))
+		return
 	}
 
 	paramsChild := newParams(withOwners(c, params, &from, &to, nil, nil))
@@ -160,8 +171,6 @@ func copyStructInternal(
 		ec          = errors.New("copyStruct errors")
 		paramsChild = newParams(withOwners(c, params, &from, &to, nil, nil))
 	)
-
-	//sourcefields = sourcefields.getallfields(f, c.autoExpandStruct)
 
 	defer ec.Defer(&err)
 	defer paramsChild.revoke()
@@ -354,13 +363,13 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 			//functorLog(" src.type: %v, len: %v, cap: %v, srcptr.canAddr: %v", src.Type().Kind(), src.Len(), src.Cap(), srcptr.CanAddr())
 			functorLog(" tgt.type: %v, tgtptr: %v .canAddr: %v", typfmtv(&tgt), typfmtv(&tgtptr), tgtptr.CanAddr())
 
-			if fn, ok := mSliceOper[flag]; ok {
+			if fn, ok := getMapOfSliceOperations()[flag]; ok {
 				if result, e := fn(c, params, from, tgt); e == nil {
 					//tgt=ns
 					//t := c.want2(to, reflect.Slice, reflect.Interface)
 					//t.Set(tgt)
 					//   //tgtptr.Elem().Set(result)
-					if tgtptr.Kind() == reflect.Slice {
+					if tk := tgtptr.Kind(); tk == reflect.Slice || tk == reflect.Interface {
 						tgtptr.Set(result)
 					} else {
 						tgtptr.Elem().Set(result)
@@ -382,194 +391,197 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 type fnSliceOperator func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error)
 type mSliceOperations map[CopyMergeStrategy]fnSliceOperator
 
-var mSliceOper = mSliceOperations{
-	// SliceCopy: target elements will be given up, and source copied to.
-	SliceCopy: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
-		sl := src.Len()
-		ns := reflect.MakeSlice(tgt.Type(), 0, 0)
-		functorLog("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
+func getMapOfSliceOperations() (mapOfSliceOperations mSliceOperations) {
+	mapOfSliceOperations = mSliceOperations{
+		// SliceCopy: target elements will be given up, and source copied to.
+		SliceCopy: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
+			sl := src.Len()
+			ns := reflect.MakeSlice(tgt.Type(), 0, 0)
+			functorLog("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
 
-		ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
-		defer ecTotal.Defer(&err)
+			ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
+			defer ecTotal.Defer(&err)
 
-		for _, ss := range []struct {
-			length int
-			source reflect.Value
-		}{
-			// {tl, tgt},
-			{sl, src},
-		} {
-			var tgtelemtype = tgt.Type().Elem()
-			for i := 0; i < ss.length; i++ {
-				var (
-					el   = ss.source.Index(i)
-					enew = el
-					ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
-				)
-				if el.Type() != tgtelemtype {
-					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
-						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
-							ec.Attach(err)
-							ecTotal.Attach(ec)
-							continue // ignore invalid element
-						}
-					} else if canConvert(&el, tgtelemtype) {
-						enew = el.Convert(tgtelemtype)
-					}
-				}
-
-				if el.Type() == tgtelemtype {
-					ns = reflect.Append(ns, el)
-				} else {
-					if canConvert(&el, tgtelemtype) {
-						ns = reflect.Append(ns, enew)
-					} else {
-						ec := errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
-						enew = reflect.New(tgtelemtype)
-						e := c.copyTo(params, el, enew)
-						if e != nil {
-							ec.Attach(e)
-							err = ec
-						} else {
-							ns = reflect.Append(ns, enew.Elem())
-						}
-					}
-				}
-				ecTotal.Attach(ec)
-			}
-		}
-		result = ns
-		return
-	},
-	// SliceCopyAppend: target and source elements will be copied to new target.
-	// The duplicated elements were kept.
-	SliceCopyAppend: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
-		sl, tl := src.Len(), tgt.Len()
-		ns := reflect.MakeSlice(tgt.Type(), 0, 0)
-		functorLog("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
-
-		ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
-		defer ecTotal.Defer(&err)
-
-		for _, ss := range []struct {
-			length int
-			source reflect.Value
-		}{
-			{tl, tgt},
-			{sl, src},
-		} {
-			tgtelemtype := tgt.Type().Elem()
-			for i := 0; i < ss.length; i++ {
-				var (
-					el   = ss.source.Index(i)
-					enew = el
-					ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
-				)
-				//elv := el.Interface()
-				if el.Type() != tgtelemtype {
-					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
-						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
-							ec.Attach(err)
-							ecTotal.Attach(ec)
-							continue // ignore invalid element
-						}
-					} else if canConvert(&el, tgtelemtype) {
-						enew = el.Convert(tgtelemtype)
-						//elv = enew.Interface()
-					}
-				}
-
-				if el.Type() == tgtelemtype {
-					ns = reflect.Append(ns, el)
-				} else {
-					if canConvert(&el, tgtelemtype) {
-						ns = reflect.Append(ns, enew)
-					} else {
-						ec := errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
-						enew = reflect.New(tgtelemtype)
-						e := c.copyTo(params, el, enew)
-						if e != nil {
-							ec.Attach(e)
-							err = ec
-						} else {
-							ns = reflect.Append(ns, enew.Elem())
-						}
-					}
-				}
-				ecTotal.Attach(ec)
-			}
-		}
-		result = ns
-		return
-	},
-	// SliceMerge: target and source elements will be copied to new target
-	// with uniqueness.
-	SliceMerge: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
-		sl, tl := src.Len(), tgt.Len()
-		ns := reflect.MakeSlice(tgt.Type(), 0, 0)
-		tgtelemtype := tgt.Type().Elem()
-		functorLog("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
-
-		ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
-		defer ecTotal.Defer(&err)
-
-		for _, ss := range []struct {
-			length int
-			source reflect.Value
-		}{
-			{tl, tgt},
-			{sl, src},
-		} {
-			for i := 0; i < ss.length; i++ {
-				//to.Set(reflect.Append(to, src.Index(i)))
-				var (
-					found bool
-					cvtok bool
-					el    = ss.source.Index(i)
-					elv   = el.Interface()
-					enew  = el
-					ec    = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
-				)
-				if el.Type() != tgtelemtype {
-					if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
-						if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
-							var ve *strconv.NumError
-							if !errors.As(err, &ve) {
+			for _, ss := range []struct {
+				length int
+				source reflect.Value
+			}{
+				// {tl, tgt},
+				{sl, src},
+			} {
+				var tgtelemtype = tgt.Type().Elem()
+				for i := 0; i < ss.length; i++ {
+					var (
+						el   = ss.source.Index(i)
+						enew = el
+						ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
+					)
+					if el.Type() != tgtelemtype {
+						if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+							if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 								ec.Attach(err)
 								ecTotal.Attach(ec)
+								continue // ignore invalid element
 							}
-							continue // ignore invalid element
+						} else if canConvert(&el, tgtelemtype) {
+							enew = el.Convert(tgtelemtype)
+						}
+					}
+
+					if el.Type() == tgtelemtype {
+						ns = reflect.Append(ns, el)
+					} else {
+						if canConvert(&el, tgtelemtype) {
+							ns = reflect.Append(ns, enew)
 						} else {
+							ec := errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
+							enew = reflect.New(tgtelemtype)
+							e := c.copyTo(params, el, enew)
+							if e != nil {
+								ec.Attach(e)
+								err = ec
+							} else {
+								ns = reflect.Append(ns, enew.Elem())
+							}
+						}
+					}
+					ecTotal.Attach(ec)
+				}
+			}
+			result = ns
+			return
+		},
+		// SliceCopyAppend: target and source elements will be copied to new target.
+		// The duplicated elements were kept.
+		SliceCopyAppend: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
+			sl, tl := src.Len(), tgt.Len()
+			ns := reflect.MakeSlice(tgt.Type(), 0, 0)
+			functorLog("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
+
+			ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
+			defer ecTotal.Defer(&err)
+
+			for _, ss := range []struct {
+				length int
+				source reflect.Value
+			}{
+				{tl, tgt},
+				{sl, src},
+			} {
+				tgtelemtype := tgt.Type().Elem()
+				for i := 0; i < ss.length; i++ {
+					var (
+						el   = ss.source.Index(i)
+						enew = el
+						ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
+					)
+					//elv := el.Interface()
+					if el.Type() != tgtelemtype {
+						if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+							if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
+								ec.Attach(err)
+								ecTotal.Attach(ec)
+								continue // ignore invalid element
+							}
+						} else if canConvert(&el, tgtelemtype) {
+							enew = el.Convert(tgtelemtype)
+							//elv = enew.Interface()
+						}
+					}
+
+					if el.Type() == tgtelemtype {
+						ns = reflect.Append(ns, el)
+					} else {
+						if canConvert(&el, tgtelemtype) {
+							ns = reflect.Append(ns, enew)
+						} else {
+							ec := errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
+							enew = reflect.New(tgtelemtype)
+							e := c.copyTo(params, el, enew)
+							if e != nil {
+								ec.Attach(e)
+								err = ec
+							} else {
+								ns = reflect.Append(ns, enew.Elem())
+							}
+						}
+					}
+					ecTotal.Attach(ec)
+				}
+			}
+			result = ns
+			return
+		},
+		// SliceMerge: target and source elements will be copied to new target
+		// with uniqueness.
+		SliceMerge: func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
+			sl, tl := src.Len(), tgt.Len()
+			ns := reflect.MakeSlice(tgt.Type(), 0, 0)
+			tgtelemtype := tgt.Type().Elem()
+			functorLog("tgt slice: %v, el: %v", tgt.Type(), tgtelemtype)
+
+			ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
+			defer ecTotal.Defer(&err)
+
+			for _, ss := range []struct {
+				length int
+				source reflect.Value
+			}{
+				{tl, tgt},
+				{sl, src},
+			} {
+				for i := 0; i < ss.length; i++ {
+					//to.Set(reflect.Append(to, src.Index(i)))
+					var (
+						found bool
+						cvtok bool
+						el    = ss.source.Index(i)
+						elv   = el.Interface()
+						enew  = el
+						ec    = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
+					)
+					if el.Type() != tgtelemtype {
+						if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+							if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
+								var ve *strconv.NumError
+								if !errors.As(err, &ve) {
+									ec.Attach(err)
+									ecTotal.Attach(ec)
+								}
+								continue // ignore invalid element
+							} else {
+								cvtok, elv = true, enew.Interface()
+							}
+						} else if canConvert(&el, tgtelemtype) {
+							enew = el.Convert(tgtelemtype)
 							cvtok, elv = true, enew.Interface()
 						}
-					} else if canConvert(&el, tgtelemtype) {
-						enew = el.Convert(tgtelemtype)
-						cvtok, elv = true, enew.Interface()
 					}
-				}
 
-				found = findInSlice(ns, elv, i)
+					found = findInSlice(ns, elv, i)
 
-				if !found {
-					if cvtok || el.Type() == tgtelemtype {
-						ns = reflect.Append(ns, enew)
-					} else {
-						enew = reflect.New(tgtelemtype)
-						e := c.copyTo(params, el, enew)
-						if e != nil {
-							ec.Attach(e)
-							err = ec
+					if !found {
+						if cvtok || el.Type() == tgtelemtype {
+							ns = reflect.Append(ns, enew)
 						} else {
-							ns = reflect.Append(ns, enew.Elem())
+							enew = reflect.New(tgtelemtype)
+							e := c.copyTo(params, el, enew)
+							if e != nil {
+								ec.Attach(e)
+								err = ec
+							} else {
+								ns = reflect.Append(ns, enew.Elem())
+							}
 						}
 					}
+					ecTotal.Attach(ec)
 				}
-				ecTotal.Attach(ec)
 			}
-		}
-		result = ns
-		return
-	},
+			result = ns
+			return
+		},
+	}
+	return
 }
 
 func copyArray(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -808,17 +820,6 @@ func copyUnsafePointer(c *cpController, params *Params, from, to reflect.Value) 
 		functorLog("    copy unsafe pointer not support: %v -> %v", from.Kind(), to.Kind())
 	}
 	return
-
-	////src := c.indirect(from)
-	////rv := reflect.NewAt(src.Type(), unsafe.Pointer(from.UnsafeAddr())).Elem()
-	////to.SetPointer(unsafe.Pointer(rv.UnsafeAddr()))
-	//if to.Kind() == reflect.UnsafePointer {
-	//	ptrTo := ptrOf(to)
-	//	ptrFrom := ptrOf(from)
-	//	ptrTo.SetPointer(unsafe.Pointer(ptrFrom.UnsafeAddr()))
-	//	return
-	//}
-	//return errors.New("target type is %v, want reflect.UnsafePointer", to.Kind())
 }
 
 func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -892,6 +893,106 @@ func copy2(c *cpController, params *Params, from, to reflect.Value) (err error) 
 //	to.Set(tmp)
 //}
 
+func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value) (err error) {
+	if c != nil {
+		sourceType, targetType := from.Type(), to.Type()
+		if cvt, ctx := c.valueCopiers.findCopiers(params, sourceType, targetType); cvt != nil {
+			err = cvt.CopyTo(ctx, from, to)
+			return
+		}
+	}
+
+	sourceType, targetType := from.Type(), to.Type()
+	fromind, toind := rdecodesimple(from), rdecodesimple(to)
+	functorLog("  copyDefaultHandler: %v -> %v | %v", typfmtv(&fromind), typfmtv(&toind), typfmtv(&to))
+
+	////////////////// source is primitive types but target isn't its
+	var processed bool
+	processed, err = copyPrimitiveToComposite(c, params, from, to, toind.Type())
+	if processed || err != nil {
+		return
+	}
+
+	if !toind.IsValid() && to.Kind() == reflect.Ptr {
+		tgt := reflect.New(targetType.Elem())
+		toind = rindirect(tgt)
+		defer func() {
+			if err == nil {
+				to.Set(tgt)
+			}
+		}()
+	}
+
+	// try primitive -> primitive at first
+	if canConvert(&fromind, toind.Type()) {
+		var val = fromind.Convert(toind.Type())
+		err = setTargetValue1(params, to, toind, val)
+		return
+	}
+	if canConvert(&from, to.Type()) && to.CanSet() {
+		var val = from.Convert(to.Type())
+		err = setTargetValue1(params, to, toind, val)
+		return
+	}
+	if sourceType.AssignableTo(targetType) {
+		if toind.CanSet() {
+			toind.Set(fromind)
+		} else if to.CanSet() {
+			to.Set(fromind)
+		} else {
+			err = ErrCannotSet.FormatWith(fromind, typfmtv(&fromind), toind, typfmtv(&toind))
+		}
+		return
+	}
+
+	err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
+	log.Errorf("    %v", err)
+	return
+}
+
+func copyPrimitiveToComposite(c *cpController, params *Params, from, to reflect.Value, desiredType reflect.Type) (processed bool, err error) {
+
+	switch tk := desiredType.Kind(); tk {
+	case reflect.Slice:
+		functorLog("  copyPrimitiveToComposite: %v -> %v | %v", typfmtv(&from), typfmt(desiredType), typfmtv(&to))
+
+		eltyp := desiredType.Elem()
+		elnew := reflect.New(eltyp)
+		if err = copyDefaultHandler(c, params, from, elnew); err != nil {
+			return
+		}
+
+		elnewelem := elnew.Elem()
+		functorLog("    source converted: %v (%v)", valfmt(&elnewelem), typfmtv(&elnewelem))
+
+		slice := reflect.MakeSlice(reflect.SliceOf(eltyp), 1, 1)
+		slice.Index(0).Set(elnewelem)
+		functorLog("    source converted: %v (%v)", valfmt(&slice), typfmtv(&slice))
+
+		err = copySlice(c, params, slice, to)
+		processed = true
+
+	case reflect.Map:
+	case reflect.Struct:
+	case reflect.Func:
+	}
+
+	return
+}
+
+func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error) {
+	if err = setTargetValue2(params, toind, newval); err == nil {
+		return
+	}
+	if to != toind {
+		if err = setTargetValue2(params, to, newval); err == nil {
+			return
+		}
+	}
+	err = ErrUnknownState
+	return
+}
+
 func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 
 	k := reflect.Invalid
@@ -912,64 +1013,5 @@ func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 	}
 
 	err = ErrUnknownState
-	return
-}
-
-func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error) {
-	if err = setTargetValue2(params, toind, newval); err == nil {
-		return
-	}
-	if to != toind {
-		if err = setTargetValue2(params, to, newval); err == nil {
-			return
-		}
-	}
-	err = ErrUnknownState
-	return
-}
-
-func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if c != nil {
-		sourceType, targetType := from.Type(), to.Type()
-		if cvt, ctx := c.valueCopiers.findCopiers(params, sourceType, targetType); cvt != nil {
-			err = cvt.CopyTo(ctx, from, to)
-			return
-		}
-	}
-
-	fromind := rdecodesimple(from)
-	toind := rdecodesimple(to)
-
-	if !toind.IsValid() && to.Kind() == reflect.Ptr {
-		tgt := reflect.New(to.Type().Elem())
-		toind = rindirect(tgt)
-		defer func() {
-			if err == nil {
-				to.Set(tgt)
-			}
-		}()
-	}
-
-	functorLog("  copyDefaultHandler: %v -> %v | %v", typfmtv(&fromind), typfmtv(&toind), typfmtv(&to))
-
-	sourceType, targetType := from.Type(), to.Type()
-	if canConvert(&fromind, toind.Type()) {
-		var val = fromind.Convert(toind.Type())
-		err = setTargetValue1(params, to, toind, val)
-	} else if canConvert(&from, to.Type()) && to.CanSet() {
-		var val = from.Convert(to.Type())
-		err = setTargetValue1(params, to, toind, val)
-	} else if sourceType.AssignableTo(targetType) {
-		if toind.CanSet() {
-			toind.Set(fromind)
-		} else if to.CanSet() {
-			to.Set(fromind)
-		} else {
-			err = ErrCannotSet.FormatWith(fromind, typfmtv(&fromind), toind, typfmtv(&toind))
-		}
-	} else {
-		err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
-		log.Errorf("    %v", err)
-	}
 	return
 }

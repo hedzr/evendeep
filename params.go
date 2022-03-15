@@ -307,23 +307,20 @@ func (params *Params) isFlagExists(ftf CopyMergeStrategy) (ret bool) {
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
-func (params *Params) isGroupedFlagOK(ftf CopyMergeStrategy) (ret bool) {
+func (params *Params) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ret bool) {
 	if params == nil {
-		return newFlags().isGroupedFlagOK(ftf)
+		return newFlags().isGroupedFlagOK(ftf...)
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isGroupedFlagOK(ftf)
+		ret = params.controller.flags.isGroupedFlagOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isGroupedFlagOK(ftf)
+		ret = params.flags.isGroupedFlagOK(ftf...)
 	}
-	//if params == nil /* || params.fieldTags == nil */ {
-	//	return ret || newFlags().isGroupedFlagOK(ftf)
-	//}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
 		return false
 	}
-	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf)
+	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf...)
 }
 
 // isGroupedFlagOKDeeply tests if the given flag is exists or valid.
@@ -334,20 +331,20 @@ func (params *Params) isGroupedFlagOK(ftf CopyMergeStrategy) (ret bool) {
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
-func (params *Params) isGroupedFlagOKDeeply(ftf CopyMergeStrategy) (ret bool) {
+func (params *Params) isGroupedFlagOKDeeply(ftf ...CopyMergeStrategy) (ret bool) {
 	if params == nil {
-		return newFlags().isGroupedFlagOK(ftf)
+		return newFlags().isGroupedFlagOK(ftf...)
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isGroupedFlagOK(ftf)
+		ret = params.controller.flags.isGroupedFlagOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isGroupedFlagOK(ftf)
+		ret = params.flags.isGroupedFlagOK(ftf...)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return ret || newFlags().isGroupedFlagOK(ftf)
+		return ret || newFlags().isGroupedFlagOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf)
+	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf...)
 }
 
 func (params *Params) isAnyFlagsOK(ftf ...CopyMergeStrategy) (ret bool) {

@@ -14,15 +14,17 @@ func initConverters() {
 	defValueConverters = ValueConverters{
 		&fromStringConverter{},
 		&toStringConverter{},
-		&fromBytesBufferConverter{},
+
 		&toDurationFromString{},
+		&fromBytesBufferConverter{},
 		&fromFuncConverter{},
 	}
 	defValueCopiers = ValueCopiers{
 		&fromStringConverter{},
 		&toStringConverter{},
-		&fromBytesBufferConverter{},
+
 		&toDurationFromString{},
+		&fromBytesBufferConverter{},
 		&fromFuncConverter{},
 	}
 }
@@ -100,6 +102,7 @@ type ValueConverterContext struct {
 	*Params
 }
 
+// IsCopyFunctionResultToTarget does SAFELY test if copyFunctionResultToTarget is true or not.
 func (ctx *ValueConverterContext) IsCopyFunctionResultToTarget() bool {
 	if ctx == nil || ctx.Params == nil || ctx.controller == nil {
 		return false
@@ -368,8 +371,19 @@ func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.
 
 //
 
-type toDurationFromString struct {
-}
+type fromTimeFromString struct{}
+
+type toTimeFromString struct{}
+
+type fromDurationFromString struct{}
+
+//
+
+//
+
+//
+
+type toDurationFromString struct{}
 
 func (c *toDurationFromString) fallback(target reflect.Value) (err error) {
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
@@ -404,6 +418,12 @@ func (c *toDurationFromString) Match(params *Params, source, target reflect.Type
 	return
 }
 
+//
+
+//
+
+//
+
 type fromFuncConverter struct{}
 
 func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
@@ -428,10 +448,7 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 
 	} else if k == reflect.Func {
 
-		if c.processUnexportedField(ctx, tgt, src) {
-			//ptr := source.Pointer()
-			//target.SetPointer(unsafe.Pointer(ptr))
-		} else {
+		if !c.processUnexportedField(ctx, tgt, src) {
 			tsetter.Set(src)
 		}
 		functorLog("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())

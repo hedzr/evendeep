@@ -57,6 +57,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 				}
 			}
 
+			// source is primitive type, or in a reserved package such as time, os, ...
 			functorLog(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
 			err = copyDefaultHandler(c, params, from, to)
 			return
@@ -71,6 +72,10 @@ func (c *cpController) copyToInternal(
 
 	// Return is from value is invalid
 	if !from.IsValid() {
+		if params.isGroupedFlagOKDeeply(OmitIfEmpty, OmitIfNil, OmitIfZero) {
+			return
+		}
+		// todo set target to zero
 		return
 	}
 

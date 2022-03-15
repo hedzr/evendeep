@@ -513,7 +513,7 @@ func RunTestCasesWith(tc *TestCase) (desc string, subtest func(t *testing.T)) {
 // RunTestCases _
 func RunTestCases(t *testing.T, cases ...TestCase) {
 	for ix, tc := range cases {
-		t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
 
 			c := NewFlatDeepCopier(tc.opts...)
 
@@ -526,11 +526,15 @@ func RunTestCases(t *testing.T, cases ...TestCase) {
 
 			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
+				log.Printf("%3d. test passed", ix)
 				return
 			}
 
+			log.Errorf("%3d. Error: %v", ix, err)
 			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
-		})
+		}) {
+			break
+		}
 
 	}
 }
@@ -538,7 +542,7 @@ func RunTestCases(t *testing.T, cases ...TestCase) {
 // RunTestCasesWithOpts _
 func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 	for ix, tc := range cases {
-		t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
 
 			c := NewFlatDeepCopier(append(opts, tc.opts...)...)
 
@@ -551,11 +555,15 @@ func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 
 			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
+				log.Printf("%3d. test passed", ix)
 				return
 			}
 
+			log.Errorf("%3d. Error: %v", ix, err)
 			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
-		})
+		}) {
+			break
+		}
 
 	}
 }
@@ -566,9 +574,8 @@ func runtestcasesverifier(t *testing.T) Verifier {
 		aa, _ := rdecode(a)
 		bb, _ := rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
-		t.Logf("got.type: %v, expect.type: %v", aa.Type(), bb.Type())
-		t.Logf("\nexpect: %+v (%v)\n   got: %+v (%v)",
-			bv, typfmtv(&bb), av, typfmtv(&aa))
+		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)",
+			bv, typfmtv(&bb), aa.Type(), av, typfmtv(&aa), bb.Type())
 
 		diff, equal := messagediff.PrettyDiff(expect, dst)
 		if !equal {

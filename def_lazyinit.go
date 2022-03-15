@@ -11,58 +11,59 @@ var otherLazyRoutines []func()
 
 type copyfn func(c *cpController, params *Params, from, to reflect.Value) (err error)
 
-func lazyInitRoutines() { onceLazyInitRoutines.Do(lazyInitRoutinesOnceInternal) }
-func lazyInitRoutinesOnceInternal() {
-	copyToRoutines = map[reflect.Kind]copyfn{
-		reflect.Ptr:           copyPointer,
-		reflect.Uintptr:       copyUintptr,
-		reflect.UnsafePointer: copyUnsafePointer,
-		reflect.Chan:          copyChan,
-		reflect.Interface:     copyInterface,
-		reflect.Struct:        copyStruct,
-		reflect.Slice:         copySlice,
-		reflect.Array:         copyArray,
-		reflect.Map:           copyMap,
-		//reflect.Func:          copyFunc,
+func lazyInitRoutines() {
+	onceLazyInitRoutines.Do(func() {
+		copyToRoutines = map[reflect.Kind]copyfn{
+			reflect.Ptr:           copyPointer,
+			reflect.Uintptr:       copyUintptr,
+			reflect.UnsafePointer: copyUnsafePointer,
+			reflect.Chan:          copyChan,
+			reflect.Interface:     copyInterface,
+			reflect.Struct:        copyStruct,
+			reflect.Slice:         copySlice,
+			reflect.Array:         copyArray,
+			reflect.Map:           copyMap,
+			//reflect.Func:          copyFunc,
 
-		//Invalid Kind = iota
+			//Invalid Kind = iota
 
-		//Bool
-		//Int
-		//Int8
-		//Int16
-		//Int32
-		//Int64
-		//Uint
-		//Uint8
-		//Uint16
-		//Uint32
-		//Uint64
-		//Uintptr
-		//Float32
-		//Float64
-		//Complex64
-		//Complex128
+			//Bool
+			//Int
+			//Int8
+			//Int16
+			//Int32
+			//Int64
+			//Uint
+			//Uint8
+			//Uint16
+			//Uint32
+			//Uint64
+			//Uintptr
+			//Float32
+			//Float64
+			//Complex64
+			//Complex128
 
-		//Array
-		//Chan
-		//Func
-		//Interface
-		//Map
-		//Ptr
-		//Slice
-		//Struct
+			//Array
+			//Chan
+			//Func
+			//Interface
+			//Map
+			//Ptr
+			//Slice
+			//Struct
 
-		//String
+			//String
 
-		//UnsafePointer
-	}
-
-	for _, fn := range otherLazyRoutines {
-		if fn != nil {
-			fn()
+			//UnsafePointer
 		}
-	}
+
+		for _, fn := range otherLazyRoutines {
+			if fn != nil {
+				fn()
+			}
+		}
+	})
 }
 
 func registerInitRoutines(fn func())     { otherRoutines = append(otherRoutines, fn) }

@@ -296,6 +296,121 @@ func TestTypeConvert(t *testing.T) {
 			},
 		),
 	)
+}
+
+func TestTypeConvert2Slice(t *testing.T) {
+
+	var i9 = 9
+	var i5 = 5
+	//var ui6 = uint(6)
+	//var i64 int64 = 10
+	//var f64 float64 = 9.1
+
+	// slice
+
+	var si64 = []int64{9}
+	var si = []int{9}
+	var sui = []uint{9}
+	var sf64 = []float64{9.1}
+	var sc128 = []complex128{9.1}
+
+	opts := []deepcopy.Opt{
+		deepcopy.WithStrategies(deepcopy.SliceMerge),
+	}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"int64 -> []uint",
+			int64(8), sui, []uint{9, 8},
+			opts,
+			nil,
+		),
+
+		deepcopy.NewTestCase(
+			"[]int -> []int64",
+			[]int{8}, &si64, &[]int64{9, 8},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int -> []int64",
+			7, &si64, &[]int64{9, 8, 7},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"[]int64 -> []int",
+			[]int64{8}, &si, &[]int{9, 8},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int64 -> []int",
+			int64(7), &si, &[]int{9, 8, 7},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"[]int64 -> []int (truncate the overflowed input)",
+			[]int64{math.MaxInt64}, &si, &[]int{9, 8, 7, deepcopy.MaxInt},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int64 -> []uint",
+			int64(8), &sui, &[]uint{9, 8},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"float32 -> []float64",
+			float32(8.1), &sf64, &[]float64{9.1, 8.100000381469727},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"[]float32 -> []float64",
+			[]float32{8.1}, &sf64, &[]float64{9.1, 8.100000381469727},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"complex64 -> []complex128",
+			complex64(8.1+3i), &sc128, &[]complex128{9.1, 8.100000381469727 + 3i},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"[]complex64 -> []complex128",
+			[]complex64{8.1 + 3i}, &sc128, &[]complex128{9.1 + 0i, 8.100000381469727 + 3i},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"complex -> int - ErrCannotConvertTo test",
+			complex64(8.1+3i), &i5, int(8),
+			opts,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if errors.IsDescended(deepcopy.ErrCannotConvertTo, e) {
+					return
+				}
+				return e
+			},
+		),
+		deepcopy.NewTestCase(
+			"int -> intptr",
+			8, &i9, 8,
+			opts,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if d, ok := dst.(*int); ok && e == nil {
+					if *d == src {
+						return
+					}
+				}
+				return errors.DataLoss
+			},
+		),
+	)
 
 }
 

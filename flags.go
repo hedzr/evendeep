@@ -95,44 +95,53 @@ func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrat
 	return
 }
 
-// isGroupedFlagOK _
-func (flags Flags) isGroupedFlagOK(ftf CopyMergeStrategy) (ok bool) {
-	if flags == nil {
-		return
-	}
-
-	if _, ok = flags[ftf]; ok {
-		return
-	}
-
-	//var vm map[CopyMergeStrategy]struct{}
-	if vm, ok1 := mKnownFieldTagFlagsConflict[ftf]; ok1 {
-		// find the default one (named as `leader` from a radio-group of flags
-		leader := InvalidStrategy
-		if _, ok1 = mKnownFieldTagFlagsConflictLeaders[ftf]; ok1 {
-			leader = ftf
-		}
-
-		for f := range vm {
-			if _, ok1 = mKnownFieldTagFlagsConflictLeaders[f]; ok1 {
-				leader = f
+// isGroupedFlagOK test if any of ftf is exists.
+//
+// If one of ftf is the leader (a.k.a. the first one) of a toggleable
+// group (such as map-copy and map-merge), and, any of the group is
+// not exists (either map-copy and map-merge), isGroupedFlagOK will
+// report true just like map-copy was in Flags.
+func (flags Flags) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ok bool) {
+	if flags != nil {
+		for _, ff := range ftf {
+			if _, ok = flags[ff]; ok {
+				return
 			}
 		}
-		var found, val bool
-		for f := range vm {
-			if val, found = flags[f]; found && val {
-				break
+	}
+
+	for _, ff := range ftf {
+		if vm, ok1 := mKnownFieldTagFlagsConflict[ff]; ok1 {
+			// find the default one (named as `leader` from a radio-group of flags
+			leader := InvalidStrategy
+			if _, ok1 = mKnownFieldTagFlagsConflictLeaders[ff]; ok1 {
+				leader = ff
 			}
-		}
-		if !found {
-			// while the testing `ftf` is a leader in certain a
-			// radio-group, and any of the flags of the group are not
-			// in flags map set, that assume the leader is exists.
-			//
-			// For example, when checking ftf = SliceCopy and any one
-			// of SliceXXX not in flags, though the test is ok.
-			if ftf == leader {
-				ok = true
+			for f := range vm {
+				if _, ok1 = mKnownFieldTagFlagsConflictLeaders[f]; ok1 {
+					leader = f
+				}
+			}
+
+			var found, val bool
+			if flags != nil {
+				for f := range vm {
+					if val, found = flags[f]; found && val {
+						break
+					}
+				}
+			}
+
+			if !found {
+				// while the testing `ff` is a leader in certain a
+				// radio-group, and any of the flags of the group are not
+				// in flags map set, that assume the leader is exists.
+				//
+				// For example, when checking ftf = SliceCopy and any one
+				// of SliceXXX not in flags, though the test is ok.
+				if ff == leader {
+					ok = true
+				}
 			}
 		}
 	}
