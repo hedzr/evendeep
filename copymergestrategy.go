@@ -75,6 +75,8 @@ const (
 	// MaxStrategy is a mark to indicate the max value of all available CopyMergeStrategies
 	MaxStrategy
 
+	// reserved:
+
 	ftf100 CopyMergeStrategy = iota + 100
 	ftf110 CopyMergeStrategy = iota + 110
 	ftf120 CopyMergeStrategy = iota + 120
@@ -85,5 +87,20 @@ const (
 	ftf170 CopyMergeStrategy = iota + 170
 
 	// InvalidStrategy for algorithm purpose
-	InvalidStrategy
+	InvalidStrategy CopyMergeStrategy = CopyMergeStrategy(MaxInt)
+)
+
+// Limit values of implementation-specific int type.
+const (
+
+	// https://stackoverflow.com/questions/6878590/the-maximum-value-for-an-int-type-in-go
+	// https://github.com/golang/go/blob/master/src/math/const.go#L39
+	//intSize = 32 << (^uint(0) >> 63) // 32 or 64
+	//MaxInt  = 1<<(intSize-1) - 1
+	//MinInt  = -1 << (intSize - 1)
+
+	// MaxInt = int.max (2^63-1 or 2^31-1 for CPU Bit Size = 32bits)
+	MaxInt = int(^uint(0) >> 1)
+	// MinInt = int.max (-2^63)
+	MinInt = -MaxInt - 1
 )
