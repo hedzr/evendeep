@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/hedzr/deepcopy"
 	"github.com/hedzr/log"
+	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"reflect"
 	"unsafe"
 )
@@ -36,6 +38,20 @@ func main() {
 		O: a,
 		Q: a3,
 	}
+	// log.Printf("expect.Q: %v", expect1.Q)
+
+	log.Infof("--------------- test 1")
+	tgt := X2{N: nn[1:3]}
+	log.Printf("   src: %+v", x1)
+	log.Printf("   tgt: %+v", tgt)
+	deepcopy.Copy(x1, &tgt, deepcopy.WithStrategiesReset())
+	if reflect.DeepEqual(tgt, *expect1) == false {
+		if delta, ok := messagediff.PrettyDiff(*expect1, x1); !ok {
+			log.Errorf("want %v but got %v", expect1, tgt)
+			log.Panicf("The diffs:\n%v", delta)
+		}
+	}
+
 	x2 := X2{N: []int{23, 8}}
 	expect2 := &X2{
 		A: uintptr(unsafe.Pointer(&x0)),
@@ -46,21 +62,32 @@ func main() {
 		O: a,
 		Q: a3,
 	}
-	log.Printf("expect.Q: %v", expect1.Q)
 
+	//log.Infof("--------------- test 2")
+	//log.Printf("   src: %+v", x1)
+	//log.Printf("   tgt: %+v", x2)
+	//deepcopy.Copy(x1, &x2, deepcopy.WithStrategies(deepcopy.SliceMerge))
+	//if reflect.DeepEqual(*expect2, x2) == false {
+	//	if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
+	//		log.Errorf("want: %v", *expect2)
+	//		log.Errorf(" got: %v", x2)
+	//		fmt.Println(delta)
+	//		panic("unmatched")
+	//	}
+	//}
+
+	log.Infof("--------------- test 3")
+	x2 = X2{N: []int{23, 8}}
 	log.Printf("   src: %+v", x1)
-	log.Printf("   tgt: %+v", X2{N: nn[1:3]})
-
-	tgt := X2{N: nn[1:3]}
-
-	deepcopy.Copy(x1, &tgt, deepcopy.WithStrategiesReset())
-	if reflect.DeepEqual(tgt, *expect1) == false {
-		log.Panicf("want %v but got %v", expect1, tgt)
-	}
-
-	deepcopy.Copy(x1, &x2) // , deepcopy.WithStrategies(deepcopy.SliceMerge))
-	if reflect.DeepEqual(x2, *expect2) == false {
-		log.Panicf("want %v but got %v", expect2, x2)
+	log.Printf("   tgt: %+v", x2)
+	deepcopy.Copy(x1, &x2)
+	if reflect.DeepEqual(*expect2, x2) == false {
+		if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
+			log.Errorf("want: %v", *expect2)
+			log.Errorf(" got: %v", x2)
+			fmt.Println(delta)
+			panic("unmatched")
+		}
 	}
 
 }

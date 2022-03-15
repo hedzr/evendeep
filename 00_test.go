@@ -574,13 +574,12 @@ func runtestcasesverifier(t *testing.T) Verifier {
 		if !equal {
 			fmt.Println(diff)
 			err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
-		}
-
-		if reflect.DeepEqual(av, bv) {
 			return
 		}
 
-		err = errors.New("reflect.DeepEqual test its not equal")
+		if !reflect.DeepEqual(av, bv) {
+			err = errors.New("reflect.DeepEqual identified its not equal")
+		}
 		return
 	}
 }

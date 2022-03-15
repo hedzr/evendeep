@@ -38,6 +38,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
+	functorLog("    flags: %v", c.flags)
 	functorLog("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
 	functorLog("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
 
