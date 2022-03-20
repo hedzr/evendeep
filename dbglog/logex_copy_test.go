@@ -1,4 +1,4 @@
-package deepcopy_test
+package dbglog_test
 
 // a little copy from logex, so we can avoid importing it
 
@@ -27,8 +27,8 @@ func (tl logCapturer) Release() {
 	log.SetOutput(tl.origOut)
 }
 
-// newCaptureLog redirects logrus output to testing.Log
-func newCaptureLog(tb testing.TB) LogCapturer {
+// NewCaptureLog redirects logrus output to testing.Log
+func NewCaptureLog(tb testing.TB) LogCapturer {
 	lc := logCapturer{TB: tb, origOut: log.GetOutput()}
 	if !testing.Verbose() {
 		log.SetOutput(lc)

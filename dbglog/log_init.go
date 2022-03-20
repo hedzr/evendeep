@@ -1,4 +1,4 @@
-package deepcopy
+package dbglog
 
 import "log"
 

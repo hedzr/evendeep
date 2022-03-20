@@ -1,7 +1,7 @@
 //go:build delve || verbose
 // +build delve verbose
 
-package deepcopy
+package dbglog
 
 import (
 	"github.com/hedzr/log"
@@ -18,5 +18,5 @@ func TestFLog(t *testing.T) {
 	log.Debugf("hello debug")
 	log.Tracef("hello trace")
 
-	functorLog("but again")
+	Log("but again")
 }
