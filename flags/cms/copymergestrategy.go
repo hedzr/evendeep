@@ -1,6 +1,6 @@
 //go: generate stringer -type=CopyMergeStrategy -linecomment
 
-package deepcopy
+package cms
 
 // CopyMergeStrategy _
 type CopyMergeStrategy int
@@ -21,24 +21,34 @@ func (i CopyMergeStrategy) Parse(s string) CopyMergeStrategy {
 const (
 	// Default the public fields will be copied
 	Default CopyMergeStrategy = iota // std
-	// Ignore the ignored fields will be ignored in any scene
+	// Ignore the ignored fields will be ignored in all scenes
 	Ignore // -
-	// Must the must-be-copied fields will be always copied to the target
+	// Must the must-be-copied fields will always be copied to the target
 	Must // must
+
 	// ClearIfEq the target field will be reset/clear to zero if it equals to the source
 	ClearIfEq CopyMergeStrategy = iota + 10 // cleareq
 	// OmitIfNotEq the source field will not be copied if it does not equal to the target
 	OmitIfNotEq // omitneq
+
+	// NoOmit never omit any source fields
+	NoOmit //noomit
 	// OmitIfEmpty is both OmitIfSourceNil + OmitIfSourceZero
 	OmitIfEmpty // omitempty
 	// OmitIfNil the target field will be kept if source is nil
 	OmitIfNil // omitnil
 	// OmitIfZero the target field will be kept if source is zero
 	OmitIfZero // omitzero
+
+	// NoOmitTarget never omit any target fields
+	NoOmitTarget //noomittgt
+	// OmitIfTargetEmpty is both OmitIfTargetNil + OmitIfTargetZero
+	OmitIfTargetEmpty // omitemptytgt
 	// OmitIfTargetNil keeps the target field if it is nil
 	OmitIfTargetNil // omitniltgt
 	// OmitIfTargetZero keeps the target field if it is zero
 	OmitIfTargetZero // omitzerotgt
+
 	// SliceCopy the source slice will be set or duplicated to the target.
 	// the target slice will be lost.
 	SliceCopy CopyMergeStrategy = iota + 50 // slicecopy
@@ -52,6 +62,7 @@ const (
 	//
 	// The uniqueness checking is only applied to each source slice items.
 	SliceMerge // slicemerge
+
 	// MapCopy do copy source map to the target
 	MapCopy CopyMergeStrategy = iota + 70 // mapcopy
 	// MapMerge try to merge each fields inside source map recursively,

@@ -1,14 +1,23 @@
-package deepcopy
+package flags
 
-import "strings"
+import (
+	"github.com/hedzr/deepcopy/flags/cms"
+	"reflect"
+	"strings"
+)
 
 // Flags is an efficient manager for a group of CopyMergeStrategy items.
-type Flags map[CopyMergeStrategy]bool
+type Flags map[cms.CopyMergeStrategy]bool
 
-func newFlags(ftf ...CopyMergeStrategy) Flags {
+// New creates a new instance for Flags
+func New(ftf ...cms.CopyMergeStrategy) Flags {
+	return newFlags(ftf...)
+}
+
+func newFlags(ftf ...cms.CopyMergeStrategy) Flags {
 	lazyInitFieldTagsFlags()
 	flags := make(Flags)
-	flags.withFlags(ftf...)
+	flags.WithFlags(ftf...)
 	return flags
 }
 
@@ -31,7 +40,7 @@ func (flags Flags) String() string {
 	return sbfinal.String()
 }
 
-func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
+func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
 	for _, f := range flg {
 		flags[f] = true
 		if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
@@ -47,16 +56,16 @@ func (flags Flags) withFlags(flg ...CopyMergeStrategy) Flags {
 	return flags
 }
 
-func (flags Flags) isFlagOK(ftf CopyMergeStrategy) bool {
+func (flags Flags) IsFlagOK(ftf cms.CopyMergeStrategy) bool {
 	if flags != nil {
 		return flags[ftf]
 	}
 	return false
 }
 
-func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrategy) {
+func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMergeStrategy) {
 	var ok, val bool
-	result = InvalidStrategy
+	result = cms.InvalidStrategy
 
 	if val, ok = flags[ftf]; ok && val {
 		result = ftf
@@ -76,7 +85,7 @@ func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrat
 			result = ftf
 		}
 	} else {
-		leader := InvalidStrategy
+		leader := cms.InvalidStrategy
 		found := false
 		for f := range mKnownFieldTagFlagsConflict[ftf] {
 			if _, ok = mKnownFieldTagFlagsConflictLeaders[f]; ok {
@@ -95,13 +104,26 @@ func (flags Flags) testGroupedFlag(ftf CopyMergeStrategy) (result CopyMergeStrat
 	return
 }
 
-// isGroupedFlagOK test if any of ftf is exists.
+func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
+	leader = cms.InvalidStrategy
+	if _, ok1 := mKnownFieldTagFlagsConflictLeaders[ff]; ok1 {
+		leader = ff
+	}
+	for f := range vm {
+		if _, ok1 := mKnownFieldTagFlagsConflictLeaders[f]; ok1 {
+			leader = f
+		}
+	}
+	return
+}
+
+// IsGroupedFlagOK test if any of ftf is exists.
 //
 // If one of ftf is the leader (a.k.a. the first one) of a toggleable
 // group (such as map-copy and map-merge), and, any of the group is
-// not exists (either map-copy and map-merge), isGroupedFlagOK will
+// not exists (either map-copy and map-merge), IsGroupedFlagOK will
 // report true just like map-copy was in Flags.
-func (flags Flags) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ok bool) {
+func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) {
 	if flags != nil {
 		for _, ff := range ftf {
 			if _, ok = flags[ff]; ok {
@@ -113,22 +135,12 @@ func (flags Flags) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ok bool) {
 	for _, ff := range ftf {
 		if vm, ok1 := mKnownFieldTagFlagsConflict[ff]; ok1 {
 			// find the default one (named as `leader` from a radio-group of flags
-			leader := InvalidStrategy
-			if _, ok1 = mKnownFieldTagFlagsConflictLeaders[ff]; ok1 {
-				leader = ff
-			}
-			for f := range vm {
-				if _, ok1 = mKnownFieldTagFlagsConflictLeaders[f]; ok1 {
-					leader = f
-				}
-			}
+			leader := flags.leader(ff, vm)
 
 			var found, val bool
-			if flags != nil {
-				for f := range vm {
-					if val, found = flags[f]; found && val {
-						break
-					}
+			for f := range vm {
+				if val, found = flags[f]; found && val {
+					break
 				}
 			}
 
@@ -148,7 +160,7 @@ func (flags Flags) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ok bool) {
 	return
 }
 
-func (flags Flags) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
+func (flags Flags) IsAnyFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
 	if flags != nil {
 		for _, f := range ftf {
 			if val, ok := flags[f]; val && ok {
@@ -159,7 +171,7 @@ func (flags Flags) isAnyFlagsOK(ftf ...CopyMergeStrategy) bool {
 	return false
 }
 
-func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
+func (flags Flags) IsAllFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
 	if flags != nil {
 		for _, f := range ftf {
 			if val, ok := flags[f]; !ok || !val {
@@ -168,4 +180,51 @@ func (flags Flags) isAllFlagsOK(ftf ...CopyMergeStrategy) bool {
 		}
 	}
 	return true
+}
+
+// Parse _
+func Parse(s reflect.StructTag) (flags Flags, targetNameRule string) {
+	lazyInitFieldTagsFlags()
+
+	if flags == nil {
+		flags = New()
+	}
+
+	tags := s.Get("copy")
+
+	for i, wh := range strings.Split(tags, ",") {
+		if i == 0 && wh != "-" {
+			targetNameRule = wh
+			continue
+		}
+
+		ftf := cms.Default.Parse(wh)
+		flags[ftf] = true
+
+		if vm, ok := mKnownFieldTagFlagsConflict[ftf]; ok {
+			for k1 := range vm {
+				if _, ok = flags[k1]; ok {
+					delete(flags, k1)
+				}
+			}
+		}
+	}
+
+	for k := range mKnownFieldTagFlagsConflictLeaders {
+		var ok bool
+		if _, ok = flags[k]; ok {
+			continue
+		}
+		for k1 := range mKnownFieldTagFlagsConflict[k] {
+			if _, ok = flags[k1]; ok {
+				break
+			}
+		}
+
+		if !ok {
+			// set default mode
+			flags[k] = true
+		}
+	}
+	return
 }
