@@ -345,13 +345,42 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 	return
 }
 
+func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target reflect.Value, processed bool, err error) {
+	val := source.Interface()
+	if ss, ok := val.(interface{ String() string }); ok {
+		nv := ss.String()
+		target = reflect.ValueOf(nv)
+		processed = true
+		return
+	}
+
+	if canConvert(&source, desiredType) {
+		nv := source.Convert(desiredType)
+		// target.Set(nv)
+		target = nv
+		processed = true
+	} else {
+		nv := fmt.Sprintf("%v", val)
+		// target.Set(reflect.ValueOf(nv))
+		target = reflect.ValueOf(nv)
+		processed = true
+	}
+	return
+}
+
 func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
 
 		switch k := source.Kind(); k {
 		case reflect.Bool:
 			target = rForBool(source)
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		case reflect.Int64:
+			var processed bool
+			if target, processed, err = tryStringerIt(source, desiredType); processed {
+				return
+			}
+			fallthrough
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32:
 			target = rForInteger(source)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			target = rForUInteger(source)
@@ -380,21 +409,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 		//reflect.Struct
 
 		default:
-			if canConvert(&source, desiredType) {
-				nv := source.Convert(desiredType)
-				// target.Set(nv)
-				target = nv
-			} else {
-				val := source.Interface()
-				if ss, ok := val.(interface{ String() string }); ok {
-					nv := ss.String()
-					target = reflect.ValueOf(nv)
-				} else {
-					nv := fmt.Sprintf("%v", val)
-					// target.Set(reflect.ValueOf(nv))
-					target = reflect.ValueOf(nv)
-				}
-			}
+			target, _, err = tryStringerIt(source, desiredType)
 		}
 	} else {
 		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())

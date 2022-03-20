@@ -289,33 +289,46 @@ func dbgMakeFieldInfoString(fld *reflect.StructField, params *Params, fn func(ms
 //}
 
 func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, padding string) (err error) {
+
+	var processed bool
+	if processed, err = tryConverters(c, params, ff, df); processed {
+		return
+	}
+
+	fft, dft := ff.Type(), df.Type()
+	fftk, dftk := fft.Kind(), dft.Kind()
+	if fftk == reflect.Struct && ff.NumField() == 0 {
+		// never get into here because tablerecords.getallfields skip empty struct
+		log.Warnf("should never get into here, might be algor wrong ?")
+	}
+	if dftk == reflect.Struct && df.NumField() == 0 {
+		// structIterable.Next() might return an empty struct accessor
+		// rather than field.
+		log.Errorf("shouldn't get into here because we have a failover branch at the callee")
+	}
+
+	err = c.copyTo(params, ff, df) // or, use internal standard implementation version
+
+	return
+}
+
+func tryConverters(c *cpController, params *Params, ff, df reflect.Value) (processed bool, err error) {
 	fft, dft := ff.Type(), df.Type()
 
 	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft); ctx != nil {
 		functorLog("-> using Copier %v", reflect.ValueOf(cvt).Type())
 		err = cvt.CopyTo(ctx, ff, df) // use user-defined copy-n-merger to merge or copy source to destination
+		processed = true
 
 	} else if cvt, ctx := c.valueConverters.findConverters(params, fft, dft); ctx != nil {
 		functorLog("-> using Converter %v", reflect.ValueOf(cvt).Type())
 		var result reflect.Value
 		result, err = cvt.Transform(ctx, ff, dft) // use user-defined value converter to transform from source to destination
 		df.Set(result)
+		processed = true
 
-	} else {
-
-		fftk, dftk := fft.Kind(), dft.Kind()
-		if fftk == reflect.Struct && ff.NumField() == 0 {
-			// never get into here because tablerecords.getallfields skip empty struct
-			log.Warnf("should never get into here, might be algor wrong ?")
-		}
-		if dftk == reflect.Struct && df.NumField() == 0 {
-			// structIterable.Next() might return an empty struct accessor
-			// rather than field.
-			log.Errorf("shouldn't get into here because we have a failover branch at the callee")
-		}
-
-		err = c.copyTo(params, ff, df) // or, use internal standard implementation version
 	}
+
 	return
 }
 
@@ -334,12 +347,16 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 	}
 
 	if params.controller != c {
-		log.Panicf("c *cpController != params.controller, what's up??")
+		log.Panicf("[copySlice] c *cpController != params.controller, what's up??")
 	}
 
 	tk := tgt.Kind()
 	if tk != reflect.Slice {
-		log.Panicf("unsupported transforming: from slice -> %v,", typfmtv(&tgt))
+		var processed bool
+		if processed, err = tryConverters(c, params, from, tgt); processed {
+			return
+		}
+		log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
 	}
 
 	ec := errors.New("slice copy/merge errors")
@@ -913,6 +930,7 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 		return
 	}
 
+	////////////////// primitive
 	if !toind.IsValid() && to.Kind() == reflect.Ptr {
 		tgt := reflect.New(targetType.Elem())
 		toind = rindirect(tgt)
@@ -973,8 +991,15 @@ func copyPrimitiveToComposite(c *cpController, params *Params, from, to reflect.
 		processed = true
 
 	case reflect.Map:
+		// not support
+
 	case reflect.Struct:
+		// not support
+
 	case reflect.Func:
+		tgt := rdecodesimple(to)
+		processed, err = true, copyToFunc(c, from, tgt, tgt.Type())
+
 	}
 
 	return
@@ -999,12 +1024,14 @@ func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 	if params != nil && params.dstDecoded != nil {
 		k = params.dstDecoded.Kind()
 	}
+
 	if k == reflect.Struct && params.accessor != nil && !isExported(params.accessor.StructField()) {
 		if params.controller.copyUnexportedFields {
 			cl.SetUnexportedField(to, newval)
 		} //else ignore the unexported field
 		return
-	} else if to.CanSet() {
+	}
+	if to.CanSet() {
 		to.Set(newval)
 		return
 		//} else if newval.IsValid() {

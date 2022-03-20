@@ -320,13 +320,6 @@ func TestTypeConvert2Slice(t *testing.T) {
 
 	deepcopy.RunTestCases(t,
 		deepcopy.NewTestCase(
-			"int64 -> []uint",
-			int64(8), sui, []uint{9, 8},
-			opts,
-			nil,
-		),
-
-		deepcopy.NewTestCase(
 			"[]int -> []int64",
 			[]int{8}, &si64, &[]int64{9, 8},
 			opts,
@@ -353,6 +346,12 @@ func TestTypeConvert2Slice(t *testing.T) {
 		deepcopy.NewTestCase(
 			"[]int64 -> []int (truncate the overflowed input)",
 			[]int64{math.MaxInt64}, &si, &[]int{9, 8, 7, deepcopy.MaxInt},
+			opts,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"int64 -> []uint",
+			int64(8), sui, []uint{9, 8},
 			opts,
 			nil,
 		),
@@ -412,6 +411,52 @@ func TestTypeConvert2Slice(t *testing.T) {
 		),
 	)
 
+}
+
+func TestTypeConvert3Func(t *testing.T) {
+	//type B struct {
+	//	F func(int) (int, error)
+	//}
+	//b1 := B{F: func(i int) (int, error) { i1 = i * 2; return i1, nil }}
+
+	opts := []deepcopy.Opt{
+		deepcopy.WithPassSourceToTargetFunctionOpt,
+	}
+
+	i1 := 0
+	b1 := func(i []int) (int, error) { i1 = i[0] * 2; return i1, nil }
+	//var e1 error
+	b2 := func(i int) (int, error) {
+		if i > 0 {
+			return 0, errors.BadRequest
+		}
+		return i, nil
+	}
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"[]int -> func(int)(int,error)",
+			[]int{8}, &b1, nil,
+			opts,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if i1 != 16 {
+					err = errors.BadRequest
+				}
+				return
+			},
+		),
+		deepcopy.NewTestCase(
+			"int -> func(int)(int,error)",
+			8, &b2, nil,
+			opts,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if e != errors.BadRequest {
+					err = errors.BadRequest
+				}
+				return
+			},
+		),
+	)
 }
 
 func TestStructSimple(t *testing.T) {

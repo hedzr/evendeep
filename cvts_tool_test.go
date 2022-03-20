@@ -510,6 +510,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	t.Logf("dur: %v (%v, kind: %v, name: %v, pkgpath: %v)", dur, typfmtv(&v), v.Kind(), v.Type().Name(), v.Type().PkgPath())
 
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
+
 	var src interface{} = int64(13 * time.Hour)
 	svv := reflect.ValueOf(src)
 	tgt, err := bbc.Transform(nil, svv, tgtType)
@@ -518,59 +519,227 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	}
 	t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
 
-	var c = newDeepCopier()
-	c.withConverters(&toDurationFromString{})
-	var ctx = newValueConverterContextForTest(c)
-	src = "71ms"
-	svv = reflect.ValueOf(src)
-	tgt, err = bbc.Transform(ctx, svv, tgtType)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+	t.Run("toDurationConverter = pre", func(t *testing.T) {
 
-	src = "9h71ms"
-	svv = reflect.ValueOf(src)
-	err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	t.Logf("res: %v", dur)
+		for ix, cas := range []struct {
+			src, tgt, expect interface{}
+		}{
+			{"71ms", &dur, 71 * time.Millisecond},
+			{"9h71ms", &dur, 9*time.Hour + 71*time.Millisecond},
+			{int64(13 * time.Hour), &dur, 13 * time.Hour},
+		} {
+			var c = newDeepCopier()
+			//var ctx = newValueConverterContextForTest(c)
+			svv = reflect.ValueOf(cas.src)
+			err = c.CopyTo(cas.src, cas.tgt)
+			//tgt, err = bbc.Transform(ctx, svv, tgtType)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
+			if reflect.DeepEqual(dur, cas.expect) == false {
+				t.Fatalf("err transform: expect %v but got %v", cas.expect, tgt)
+			}
+			t.Logf("res #%d: %v", ix, dur)
+		}
 
-	//
-
-	c = newDeepCopier()
-	c.withCopiers(&toDurationFromString{})
-	ctx = newValueConverterContextForTest(c)
-	src = "71ms"
-	svv = reflect.ValueOf(src)
-	tgt, err = bbc.Transform(ctx, svv, tgtType)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
-
-	src = "9h71ms"
-	svv = reflect.ValueOf(src)
-	err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	t.Logf("res: %v", dur)
+	})
 
 	//
 
-	c = newCopier()
+	t.Run("fromDurationConverter - normal test", func(t *testing.T) {
+
+		inttyp := reflect.TypeOf((*int)(nil)).Elem()
+		int64typ := reflect.TypeOf((*int64)(nil)).Elem()
+		stringtyp := reflect.TypeOf((*string)(nil)).Elem()
+		booltyp := reflect.TypeOf((*bool)(nil)).Elem()
+
+		var fdc fromDurationConverter
+
+		for ix, cas := range []struct {
+			src, tgt, expect interface{}
+			desiredType      reflect.Type
+		}{
+			{13 * time.Hour, &dur, "13h0m0s", stringtyp},
+			{71 * time.Millisecond, &dur, int(71 * time.Millisecond), inttyp},
+			{9*time.Hour + 71*time.Millisecond, &dur, int64(9*time.Hour + 71*time.Millisecond), int64typ},
+			{13 * time.Hour, &dur, true, booltyp},
+			{0 * time.Hour, &dur, false, booltyp},
+		} {
+			var c = newDeepCopier()
+			var ctx = newValueConverterContextForTest(c)
+			svv = reflect.ValueOf(cas.src)
+			//err = c.CopyTo(cas.src, cas.tgt)
+			tgt, err = fdc.Transform(ctx, svv, cas.desiredType)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
+			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), typfmt(tgt.Type()))
+			}
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), typfmt(tgt.Type()))
+		}
+
+	})
+
+	//
+
+	t.Run("toDurationConverter - normal test", func(t *testing.T) {
+
+		var tdc toDurationConverter
+
+		for ix, cas := range []struct {
+			src, tgt, expect interface{}
+		}{
+			{"71ms", &dur, 71 * time.Millisecond},
+			{"9h71ms", &dur, 9*time.Hour + 71*time.Millisecond},
+			{int64(13 * time.Hour), &dur, 13 * time.Hour},
+			{false, &dur, 0 * time.Second},
+			{true, &dur, 1 * time.Nanosecond},
+		} {
+			var c = newDeepCopier()
+			var ctx = newValueConverterContextForTest(c)
+			svv = reflect.ValueOf(cas.src)
+			//err = c.CopyTo(cas.src, cas.tgt)
+			tgt, err = tdc.Transform(ctx, svv, tgtType)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
+			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), typfmt(tgt.Type()))
+			}
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), typfmt(tgt.Type()))
+		}
+
+	})
+
+	//var c = newDeepCopier()
+	//c.withConverters(&toDurationConverter{})
+	//var ctx = newValueConverterContextForTest(c)
+	//src = "71ms"
+	//svv = reflect.ValueOf(src)
+	//tgt, err = bbc.Transform(ctx, svv, tgtType)
+	//if err != nil {
+	//	t.Fatalf("err: %v", err)
+	//}
+	//t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+	//
+	//src = "9h71ms"
+	//svv = reflect.ValueOf(src)
+	//err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
+	//if err != nil {
+	//	t.Fatalf("err: %v", err)
+	//}
+	//t.Logf("res: %v", dur)
+	//
+	////
+	//
+	//c = newDeepCopier()
+	//c.withCopiers(&toDurationConverter{})
+	//ctx = newValueConverterContextForTest(c)
+	//src = "71ms"
+	//svv = reflect.ValueOf(src)
+	//tgt, err = bbc.Transform(ctx, svv, tgtType)
+	//if err != nil {
+	//	t.Fatalf("err: %v", err)
+	//}
+	//t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+	//
+	//src = "9h71ms"
+	//svv = reflect.ValueOf(src)
+	//err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
+	//if err != nil {
+	//	t.Fatalf("err: %v", err)
+	//}
+	//t.Logf("res: %v", dur)
+
+	//
+
+	c := newCopier()
 	c.withFlags(SliceMerge)
 	c.withFlags(MapMerge)
 }
 
 func TestToDurationConverter_fallback(t *testing.T) {
-	var tdfs toDurationFromString
+	var tdfs toDurationConverter
 	var dur = 3 * time.Second
 	var v = reflect.ValueOf(&dur)
 	_ = tdfs.fallback(v)
 	t.Logf("dur: %v", dur)
+}
+
+func TestToTimeConverter_Transform(t *testing.T) {
+
+	t.Run("fromTimeConverter - normal test", func(t *testing.T) {
+
+		inttyp := reflect.TypeOf((*int)(nil)).Elem()
+		int64typ := reflect.TypeOf((*int64)(nil)).Elem()
+		stringtyp := reflect.TypeOf((*string)(nil)).Elem()
+		//booltyp := reflect.TypeOf((*bool)(nil)).Elem()
+		floattyp := reflect.TypeOf((*float64)(nil)).Elem()
+
+		var ftc fromTimeConverter
+		var dur int
+
+		for ix, cas := range []struct {
+			src         string
+			tgt, expect interface{}
+			desiredType reflect.Type
+		}{
+			{"2001-02-03 04:05:06.078912", &dur, "2001-02-03T04:05:06Z", stringtyp},
+			{"2001-02-03 04:05:06.078912", &dur, int(981173106), inttyp},
+			{"2001-02-03 04:05:06.078912", &dur, int64(981173106), int64typ},
+			{"2001-02-03 04:05:06.078912", &dur, float64(981173106.078912), floattyp},
+		} {
+			var c = newDeepCopier()
+			var ctx = newValueConverterContextForTest(c)
+			var tm, err = time.Parse("2006-01-02 15:04:05.000000", cas.src)
+			t.Logf("%q parsed: %v (%v)", cas.src, tm, err)
+			var svv = reflect.ValueOf(tm)
+			//err = c.CopyTo(cas.src, cas.tgt)
+			tgt, err := ftc.Transform(ctx, svv, cas.desiredType)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
+			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), typfmt(tgt.Type()))
+			}
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), typfmt(tgt.Type()))
+		}
+
+	})
+
+	t.Run("toTimeConverter - normal test", func(t *testing.T) {
+
+		var tdc toTimeConverter
+		var tm time.Time
+		layout := "2006-01-02 15:04:05.999999999Z07:00"
+		tgtType := reflect.TypeOf((*time.Time)(nil)).Elem()
+
+		for ix, cas := range []struct {
+			src, tgt, expect interface{}
+		}{
+			{"2001-02-03 04:05:06.078912", &tm, "2001-02-03 04:05:06.078912Z"},
+			{"2001-02-03 04:05:06.078912345", &tm, "2001-02-03 04:05:06.078912345Z"},
+			{int(981173106), &tm, "2001-02-03 04:05:06Z"},
+			{int64(981173106), &tm, "2001-02-03 04:05:06Z"},
+			{float64(981173106.078912), &tm, "2001-02-03 04:05:06.078912019Z"},
+		} {
+			var c = newDeepCopier()
+			var ctx = newValueConverterContextForTest(c)
+			var svv = reflect.ValueOf(cas.src)
+			//err = c.CopyTo(cas.src, cas.tgt)
+			var tgt, err = tdc.Transform(ctx, svv, tgtType)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
+			got := tgt.Interface().(time.Time).UTC().Format(layout)
+			if reflect.DeepEqual(got, cas.expect) == false {
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, got, typfmt(tgt.Type()))
+			}
+			t.Logf("res #%d: %v (%v)", ix, got, typfmt(tgt.Type()))
+		}
+
+	})
 }
 
 func TestFromStringConverter_defaultTypes(t *testing.T) {

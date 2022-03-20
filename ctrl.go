@@ -9,6 +9,7 @@ import (
 type cpController struct {
 	copyUnexportedFields       bool
 	copyFunctionResultToTarget bool
+	passSourceToTargetFunction bool
 	autoExpandStruct           bool
 
 	makeNewClone bool      // make a new clone by copying to a fresh new object

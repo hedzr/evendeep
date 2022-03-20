@@ -7,6 +7,7 @@ import (
 	"github.com/hedzr/log"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
+	"math"
 	"math/big"
 	mrand "math/rand"
 	"reflect"
@@ -376,6 +377,17 @@ func TestDeferCatchers(t *testing.T) {
 
 //
 
+func TestTm00(t *testing.T) {
+
+	timeFloat := 13572223.479231686
+	sec, dec := math.Modf(timeFloat)
+	tm := time.Unix(int64(sec), int64(dec*(1e9)))
+	t.Logf("tm: %v", tm)
+
+	t.Logf("sec, %v, nano, %v", tm.Unix(), tm.UnixNano())
+	t.Logf("f: %v", float64(tm.UnixNano())/1e9)
+}
+
 //
 
 //
@@ -389,23 +401,26 @@ func TestDeferCatchers(t *testing.T) {
 // NewForTest creates a new copier with most common options.
 func NewForTest() DeepCopier {
 	copier := New(
-		WithValueConverters(&toDurationFromString{}),
-		WithValueCopiers(&toDurationFromString{}),
+		WithValueConverters(&toDurationConverter{}),
+		WithValueCopiers(&toDurationConverter{}),
 
 		WithCloneStyle(),
 		WithCopyStyle(),
 
-		WithAutoExpandStructOpt,
 		WithCopyStrategyOpt,
 		WithMergeStrategyOpt,
-
 		WithStrategiesReset(),
 		WithStrategies(SliceMerge, MapMerge),
 
-		WithCopyUnexportedField(true),
-		WithCopyFunctionResultToTarget(true),
+		WithAutoExpandStructOpt,
+		WithCopyUnexportedFieldOpt,
+		WithCopyFunctionResultToTargetOpt,
+		WithPassSourceToTargetFunctionOpt,
+
 		WithIgnoreNamesReset(),
 		WithIgnoreNames("Bugs*", "Test*"),
+
+		WithoutPanic(),
 	)
 
 	lazyInitRoutines()
@@ -427,8 +442,8 @@ func NewForTest() DeepCopier {
 
 	copier = NewFlatDeepCopier(
 		WithStrategies(SliceMerge, MapMerge),
-		WithValueConverters(&toDurationFromString{}),
-		WithValueCopiers(&toDurationFromString{}),
+		WithValueConverters(&toDurationConverter{}),
+		WithValueCopiers(&toDurationConverter{}),
 		WithCloneStyle(),
 		WithCopyStyle(),
 		WithAutoExpandStructOpt,

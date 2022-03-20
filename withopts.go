@@ -39,16 +39,6 @@ func WithCopyStyle() Opt {
 	}
 }
 
-// WithAutoExpandForInnerStruct does copy fields with flat struct.
-func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
-	return func(c *cpController) {
-		c.autoExpandStruct = autoexpand
-	}
-}
-
-// WithAutoExpandStructOpt is synonym of SliceMerge + MapMerge
-var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
-
 // WithStrategies appends more flags into *cpController
 func WithStrategies(flags ...CopyMergeStrategy) Opt {
 	return func(c *cpController) {
@@ -86,6 +76,16 @@ func WithStrategiesReset() Opt {
 	}
 }
 
+// WithAutoExpandForInnerStruct does copy fields with flat struct.
+func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
+	return func(c *cpController) {
+		c.autoExpandStruct = autoexpand
+	}
+}
+
+// WithAutoExpandStructOpt is synonym of SliceMerge + MapMerge
+var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
+
 // WithCopyUnexportedField try to copy the unexported fields
 // with special way.
 func WithCopyUnexportedField(b bool) Opt {
@@ -93,6 +93,9 @@ func WithCopyUnexportedField(b bool) Opt {
 		c.copyUnexportedFields = b
 	}
 }
+
+// WithCopyUnexportedFieldOpt is shortcut of WithCopyUnexportedField
+var WithCopyUnexportedFieldOpt = WithCopyUnexportedField(true)
 
 // WithCopyFunctionResultToTarget invoke source function member and
 // pass the result to the responsible target field.
@@ -103,6 +106,20 @@ func WithCopyFunctionResultToTarget(b bool) Opt {
 		c.copyFunctionResultToTarget = b
 	}
 }
+
+// WithCopyFunctionResultToTargetOpt is shortcut of WithCopyFunctionResultToTarget
+var WithCopyFunctionResultToTargetOpt = WithCopyFunctionResultToTarget(true)
+
+// WithPassSourceToTargetFunction invoke target function member and
+// pass the source as its input parameters.
+func WithPassSourceToTargetFunction(b bool) Opt {
+	return func(c *cpController) {
+		c.passSourceToTargetFunction = b
+	}
+}
+
+// WithPassSourceToTargetFunctionOpt is shortcut of WithPassSourceToTargetFunction
+var WithPassSourceToTargetFunctionOpt = WithPassSourceToTargetFunction(true)
 
 // WithIgnoreNames does specify the ignored field names list.
 //
