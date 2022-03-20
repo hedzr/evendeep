@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/flags/cms"
 	"reflect"
 	"testing"
 )
@@ -39,7 +40,7 @@ func TestCopySlice_differModes(t *testing.T) {
 	c := newCloner()
 	params := newParams(withOwnersSimple(c, nil))
 
-	lazyInitFieldTagsFlags()
+	// flags.LazyInitFieldTagsFlags()
 
 	var so = []int{9, 77}
 	var to = []int{}
@@ -68,7 +69,7 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	to = []int{1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(cms.SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -78,7 +79,7 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	to = []int{}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(cms.SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -88,7 +89,7 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(cms.SliceCopyAppend), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -100,7 +101,7 @@ func TestCopySlice_differModes(t *testing.T) {
 	src = reflect.ValueOf(&so)
 	to = []int{2, 9, 1}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(cms.SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -110,7 +111,7 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	to = []int{3, 77, 2, 15}
 	tgt = reflect.ValueOf(&to)
-	err = copySlice(c, newParams(withFlags(SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
+	err = copySlice(c, newParams(withFlags(cms.SliceMerge), withOwnersSimple(c, nil)), rdecodesimple(src), rdecodesimple(tgt))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {
@@ -123,7 +124,7 @@ func TestCopySlice_differModes(t *testing.T) {
 func TestCopySlice_mergeMode(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
-	c := newCopier().withFlags(SliceMerge, MapMerge)
+	c := newCopier().withFlags(cms.SliceMerge, cms.MapMerge)
 	params := newParams(withOwnersSimple(c, nil))
 
 	var so = []int{9, 77}

@@ -4,6 +4,7 @@ package deepcopy
 
 import (
 	"fmt"
+	"github.com/hedzr/deepcopy/dbglog"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -11,7 +12,7 @@ import (
 
 func ptrOf(tgt reflect.Value) reflect.Value {
 	//for tgt.Kind() != reflect.Ptr {
-	//	functorLog("tgt: %v, get pointer", tgt.Kind())
+	//	Log("tgt: %v, get pointer", tgt.Kind())
 	//	tgt = reflect.NewAt(tgt.Elem().Type(), unsafe.Pointer(tgt.UnsafeAddr()))
 	//}
 	ret := reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.UnsafeAddr()))
@@ -21,7 +22,7 @@ func ptrOf(tgt reflect.Value) reflect.Value {
 //func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
 //	//return reflect.PtrTo(tgt)
 //	//for tgt.Kind() != reflect.Ptr {
-//	//functorLog("tgt: %v, get pointer", tgt.Kind())
+//	//Log("tgt: %v, get pointer", tgt.Kind())
 //	//r = reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.Pointer()))
 //	//}
 //	if tgt.CanAddr() {
@@ -34,17 +35,17 @@ func ptrOf(tgt reflect.Value) reflect.Value {
 //			r = tmp
 //		} else {
 //			var v = tgt.Interface()
-//			functorLog("     v: %v", v)
+//			Log("     v: %v", v)
 //			r = reflect.ValueOf(&v)
-//			functorLog("   ret: %v, *%v", r.Kind(), r.Elem().Kind())
+//			Log("   ret: %v, *%v", r.Kind(), r.Elem().Kind())
 //		}
 //	}
 //	if r.Type() == want {
-//		functorLog("ret: %v, *%v", r.Kind(), r.Elem().Kind())
+//		Log("ret: %v, *%v", r.Kind(), r.Elem().Kind())
 //		return
 //	}
 //
-//	functorLog("NOTE an temp pointer was created as *%v", want.Kind())
+//	Log("NOTE an temp pointer was created as *%v", want.Kind())
 //	return reflect.New(want)
 //}
 
@@ -173,10 +174,10 @@ func reverseStringSlice(s []string) []string {
 func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
-		functorLog("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
+		dbglog.Log("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
 		if reflect.DeepEqual(tev, elv) {
 			found = true
-			functorLog("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
+			dbglog.Log("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
 			break
 		}
 	}

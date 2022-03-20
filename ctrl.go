@@ -1,6 +1,9 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
@@ -12,11 +15,11 @@ type cpController struct {
 	passSourceToTargetFunction bool
 	autoExpandStruct           bool
 
-	makeNewClone bool      // make a new clone by copying to a fresh new object
-	flags        Flags     // CopyMergeStrategies globally
-	ignoreNames  []string  // optional ignored names with wild-matching
-	funcInputs   []log.Any // preset input args for function invoking
-	rethrow      bool      // panic when error occurs
+	makeNewClone bool        // make a new clone by copying to a fresh new object
+	flags        flags.Flags // CopyMergeStrategies globally
+	ignoreNames  []string    // optional ignored names with wild-matching
+	funcInputs   []log.Any   // preset input args for function invoking
+	rethrow      bool        // panic when error occurs
 
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
@@ -39,9 +42,9 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
-	functorLog("    flags: %v", c.flags)
-	functorLog("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
-	functorLog("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
+	dbglog.Log("    flags: %v", c.flags)
+	dbglog.Log("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
+	dbglog.Log("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
 
 	err = c.copyTo(root, from, to)
 	return
@@ -50,7 +53,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
-			kind := from.Kind() //functorLog(" - from.type: %v", kind)
+			kind := from.Kind() //Log(" - from.type: %v", kind)
 			if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
 				if fn, ok := copyToRoutines[kind]; ok && fn != nil {
 					err = fn(c, params, from, to)
@@ -59,7 +62,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 			}
 
 			// source is primitive type, or in a reserved package such as time, os, ...
-			functorLog(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
+			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
 			err = copyDefaultHandler(c, params, from, to)
 			return
 		})
@@ -73,7 +76,7 @@ func (c *cpController) copyToInternal(
 
 	// Return is from value is invalid
 	if !from.IsValid() {
-		if params.isGroupedFlagOKDeeply(OmitIfEmpty, OmitIfNil, OmitIfZero) {
+		if params.isGroupedFlagOKDeeply(cms.OmitIfEmpty, cms.OmitIfNil, cms.OmitIfZero) {
 			return
 		}
 		// todo set target to zero
@@ -163,11 +166,11 @@ func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController {
 	return c
 }
 
-func (c *cpController) withFlags(flags ...CopyMergeStrategy) *cpController {
+func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController {
 	if c.flags == nil {
-		c.flags = newFlags(flags...)
+		c.flags = flags.New(flags1...)
 	} else {
-		c.flags.withFlags(flags...)
+		c.flags.WithFlags(flags1...)
 	}
 	return c
 }

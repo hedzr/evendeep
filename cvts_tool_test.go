@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"math"
 	"reflect"
 	"strconv"
@@ -416,8 +418,9 @@ func TestToStringConverter_Transform(t *testing.T) {
 			t.Fatalf("convert failed, want %q but got %q", exp, x)
 		}
 
-		var tgtstr string
+		var tgtstr string = "1"
 		tgt = reflect.ValueOf(&tgtstr).Elem()
+		dbglog.Log("target/; %v %v", valfmt(&tgt), typfmtv(&tgt))
 		err = bbc.CopyTo(nil, svv, tgt)
 		if err != nil {
 			t.Fatalf("err: %v", err)
@@ -655,8 +658,8 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	//
 
 	c := newCopier()
-	c.withFlags(SliceMerge)
-	c.withFlags(MapMerge)
+	c.withFlags(cms.SliceMerge)
+	c.withFlags(cms.MapMerge)
 }
 
 func TestToDurationConverter_fallback(t *testing.T) {

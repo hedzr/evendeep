@@ -1,6 +1,8 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"reflect"
 	"strings"
 )
@@ -18,7 +20,7 @@ func parseFieldTags(tag reflect.StructTag) *fieldTags {
 //         IgnoredName string `copy:"-"`
 //     }
 type fieldTags struct {
-	flags Flags `copy:"zeroIfEq"`
+	flags flags.Flags `copy:"zeroIfEq"`
 
 	converter     *ValueConverter
 	copier        *ValueCopier
@@ -41,7 +43,7 @@ func (f *fieldTags) String() string {
 	return strings.Join(a, ", ")
 }
 
-func (f *fieldTags) isFlagExists(ftf CopyMergeStrategy) bool {
+func (f *fieldTags) isFlagExists(ftf cms.CopyMergeStrategy) bool {
 	if f == nil {
 		return false
 	}
@@ -49,46 +51,5 @@ func (f *fieldTags) isFlagExists(ftf CopyMergeStrategy) bool {
 }
 
 func (f *fieldTags) Parse(s reflect.StructTag) {
-	lazyInitFieldTagsFlags()
-
-	if f.flags == nil {
-		f.flags = newFlags()
-	}
-
-	tags := s.Get("copy")
-
-	for i, wh := range strings.Split(tags, ",") {
-		if i == 0 && wh != "-" {
-			f.targetNameRule = wh
-			continue
-		}
-
-		ftf := Default.Parse(wh)
-		f.flags[ftf] = true
-
-		if vm, ok := mKnownFieldTagFlagsConflict[ftf]; ok {
-			for k1 := range vm {
-				if _, ok = f.flags[k1]; ok {
-					delete(f.flags, k1)
-				}
-			}
-		}
-	}
-
-	for k := range mKnownFieldTagFlagsConflictLeaders {
-		var ok bool
-		if _, ok = f.flags[k]; ok {
-			continue
-		}
-		for k1 := range mKnownFieldTagFlagsConflict[k] {
-			if _, ok = f.flags[k1]; ok {
-				break
-			}
-		}
-
-		if !ok {
-			// set default mode
-			f.flags[k] = true
-		}
-	}
+	f.flags, f.targetNameRule = flags.Parse(s)
 }

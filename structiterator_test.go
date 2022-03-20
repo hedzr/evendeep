@@ -2,6 +2,8 @@ package deepcopy
 
 import (
 	"fmt"
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"reflect"
 	"strings"
 	"testing"
@@ -63,7 +65,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tablerecords[i]
 			flags := parseFieldTags(sourcefield.structField.Tag)
 			accessor, ok := targetIterator.Next()
-			if flags.isFlagExists(Ignore) || !ok {
+			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -88,7 +90,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tablerecords[i]
 			flags := parseFieldTags(sourcefield.structField.Tag)
 			accessor, ok := targetIterator.Next()
-			if flags.isFlagExists(Ignore) || !ok {
+			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -136,7 +138,7 @@ func testgetallfieldsX1(t *testing.T) {
 		sourcefield := sourcefields.tablerecords[i]
 		srcval := sourcefield.FieldValue()
 		srctypstr := typfmtv(srcval)
-		functorLog("%d. %s (%v) %v -> %s (%v)", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), srctypstr, "", "")
+		dbglog.Log("%d. %s (%v) %v -> %s (%v)", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), srctypstr, "", "")
 	}
 }
 
@@ -157,7 +159,7 @@ func teststructiteratorNextT1(t *testing.T) {
 			t.Logf("%d. field info missed", i)
 			continue
 		}
-		functorLog("%d. %q (%v) %v %q", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath)
+		dbglog.Log("%d. %q (%v) %v %q", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath)
 	}
 }
 

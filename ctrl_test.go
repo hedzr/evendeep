@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
@@ -205,7 +206,7 @@ func TestSimple(t *testing.T) {
 			&[]int{5},
 			&[]int{5, 7, 99},
 			[]deepcopy.Opt{
-				deepcopy.WithStrategies(deepcopy.SliceMerge),
+				deepcopy.WithStrategies(cms.SliceMerge),
 			},
 			nil,
 		),
@@ -213,7 +214,7 @@ func TestSimple(t *testing.T) {
 			"primitive types - int slice - merge for dup",
 			[]int{99, 7}, &[]int{125, 99}, &[]int{125, 99, 7},
 			[]deepcopy.Opt{
-				deepcopy.WithStrategies(deepcopy.SliceMerge),
+				deepcopy.WithStrategies(cms.SliceMerge),
 			},
 			nil,
 		),
@@ -315,7 +316,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 	var sc128 = []complex128{9.1}
 
 	opts := []deepcopy.Opt{
-		deepcopy.WithStrategies(deepcopy.SliceMerge),
+		deepcopy.WithStrategies(cms.SliceMerge),
 	}
 
 	deepcopy.RunTestCases(t,
@@ -345,7 +346,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 		),
 		deepcopy.NewTestCase(
 			"[]int64 -> []int (truncate the overflowed input)",
-			[]int64{math.MaxInt64}, &si, &[]int{9, 8, 7, deepcopy.MaxInt},
+			[]int64{math.MaxInt64}, &si, &[]int{9, 8, 7, cms.MaxInt},
 			opts,
 			nil,
 		),
@@ -524,7 +525,7 @@ func TestStructSimple(t *testing.T) {
 			x1, &x2,
 			expect2,
 			[]deepcopy.Opt{
-				deepcopy.WithStrategies(deepcopy.SliceMerge),
+				deepcopy.WithStrategies(cms.SliceMerge),
 			},
 			nil,
 		),

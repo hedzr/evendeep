@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/log"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
@@ -29,7 +32,7 @@ func TestLogNormal(t *testing.T) {
 	log.Debugf("hello debug")
 	log.Tracef("hello trace")
 
-	functorLog("but again")
+	dbglog.Log("but again")
 }
 
 // TestErrorsTmpl _
@@ -201,7 +204,7 @@ func TestParamsBasics(t *testing.T) {
 		for i := 0; i < v.NumField(); i++ {
 			fld := v.Type().Field(i)
 			fldTags := parseFieldTags(fld.Tag)
-			if !p2.isFlagExists(Ignore) {
+			if !p2.isFlagExists(cms.Ignore) {
 				t.Logf("%q flags: %v", fld.Tag, fldTags)
 			} else {
 				t.Logf("%q flags: %v", fld.Tag, fldTags)
@@ -222,7 +225,7 @@ func TestParamsBasics3(t *testing.T) {
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     Flags           `copy:",cleareq,must"`
+			flags     flags.Flags     `copy:",cleareq,must"`
 			converter *ValueConverter `copy:",ignore"`
 			wouldbe   int             `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
 		}
@@ -241,44 +244,44 @@ func TestParamsBasics3(t *testing.T) {
 		var z *fieldTags
 		z = fldTags
 
-		z.isFlagExists(SliceCopy)
-		p2.isFlagExists(SliceCopy)
-		p2.isFlagExists(SliceCopyAppend)
-		p2.isFlagExists(SliceMerge)
+		z.isFlagExists(cms.SliceCopy)
+		p2.isFlagExists(cms.SliceCopy)
+		p2.isFlagExists(cms.SliceCopyAppend)
+		p2.isFlagExists(cms.SliceMerge)
 
-		p2.isAnyFlagsOK(SliceMerge, Ignore)
-		p2.isAllFlagsOK(SliceCopy, Default)
+		p2.isAnyFlagsOK(cms.SliceMerge, cms.Ignore)
+		p2.isAllFlagsOK(cms.SliceCopy, cms.Default)
 
-		p2.isGroupedFlagOK(SliceCopy)
-		p2.isGroupedFlagOK(SliceCopyAppend)
-		p2.isGroupedFlagOK(SliceMerge)
+		p2.isGroupedFlagOK(cms.SliceCopy)
+		p2.isGroupedFlagOK(cms.SliceCopyAppend)
+		p2.isGroupedFlagOK(cms.SliceMerge)
 
-		p2.isGroupedFlagOKDeeply(SliceCopy)
-		p2.isGroupedFlagOKDeeply(SliceCopyAppend)
-		p2.isGroupedFlagOKDeeply(SliceMerge)
+		p2.isGroupedFlagOKDeeply(cms.SliceCopy)
+		p2.isGroupedFlagOKDeeply(cms.SliceCopyAppend)
+		p2.isGroupedFlagOKDeeply(cms.SliceMerge)
 
 		if p2.depth() != 2 {
 			t.Fail()
 		}
 
 		var p3 *Params
-		p3.isFlagExists(SliceCopy)
-		p3.isGroupedFlagOK(SliceCopy)
-		p3.isGroupedFlagOK(SliceCopyAppend)
-		p3.isGroupedFlagOK(SliceMerge)
+		p3.isFlagExists(cms.SliceCopy)
+		p3.isGroupedFlagOK(cms.SliceCopy)
+		p3.isGroupedFlagOK(cms.SliceCopyAppend)
+		p3.isGroupedFlagOK(cms.SliceMerge)
 
-		p3.isGroupedFlagOKDeeply(SliceCopy)
-		p3.isGroupedFlagOKDeeply(SliceCopyAppend)
-		p3.isGroupedFlagOKDeeply(SliceMerge)
+		p3.isGroupedFlagOKDeeply(cms.SliceCopy)
+		p3.isGroupedFlagOKDeeply(cms.SliceCopyAppend)
+		p3.isGroupedFlagOKDeeply(cms.SliceMerge)
 
-		p3.isAnyFlagsOK(SliceMerge, Ignore)
-		p3.isAllFlagsOK(SliceCopy, Default)
+		p3.isAnyFlagsOK(cms.SliceMerge, cms.Ignore)
+		p3.isAllFlagsOK(cms.SliceCopy, cms.Default)
 
 		var p4 Params
-		p4.isFlagExists(SliceCopy)
-		p4.isGroupedFlagOK(SliceCopy)
-		p4.isGroupedFlagOK(SliceCopyAppend)
-		p4.isGroupedFlagOK(SliceMerge)
+		p4.isFlagExists(cms.SliceCopy)
+		p4.isGroupedFlagOK(cms.SliceCopy)
+		p4.isGroupedFlagOK(cms.SliceCopyAppend)
+		p4.isGroupedFlagOK(cms.SliceMerge)
 
 	})
 }
@@ -313,7 +316,7 @@ func TestDeferCatchers(t *testing.T) {
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
 
-		dbgFrontOfStruct(p1, p2, "    ", func(msg string, args ...interface{}) { functorLog(msg, args...) })
+		dbgFrontOfStruct(p1, p2, "    ", func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
 	})
 
 	slicePanic := func() {
@@ -390,6 +393,41 @@ func TestTm00(t *testing.T) {
 
 //
 
+func TestValueValid(t *testing.T) {
+
+	var ival int
+	var pival *int
+	type A struct {
+		ival int
+	}
+	var aval A
+	var paval *A
+
+	var v reflect.Value
+
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	v = reflect.ValueOf(ival)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	v = reflect.ValueOf(pival)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	v = reflect.ValueOf(aval)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	v = reflect.ValueOf(paval)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	var b bool
+	v = reflect.ValueOf(b)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+
+	b = true
+	v = reflect.ValueOf(b)
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+}
+
 //
 
 //
@@ -410,7 +448,7 @@ func NewForTest() DeepCopier {
 		WithCopyStrategyOpt,
 		WithMergeStrategyOpt,
 		WithStrategiesReset(),
-		WithStrategies(SliceMerge, MapMerge),
+		WithStrategies(cms.SliceMerge, cms.MapMerge),
 
 		WithAutoExpandStructOpt,
 		WithCopyUnexportedFieldOpt,
@@ -425,23 +463,23 @@ func NewForTest() DeepCopier {
 
 	lazyInitRoutines()
 	var c1 = newCopier()
-	WithStrategies(SliceMerge, MapMerge)(c1)
-	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceMerge, MapMerge, OmitIfEmpty, Default) == false {
+	WithStrategies(cms.SliceMerge, cms.MapMerge)(c1)
+	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceMerge, cms.MapMerge, cms.OmitIfEmpty, cms.Default) == false {
 		log.Panicf("except flag set with optional values but not matched, 1")
 	}
 	c1 = newDeepCopier()
-	WithStrategies(SliceCopyAppend, MapCopy)(c1)
-	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceCopyAppend, MapCopy, OmitIfEmpty, Default) == false {
+	WithStrategies(cms.SliceCopyAppend, cms.MapCopy)(c1)
+	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopyAppend, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
 		log.Panicf("except flag set with optional values but not matched, 2")
 	}
 	c1 = newCloner()
-	WithStrategies(SliceCopy)(c1)
-	if c1.flags.isAnyFlagsOK(ByOrdinal, SliceCopy, MapCopy, OmitIfEmpty, Default) == false {
+	WithStrategies(cms.SliceCopy)(c1)
+	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopy, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
 		log.Panicf("except flag set with optional values but not matched, 3")
 	}
 
 	copier = NewFlatDeepCopier(
-		WithStrategies(SliceMerge, MapMerge),
+		WithStrategies(cms.SliceMerge, cms.MapMerge),
 		WithValueConverters(&toDurationConverter{}),
 		WithValueCopiers(&toDurationConverter{}),
 		WithCloneStyle(),

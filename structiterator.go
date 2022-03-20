@@ -2,6 +2,7 @@ package deepcopy
 
 import (
 	"github.com/hedzr/deepcopy/cl"
+	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/log"
 	"reflect"
 	"strings"
@@ -86,7 +87,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 		sftypind := rindirectType(sftyp)
 		svind := table.safegetstructfieldvalueind(structValue, i)
 
-		functorLog(" field %d: %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
+		dbglog.Log(" field %d: %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
 
 		isStruct := sftypind.Kind() == reflect.Struct
 		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
@@ -298,7 +299,7 @@ func (s *fieldaccessor) ensurePtrField() {
 		switch kind {
 		case reflect.Ptr:
 			if isNil(fv) {
-				functorLog("   autoNew")
+				dbglog.Log("   autoNew")
 				typ := sf.Type.Elem()
 				nv := reflect.New(typ)
 				fv.Set(nv)
@@ -424,7 +425,7 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 			accessor.srcStructField = srcStructField
 			accessor.fieldTags = parseFieldTags(accessor.srcStructField.Tag)
 
-			functorLog("   | Next %d | src field: %v (%v) -> %v (%v)",
+			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v)",
 				s.srcIndex, accessor.sourceTableRec.FieldName(),
 				typfmt(accessor.srcStructField.Type),
 				accessor.StructFieldName(), typfmt(accessor.Type()))
@@ -433,7 +434,7 @@ func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
 	} else {
 		accessor, ok = s.doNext(false)
 		if ok {
-			functorLog("   | Next %d | -> %v (%v)",
+			dbglog.Log("   | Next %d | -> %v (%v)",
 				s.dstIndex,
 				accessor.StructFieldName(), typfmt(accessor.Type()))
 			s.dstIndex++
@@ -472,7 +473,7 @@ retryExpand:
 		if s.autoExpandStruct {
 			tind = rindirectType(field.Type)
 			k1 := tind.Kind()
-			functorLog("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
+			dbglog.Log("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
 			if s.autoNew {
 				lastone.ensurePtrField()
 			}
@@ -482,7 +483,7 @@ retryExpand:
 
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
-				functorLog("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
+				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
 				inretry = true
 				goto retryExpand
 

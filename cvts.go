@@ -3,6 +3,8 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/deepcopy/syscalls"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
@@ -12,7 +14,7 @@ import (
 )
 
 func initConverters() {
-	functorLog("initializing default converters and copiers ...")
+	dbglog.Log("initializing default converters and copiers ...")
 	defValueConverters = ValueConverters{
 		&fromStringConverter{},
 		&toStringConverter{},
@@ -152,6 +154,53 @@ func (ctx *ValueConverterContext) Preprocess(source reflect.Value, targetType re
 
 //
 
+type toConverterBase struct{}
+
+func (c *toConverterBase) checkSource(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, processed bool) {
+	if ctx == nil {
+		return
+	}
+
+	if processed = ctx.isGroupedFlagOKDeeply(cms.Ignore); processed {
+		return
+	}
+	if processed = isNil(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty); processed {
+		target = reflect.Zero(targetType)
+		return
+	}
+	if processed = isZero(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty); processed {
+		target = reflect.Zero(targetType)
+		return
+	}
+	return
+}
+
+func (c *toConverterBase) checkTarget(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, processed bool) {
+	if processed = isNil(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil); processed {
+		return
+	}
+	if processed = isZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero); processed {
+		return
+	}
+	return
+}
+
+func (c *toConverterBase) fallback(target reflect.Value) (err error) {
+	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
+	rindirect(target).Set(reflect.Zero(tgtType))
+	return
+}
+
+func (c *toConverterBase) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
+	if ctx == nil || ctx.Params == nil {
+		return
+	}
+	processed = ctx.Params.processUnexportedField(target, newval)
+	return
+}
+
+//
+
 var niltyp = reflect.TypeOf((*string)(nil))
 
 type fromConverterBase struct{}
@@ -229,15 +278,7 @@ func (c *fromConverterBase) safeType(tgt, tgtptr reflect.Value) reflect.Type {
 
 //
 
-type toStringConverter struct{}
-
-func (c *toStringConverter) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
-	if ctx == nil || ctx.Params == nil {
-		return
-	}
-	processed = ctx.Params.processUnexportedField(target, newval)
-	return
-}
+type toStringConverter struct{ toConverterBase }
 
 func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	if source.IsValid() {
@@ -262,11 +303,18 @@ func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, targe
 }
 
 func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tt := target.Type()
-	if ret, e := c.Transform(ctx, source, tt); e == nil {
+	tgtType := target.Type()
+
+	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
+		target.Set(ret)
+		return
+	}
+
+	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		if c.processUnexportedField(ctx, target, ret) {
 			return
 		}
+		dbglog.Log("set: %v (%v) <- %v", valfmt(&target), typfmtv(&target), valfmt(&ret))
 		target.Set(ret)
 	} else {
 		err = c.postCopyTo(ctx, source, target)
@@ -277,8 +325,13 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 // Transform will transform source type (bool, int, ...) to target string
 func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+		//var processed bool
+		//if processed, target, err = ctx.Preprocess(source, targetType, c); processed {
+		//	return
+		//}
+
 		var processed bool
-		if processed, target, err = ctx.Preprocess(source, targetType, c); processed {
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
 			return
 		}
 
@@ -303,7 +356,7 @@ type fromStringConverter struct{ fromConverterBase }
 func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgt, tgtptr := rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid so we fetch tgt type via its pointer
-	functorLog("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
 
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
@@ -315,10 +368,10 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 		} else {
 			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
 		}
-		functorLog("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
 	} else {
-		functorLog("  Transform() failed: %v", e)
-		functorLog("  trying to postCopyTo()")
+		dbglog.Log("  Transform() failed: %v", e)
+		dbglog.Log("  trying to postCopyTo()")
 		err = c.postCopyTo(source, target)
 	}
 	return
@@ -410,9 +463,9 @@ func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.
 	//st.PkgPath() . st.Name()
 	if yes = source.Kind() == reflect.Struct && source.String() == "bytes.Buffer"; yes {
 		ctx = &ValueConverterContext{params}
-		functorLog("    src: %v, tgt: %v | Matched", source, target)
+		dbglog.Log("    src: %v, tgt: %v | Matched", source, target)
 	} else {
-		//functorLog("    src: %v, tgt: %v", source, target)
+		//Log("    src: %v, tgt: %v", source, target)
 	}
 	return
 }
@@ -428,7 +481,7 @@ type fromTimeConverter struct{ fromConverterBase }
 func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgt, tgtptr := rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
-	functorLog("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
 
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
@@ -440,10 +493,10 @@ func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target re
 		} else {
 			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
 		}
-		functorLog("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
 	} else {
-		functorLog("  Transform() failed: %v", e)
-		functorLog("  trying to postCopyTo()")
+		dbglog.Log("  Transform() failed: %v", e)
+		dbglog.Log("  trying to postCopyTo()")
 		err = c.postCopyTo(source, target)
 	}
 	return
@@ -539,16 +592,22 @@ var knownTimeLayouts = []string{
 	"01/02/2006",
 }
 
-type toTimeConverter struct{}
+type toTimeConverter struct{ toConverterBase }
 
-func (c *toTimeConverter) fallback(target reflect.Value) (err error) {
-	var timeTimeTyp = reflect.TypeOf((*time.Time)(nil)).Elem()
-	rindirect(target).Set(reflect.Zero(timeTimeTyp))
-	return
-}
+//func (c *toTimeConverter) fallback(target reflect.Value) (err error) {
+//	var timeTimeTyp = reflect.TypeOf((*time.Time)(nil)).Elem()
+//	rindirect(target).Set(reflect.Zero(timeTimeTyp))
+//	return
+//}
 
 func (c *toTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgtType := target.Type()
+
+	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
+		target.Set(ret)
+		return
+	}
+
 	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		target.Set(ret)
 	} else {
@@ -570,6 +629,12 @@ func tryParseTime(s string) (tm time.Time) {
 
 func (c *toTimeConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
+
 		switch k := source.Kind(); k {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			tm := time.Unix(source.Int(), 0)
@@ -620,7 +685,7 @@ type fromDurationConverter struct{ fromConverterBase }
 func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgt, tgtptr := rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
-	functorLog("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
 
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
@@ -632,10 +697,10 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 		} else {
 			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
 		}
-		functorLog("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
 	} else {
-		functorLog("  Transform() failed: %v", e)
-		functorLog("  trying to postCopyTo()")
+		dbglog.Log("  Transform() failed: %v", e)
+		dbglog.Log("  trying to postCopyTo()")
 		err = c.postCopyTo(source, target)
 	}
 	return
@@ -705,16 +770,16 @@ func (c *fromDurationConverter) Match(params *Params, source, target reflect.Typ
 
 //
 
-type toDurationConverter struct{}
-
-func (c *toDurationConverter) fallback(target reflect.Value) (err error) {
-	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
-	rindirect(target).Set(reflect.Zero(tgtType))
-	return
-}
+type toDurationConverter struct{ toConverterBase }
 
 func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgtType := target.Type()
+
+	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
+		target.Set(ret)
+		return
+	}
+
 	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		target.Set(ret)
 	} else {
@@ -725,6 +790,11 @@ func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target 
 
 func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
+
 		switch k := source.Kind(); k {
 		case reflect.Bool:
 			if source.Bool() {
@@ -790,7 +860,7 @@ func (c *toDurationConverter) Match(params *Params, source, target reflect.Type)
 
 type toFuncConverter struct{}
 
-func copyToFunc(controller *cpController, source, target reflect.Value, targetType reflect.Type) (err error) {
+func copyToFuncImpl(controller *cpController, source, target reflect.Value, targetType reflect.Type) (err error) {
 	var presets []log.Any
 	if controller != nil {
 		presets = controller.funcInputs
@@ -813,29 +883,6 @@ func copyToFunc(controller *cpController, source, target reflect.Value, targetTy
 	return
 }
 
-func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	src := rdecodesimple(source)
-	tgt, tsetter := rdecode(target)
-	tgttyp := tgt.Type()
-	functorLog("  CopyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgttyp))
-
-	if k := src.Kind(); k != reflect.Func && ctx.IsPassSourceToTargetFunction() {
-		var controller *cpController
-		if ctx.Params != nil && ctx.controller != nil {
-			controller = ctx.controller
-		}
-		err = copyToFunc(controller, source, tgt, tgttyp)
-
-	} else if k == reflect.Func {
-
-		if !c.processUnexportedField(ctx, tgt, src) {
-			tsetter.Set(src)
-		}
-		functorLog("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
-	}
-	return
-}
-
 // processUnexportedField try to set newval into target if it's an unexported field
 func (c *toFuncConverter) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
 	if ctx == nil || ctx.Params == nil {
@@ -845,9 +892,65 @@ func (c *toFuncConverter) processUnexportedField(ctx *ValueConverterContext, tar
 	return
 }
 
+func (c *toFuncConverter) copyTo(ctx *ValueConverterContext, source, src, tgt, tsetter reflect.Value) (err error) {
+	if ctx.isGroupedFlagOKDeeply(cms.Ignore) {
+		return
+	}
+
+	tgttyp := tgt.Type()
+	dbglog.Log("  copyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgttyp))
+
+	if k := src.Kind(); k != reflect.Func && ctx.IsPassSourceToTargetFunction() {
+		var controller *cpController
+		if ctx.Params != nil && ctx.controller != nil {
+			controller = ctx.controller
+		}
+		err = copyToFuncImpl(controller, source, tgt, tgttyp)
+
+	} else if k == reflect.Func {
+
+		if !c.processUnexportedField(ctx, tgt, src) {
+			tsetter.Set(src)
+		}
+		dbglog.Log("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), tgt.Kind())
+	}
+	return
+}
+
+func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	src := rdecodesimple(source)
+	tgt, tsetter := rdecode(target)
+	//tgttyp := tgt.Type()
+	// Log("  CopyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgttyp))
+
+	if isNil(tgt) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil) {
+		return
+	}
+	if isZero(tgt) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero) {
+		return
+	}
+
+	err = c.copyTo(ctx, source, src, tgt, tsetter)
+	return
+}
+
 func (c *toFuncConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+
 	target = reflect.New(targetType).Elem()
-	err = c.CopyTo(ctx, source, target)
+
+	src := rdecodesimple(source)
+	tgt, tsetter := rdecode(target)
+
+	if isNil(src) && ctx.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) {
+		target = reflect.Zero(targetType)
+		return
+	}
+	if isZero(src) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty) {
+		target = reflect.Zero(targetType)
+		return
+	}
+
+	err = c.copyTo(ctx, source, src, tgt, tsetter)
 	return
 }
 
@@ -876,7 +979,7 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	src := rdecodesimple(source)
 	tgt, tsetter := rdecode(target)
 	tgttyp := tgt.Type()
-	functorLog("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
+	dbglog.Log("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
 
 	if k := tgttyp.Kind(); k != reflect.Func && ctx.IsCopyFunctionResultToTarget() {
 		err = c.funcResultToTarget(ctx, src, target)
@@ -887,7 +990,7 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 		if !c.processUnexportedField(ctx, tgt, src) {
 			tsetter.Set(src)
 		}
-		functorLog("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
+		dbglog.Log("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
 	}
 
 	//if ret, e := c.Transform(ctx, src, tgttyp); e == nil {
@@ -960,7 +1063,7 @@ func (c *fromFuncConverter) Transform(ctx *ValueConverterContext, source reflect
 	err = c.CopyTo(ctx, source, target)
 
 	//src, tgt, tgttyp := rdecodesimple(source), rdecodesimple(target), rdecodetypesimple(targetType)
-	//functorLog("  Transform: src: %v, tgt: %v", typfmtv(&src), typfmt(tgttyp))
+	//Log("  Transform: src: %v, tgt: %v", typfmtv(&src), typfmt(tgttyp))
 	//if k := tgttyp.Kind(); k != reflect.Func && ctx.IsCopyFunctionResultToTarget() {
 	//	target, err = c.funcResultToField(ctx, src, tgttyp)
 	//	return
@@ -971,7 +1074,7 @@ func (c *fromFuncConverter) Transform(ctx *ValueConverterContext, source reflect
 	//		ptr := source.Pointer()
 	//		target.SetPointer(unsafe.Pointer(ptr))
 	//	}
-	//	functorLog("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
+	//	Log("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
 	//}
 	return
 }

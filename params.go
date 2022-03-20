@@ -2,6 +2,9 @@ package deepcopy
 
 import (
 	"github.com/hedzr/deepcopy/cl"
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/log"
 	"reflect"
 )
@@ -31,7 +34,7 @@ type Params struct {
 	// field     *reflect.StructField // source field type
 	// fieldTags *fieldTags           // tag of source field
 
-	flags Flags
+	flags flags.Flags
 
 	children          map[string]*Params // children of struct fields
 	childrenAnonymous []*Params          // or children without name (non-struct)
@@ -49,9 +52,9 @@ func newParams(opts ...paramsOpt) *Params {
 	return p
 }
 
-func withFlags(flags ...CopyMergeStrategy) paramsOpt {
+func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt {
 	return func(p *Params) {
-		p.flags = newFlags(flags...)
+		p.flags = flags.New(flagsList...)
 	}
 }
 
@@ -146,9 +149,9 @@ func (params *Params) nextTargetField() (ok bool) {
 }
 
 func (params *Params) inMergeMode() bool {
-	return params.controller.flags.isAnyFlagsOK(SliceMerge, MapMerge) ||
-		params.owner.isAnyFlagsOK(SliceMerge, MapMerge) ||
-		params.flags.isAnyFlagsOK(SliceMerge, MapMerge)
+	return params.controller.flags.IsAnyFlagsOK(cms.SliceMerge, cms.MapMerge) ||
+		params.owner.isAnyFlagsOK(cms.SliceMerge, cms.MapMerge) ||
+		params.flags.IsAnyFlagsOK(cms.SliceMerge, cms.MapMerge)
 }
 
 // processUnexportedField try to set newval into target if it's an unexported field
@@ -159,7 +162,7 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	if fld := params.accessor.srcStructField; fld != nil && params.controller.copyUnexportedFields {
 		// in a struct
 		if !isExported(fld) {
-			functorLog("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, typfmt(fld.Type), valfmt(&target), valfmt(&newval))
+			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, typfmt(fld.Type), valfmt(&target), valfmt(&newval))
 			cl.SetUnexportedField(target, newval)
 			processed = true
 		}
@@ -284,20 +287,20 @@ func (params *Params) isStruct() bool {
 	return params != nil && params.accessor != nil && params.accessor.fieldTags != nil && params.dstOwner != nil
 }
 
-func (params *Params) isFlagExists(ftf CopyMergeStrategy) (ret bool) {
+func (params *Params) isFlagExists(ftf cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
 		return
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isFlagOK(ftf)
+		ret = params.controller.flags.IsFlagOK(ftf)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isFlagOK(ftf)
+		ret = params.flags.IsFlagOK(ftf)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
 		return
 	}
-	return ret || params.accessor.fieldTags.flags.isFlagOK(ftf)
+	return ret || params.accessor.fieldTags.flags.IsFlagOK(ftf)
 }
 
 // isGroupedFlagOK tests if the given flag is exists or valid.
@@ -307,20 +310,20 @@ func (params *Params) isFlagExists(ftf CopyMergeStrategy) (ret bool) {
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
-func (params *Params) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ret bool) {
+func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
-		return newFlags().isGroupedFlagOK(ftf...)
+		return flags.New().IsGroupedFlagOK(ftf...)
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isGroupedFlagOK(ftf...)
+		ret = params.controller.flags.IsGroupedFlagOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isGroupedFlagOK(ftf...)
+		ret = params.flags.IsGroupedFlagOK(ftf...)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
 		return false
 	}
-	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf...)
+	return ret || params.accessor.fieldTags.flags.IsGroupedFlagOK(ftf...)
 }
 
 // isGroupedFlagOKDeeply tests if the given flag is exists or valid.
@@ -331,52 +334,52 @@ func (params *Params) isGroupedFlagOK(ftf ...CopyMergeStrategy) (ret bool) {
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
-func (params *Params) isGroupedFlagOKDeeply(ftf ...CopyMergeStrategy) (ret bool) {
+func (params *Params) isGroupedFlagOKDeeply(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
-		return newFlags().isGroupedFlagOK(ftf...)
+		return flags.New().IsGroupedFlagOK(ftf...)
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isGroupedFlagOK(ftf...)
+		ret = params.controller.flags.IsGroupedFlagOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isGroupedFlagOK(ftf...)
+		ret = params.flags.IsGroupedFlagOK(ftf...)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return ret || newFlags().isGroupedFlagOK(ftf...)
+		return ret || flags.New().IsGroupedFlagOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.isGroupedFlagOK(ftf...)
+	return ret || params.accessor.fieldTags.flags.IsGroupedFlagOK(ftf...)
 }
 
-func (params *Params) isAnyFlagsOK(ftf ...CopyMergeStrategy) (ret bool) {
+func (params *Params) isAnyFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
 		return
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isAnyFlagsOK(ftf...)
+		ret = params.controller.flags.IsAnyFlagsOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isAnyFlagsOK(ftf...)
+		ret = params.flags.IsAnyFlagsOK(ftf...)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
 		return
 	}
-	return ret || params.accessor.fieldTags.flags.isAnyFlagsOK(ftf...)
+	return ret || params.accessor.fieldTags.flags.IsAnyFlagsOK(ftf...)
 }
 
-func (params *Params) isAllFlagsOK(ftf ...CopyMergeStrategy) (ret bool) {
+func (params *Params) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
 		return
 	}
 	if params.controller != nil {
-		ret = params.controller.flags.isAllFlagsOK(ftf...)
+		ret = params.controller.flags.IsAllFlagsOK(ftf...)
 	}
 	if !ret && params.flags != nil {
-		ret = params.flags.isAllFlagsOK(ftf...)
+		ret = params.flags.IsAllFlagsOK(ftf...)
 	}
 	if params.accessor == nil || params.accessor.fieldTags == nil {
 		return
 	}
-	return ret || params.accessor.fieldTags.flags.isAllFlagsOK(ftf...)
+	return ret || params.accessor.fieldTags.flags.IsAllFlagsOK(ftf...)
 }
 
 func (params *Params) depth() (depth int) {

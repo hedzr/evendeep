@@ -102,7 +102,7 @@ func TestInspectStruct(t *testing.T) {
 
 func TestDeepCopyExternal(t *testing.T) {
 
-	defer newCaptureLog(t).Release()
+	//defer dbglog.newCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string

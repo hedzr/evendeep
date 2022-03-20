@@ -160,6 +160,12 @@ func valfmt(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
+	if v.Kind() == reflect.Bool {
+		if v.Bool() {
+			return "true"
+		}
+		return "false"
+	}
 	if isNil(*v) {
 		return "<nil>"
 	}

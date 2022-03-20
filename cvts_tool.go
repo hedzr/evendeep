@@ -3,6 +3,7 @@ package deepcopy
 import (
 	"fmt"
 	"github.com/hedzr/deepcopy/cl"
+	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/syscalls"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
@@ -419,7 +420,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	functorLog("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {
@@ -446,7 +447,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	functorLog("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {

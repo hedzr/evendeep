@@ -1,6 +1,8 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"reflect"
 	"testing"
 )
@@ -13,17 +15,17 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flags     Flags `copy:",cleareq"`
+	flags     flags.Flags `copy:",cleareq"`
 	converter *ValueConverter
 	wouldbe   int `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
 }
 
-func prepareAFT() (a AFT, expects []Flags) {
-	expects = []Flags{
-		{Default: true, ClearIfEq: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true, ByOrdinal: true},
-		{Default: true, SliceCopy: true, MapCopy: true, OmitIfEmpty: true, ByOrdinal: true},
-		{Must: true, SliceCopyAppend: true, MapMerge: true, OmitIfNotEq: true, OmitIfZero: true, ByOrdinal: true},
-		{ByOrdinal: true, ByName: true},
+func prepareAFT() (a AFT, expects []flags.Flags) {
+	expects = []flags.Flags{
+		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Must: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfNotEq: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+		{cms.ByOrdinal: true, cms.ByName: true},
 	}
 
 	return
@@ -41,7 +43,7 @@ func subtestParse(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
 		ft := parseFieldTags(fld.Tag)
-		if !ft.isFlagExists(Ignore) {
+		if !ft.isFlagExists(cms.Ignore) {
 			t.Logf("%q flags: %v", fld.Tag, ft)
 		} else {
 			t.Logf("%q flags: %v", fld.Tag, ft)
@@ -52,7 +54,7 @@ func subtestParse(t *testing.T) {
 
 func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
-		flags     Flags           `copy:",cleareq,must"`
+		flags     flags.Flags     `copy:",cleareq,must"`
 		converter *ValueConverter `copy:",ignore"`
 		wouldbe   int             `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
 	}
@@ -69,7 +71,7 @@ func subtestFlagTests(t *testing.T) {
 	ft.Parse(sf1.Tag) // entering 'delete' branch
 
 	var z *fieldTags
-	z.isFlagExists(SliceCopy)
+	z.isFlagExists(cms.SliceCopy)
 
 	v = reflect.ValueOf(&z)
 	rwant(v, reflect.Struct)

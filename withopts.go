@@ -1,6 +1,10 @@
 package deepcopy
 
-import "github.com/hedzr/log/dir"
+import (
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/log/dir"
+)
 
 // Opt _
 type Opt func(c *cpController)
@@ -40,12 +44,12 @@ func WithCopyStyle() Opt {
 }
 
 // WithStrategies appends more flags into *cpController
-func WithStrategies(flags ...CopyMergeStrategy) Opt {
+func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		if c.flags == nil {
-			c.flags = newFlags(flags...)
+			c.flags = flags.New(flagsList...)
 		} else {
-			for _, f := range flags {
+			for _, f := range flagsList {
 				c.flags[f] = true
 			}
 		}
@@ -53,10 +57,10 @@ func WithStrategies(flags ...CopyMergeStrategy) Opt {
 }
 
 // WithCopyStrategyOpt is synonym of SliceCopy + MapCopy
-var WithCopyStrategyOpt = WithStrategies(SliceCopy, MapCopy)
+var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
 
 // WithMergeStrategyOpt is synonym of SliceMerge + MapMerge
-var WithMergeStrategyOpt = WithStrategies(SliceMerge, MapMerge)
+var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
@@ -72,7 +76,7 @@ var WithMergeStrategyOpt = WithStrategies(SliceMerge, MapMerge)
 //
 func WithStrategiesReset() Opt {
 	return func(c *cpController) {
-		c.flags = newFlags()
+		c.flags = flags.New()
 	}
 }
 

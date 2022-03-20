@@ -1,6 +1,9 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags"
+	"github.com/hedzr/deepcopy/flags/cms"
 	"reflect"
 )
 
@@ -37,7 +40,7 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	findtyp := rdecodetypesimple(fromtyp)
 	toPtr := reflect.New(findtyp)
 	toPtrObj := toPtr.Interface()
-	functorLog("toPtrObj: %v", toPtrObj)
+	dbglog.Log("toPtrObj: %v", toPtrObj)
 
 	var saved = defaultCloneController.flags
 	defer func() { defaultCloneController.flags = saved }()
@@ -113,7 +116,7 @@ func New(opts ...Opt) DeepCopier {
 func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	//lazyInitRoutines()
 	var c = newCopier()
-	c.flags = newFlags()
+	c.flags = flags.New()
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -141,7 +144,7 @@ func newDeepCopier() *cpController {
 		copyUnexportedFields:       true,
 		copyFunctionResultToTarget: true,
 		autoExpandStruct:           true,
-		flags:                      newFlags(SliceMerge, MapMerge),
+		flags:                      flags.New(cms.SliceMerge, cms.MapMerge),
 		rethrow:                    true,
 		makeNewClone:               false,
 	}
