@@ -59,8 +59,8 @@ cover.html
 
 ###
 
-*_string.go
-stringer/
+#*_string.go
+#stringer/
 
 
 ### Go template
