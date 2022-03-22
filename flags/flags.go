@@ -43,15 +43,16 @@ func (flags Flags) String() string {
 func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
 	for _, f := range flg {
 		flags[f] = true
-		if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
-			for fx := range m {
-				if fx != f {
-					if _, has := flags[fx]; has {
-						flags[fx] = false
-					}
-				}
-			}
-		}
+		toggleTheRadio(f, flags)
+		//if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
+		//	for fx := range m {
+		//		if fx != f {
+		//			if _, has := flags[fx]; has {
+		//				flags[fx] = false
+		//			}
+		//		}
+		//	}
+		//}
 	}
 	return flags
 }
@@ -182,6 +183,19 @@ func (flags Flags) IsAllFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
 	return true
 }
 
+func toggleTheRadio(f cms.CopyMergeStrategy, flags Flags) {
+	if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
+		for fx := range m {
+			if fx != f {
+				if _, ok = flags[fx]; ok {
+					delete(flags, fx)
+					// flags[fx] = false
+				}
+			}
+		}
+	}
+}
+
 // Parse _
 func Parse(s reflect.StructTag) (flags Flags, targetNameRule string) {
 	lazyInitFieldTagsFlags()
@@ -199,15 +213,15 @@ func Parse(s reflect.StructTag) (flags Flags, targetNameRule string) {
 		}
 
 		ftf := cms.Default.Parse(wh)
-		flags[ftf] = true
-
-		if vm, ok := mKnownFieldTagFlagsConflict[ftf]; ok {
-			for k1 := range vm {
-				if _, ok = flags[k1]; ok {
-					delete(flags, k1)
-				}
+		if ftf == cms.InvalidStrategy {
+			if wh == "ignore" {
+				flags[cms.Ignore] = true
 			}
+		} else {
+			flags[ftf] = true
 		}
+
+		toggleTheRadio(ftf, flags)
 	}
 
 	for k := range mKnownFieldTagFlagsConflictLeaders {

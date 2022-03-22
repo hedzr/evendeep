@@ -15,7 +15,7 @@ func (i CopyMergeStrategy) Parse(s string) CopyMergeStrategy {
 			return ix
 		}
 	}
-	return Default
+	return InvalidStrategy
 }
 
 const (
@@ -26,13 +26,20 @@ const (
 	// Must the must-be-copied fields will always be copied to the target
 	Must // must
 
-	// ClearIfEq the target field will be reset/clear to zero if it equals to the source
-	ClearIfEq CopyMergeStrategy = iota + 10 // cleareq
-	// OmitIfNotEq the source field will not be copied if it does not equal to the target
-	OmitIfNotEq // omitneq
+	// ClearIfEq the target field will be reset/clear to zero if it equals to the source.
+	// Just for struct fields
+	ClearIfEq CopyMergeStrategy = iota + 10 // clearifeq
+
+	// KeepIfNotEq the source field will not be copied if it does not equal to the target
+	// Just for struct fields
+	KeepIfNotEq // keepifneq
+
+	// ClearIfInvalid the target field will be reset/cleart to zero if source is invalid.
+	// default is ON.
+	ClearIfInvalid // clearifinvalid
 
 	// NoOmit never omit any source fields
-	NoOmit //noomit
+	NoOmit CopyMergeStrategy = iota + 20 - 5 //noomit
 	// OmitIfEmpty is both OmitIfSourceNil + OmitIfSourceZero
 	OmitIfEmpty // omitempty
 	// OmitIfNil the target field will be kept if source is nil
@@ -41,7 +48,7 @@ const (
 	OmitIfZero // omitzero
 
 	// NoOmitTarget never omit any target fields
-	NoOmitTarget //noomittgt
+	NoOmitTarget CopyMergeStrategy = iota + 30 - 9 //noomittgt
 	// OmitIfTargetEmpty is both OmitIfTargetNil + OmitIfTargetZero
 	OmitIfTargetEmpty // omitemptytgt
 	// OmitIfTargetNil keeps the target field if it is nil
@@ -51,7 +58,7 @@ const (
 
 	// SliceCopy the source slice will be set or duplicated to the target.
 	// the target slice will be lost.
-	SliceCopy CopyMergeStrategy = iota + 50 // slicecopy
+	SliceCopy CopyMergeStrategy = iota + 50 - 13 // slicecopy
 	// SliceCopyAppend the source slice will be appended into the target.
 	// The original value in the target will be kept
 	SliceCopyAppend // slicecopyappend
@@ -64,7 +71,7 @@ const (
 	SliceMerge // slicemerge
 
 	// MapCopy do copy source map to the target
-	MapCopy CopyMergeStrategy = iota + 70 // mapcopy
+	MapCopy CopyMergeStrategy = iota + 70 - 16 // mapcopy
 	// MapMerge try to merge each fields inside source map recursively,
 	// even if it's a slice, a pointer, another sub-map, and so on.
 	MapMerge // mapmerge
@@ -75,7 +82,7 @@ const (
 	// All of them should NOT be used in your user-side codes.
 
 	// UnexportedToo _
-	UnexportedToo CopyMergeStrategy = iota + 90 // private
+	UnexportedToo CopyMergeStrategy = iota + 90 - 18 // private
 
 	// ByOrdinal will be applied to struct, map and slice.
 	// As to slice, it is standard and unique choice.

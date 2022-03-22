@@ -37,16 +37,25 @@ func lazyInitFieldTagsFlags() {
 
 		conflictsAdd("noomit", "omitempty", "omitnil", "omitzero")
 		conflictsAdd("noomittgt", "omitemptytgt", "omitniltgt", "omitzerotgt")
+
 		conflictsAdd("slicecopy", "slicecopyappend", "slicemerge")
 		conflictsAdd("mapcopy", "mapmerge")
+
+		conflictsAdd("clearifinvalid")
+		conflictsAdd("clearifeq")
+		conflictsAdd("keepifneq")
+
 		conflictsAdd("std", "-", "must")
 
 		mKnownStrategyGroup = []cms.CopyMergeStrategies{
 			{cms.ByOrdinal, cms.ByName},
-			{cms.SliceCopy, cms.SliceCopyAppend, cms.SliceMerge},
 			{cms.NoOmit, cms.OmitIfEmpty, cms.OmitIfNil, cms.OmitIfZero},
 			{cms.NoOmitTarget, cms.OmitIfTargetEmpty, cms.OmitIfTargetNil, cms.OmitIfTargetZero},
+			{cms.SliceCopy, cms.SliceCopyAppend, cms.SliceMerge},
 			{cms.MapCopy, cms.MapMerge},
+			{cms.ClearIfInvalid},
+			{cms.ClearIfEq},
+			{cms.KeepIfNotEq},
 			{cms.Default, cms.Ignore, cms.Must},
 		}
 	})
