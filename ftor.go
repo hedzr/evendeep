@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 	"unsafe"
 )
 
@@ -45,7 +44,7 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 	if tgt.CanSet() {
 		if src.IsValid() {
 			err = c.copyTo(paramsChild, src, to)
-		} else {
+		} else if paramsChild.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 			// pointer - src is nil - set tgt to nil too
 			newtyp := to.Type()
 			zv := reflect.Zero(newtyp)
@@ -101,10 +100,11 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 }
 
 func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if tt, ok := from.Interface().(time.Time); ok {
-		to.Set(reflect.ValueOf(tt))
-		return
-	}
+	//if ff, ok := from.Interface().(time.Time); ok {
+	//	to.Set(reflect.ValueOf(ff))
+	//	return
+	//}
+
 	err = copyStructInternal(c, params, from, to,
 		func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
 
@@ -122,22 +122,22 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 					continue
 				}
 
-				flags := parseFieldTags(sourcefield.structField.Tag) // todo pass and apply the flags in field tag
-				if flags.isFlagExists(cms.Ignore) {
+				if paramsChild.parseFieldTags(sourcefield.structField.Tag) {
 					continue
 				}
 
 				srcval, dstval := sourcefield.FieldValue(), paramsChild.accessor.FieldValue()
-				dbglog.Log("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
+				log.VDebugf("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
 
 				if srcval != nil && dstval != nil && srcval.IsValid() {
 					if err = invokeStructFieldTransformer(c, paramsChild, *srcval, *dstval, padding); err != nil {
 						ec.Attach(err)
 						log.Errorf("error: %v", err)
 					}
+					continue
+				}
 
-				} else if paramsChild.inMergeMode() {
-
+				if paramsChild.inMergeMode() {
 					newtyp := paramsChild.accessor.FieldType()
 					dbglog.Log("    new object for %v", typfmt(*newtyp))
 
@@ -151,10 +151,10 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 					} else {
 						paramsChild.accessor.Set(toobjcopyptrv.Elem())
 					}
-
-				} else {
-					dbglog.Log("   ignore nil/zero/invalid source or nil target")
+					continue
 				}
+
+				dbglog.Log("   ignore nil/zero/invalid source or nil target")
 			}
 
 		})

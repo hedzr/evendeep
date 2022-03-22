@@ -752,7 +752,7 @@ func TestFromStringConverter_defaultTypes(t *testing.T) {
 	var svv = reflect.ValueOf(src)
 	var dvv = reflect.ValueOf(&dst)
 
-	ret, err := fss.defaultTypes(svv, dvv.Type().Elem())
+	ret, err := fss.convertToOrZeroTarget(svv, dvv.Type().Elem())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -951,7 +951,7 @@ func TestFromFuncConverter(t *testing.T) {
 			fnv := reflect.ValueOf(&fncase.fn)
 			tgtv := reflect.ValueOf(&fncase.target)
 			ff, tt := rdecodesimple(fnv), rdecodesimple(tgtv)
-			t.Logf("---- CASE %d. %v -> %v", ix, typfmtv(&ff), typfmtv(&tt))
+			dbglog.Log("---- CASE %d. %v -> %v", ix, typfmtv(&ff), typfmtv(&tt))
 
 			c := fromFuncConverter{}
 			ctx := newValueConverterContextForTest(nil)

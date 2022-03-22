@@ -287,6 +287,12 @@ func (params *Params) isStruct() bool {
 	return params != nil && params.accessor != nil && params.accessor.fieldTags != nil && params.dstOwner != nil
 }
 
+func (params *Params) parseFieldTags(tag reflect.StructTag) (isIgnored bool) {
+	flagsInTag := parseFieldTags(tag) // todo pass and apply the flags in field tag
+	isIgnored = flagsInTag.isFlagExists(cms.Ignore)
+	return
+}
+
 func (params *Params) isFlagExists(ftf cms.CopyMergeStrategy) (ret bool) {
 	if params == nil {
 		return
@@ -330,7 +336,12 @@ func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 //
 // Different with isGroupedFlagOK is, isGroupedFlagOKDeeply will check
 // whether the given flag is a leader (i.e. default choice) in a group
-// or not, even if Params.fieldTags is empty or unset.
+// or not, even if Params.fieldTags is empty or unset. And too, we run
+// the same logical on these sources:
+//
+//   1. params.controller.flags
+//   2. params.flags
+//   3. params.accessor.fieldTags.flags if present
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().

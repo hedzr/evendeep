@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/deepcopy/syscalls"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -148,15 +150,92 @@ func (ctx *ValueConverterContext) Preprocess(source reflect.Value, targetType re
 	return
 }
 
+func (ctx *ValueConverterContext) isStruct() bool {
+	if ctx == nil {
+		return false
+	}
+	return ctx.Params.isStruct()
+}
+
+func (ctx *ValueConverterContext) isFlagExists(ftf cms.CopyMergeStrategy) (ret bool) {
+	if ctx == nil {
+		return
+	}
+	return ctx.Params.isFlagExists(ftf)
+}
+
+// isGroupedFlagOK tests if the given flag is exists or valid.
+//
+// Different with isGroupedFlagOKDeeply is, isGroupedFlagOK will return
+// false simply while Params.fieldTags is empty or unset.
+//
+// When Params.fieldTags is valid, the actual testing will be forwarded
+// to Params.fieldTags.flags.isGroupedFlagOK().
+func (ctx *ValueConverterContext) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
+	if ctx == nil {
+		return flags.New().IsGroupedFlagOK(ftf...)
+	}
+	return ctx.Params.isGroupedFlagOK(ftf...)
+}
+
+// isGroupedFlagOKDeeply tests if the given flag is exists or valid.
+//
+// Different with isGroupedFlagOK is, isGroupedFlagOKDeeply will check
+// whether the given flag is a leader (i.e. default choice) in a group
+// or not, even if Params.fieldTags is empty or unset.
+//
+// When Params.fieldTags is valid, the actual testing will be forwarded
+// to Params.fieldTags.flags.isGroupedFlagOK().
+func (ctx *ValueConverterContext) isGroupedFlagOKDeeply(ftf ...cms.CopyMergeStrategy) (ret bool) {
+	if ctx == nil {
+		return flags.New().IsGroupedFlagOK(ftf...)
+	}
+	return ctx.Params.isGroupedFlagOKDeeply(ftf...)
+}
+
+func (ctx *ValueConverterContext) isAnyFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
+	if ctx == nil {
+		return flags.New().IsAnyFlagsOK(ftf...)
+	}
+	return ctx.Params.isAnyFlagsOK(ftf...)
+}
+
+func (ctx *ValueConverterContext) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
+	if ctx == nil {
+		return flags.New().IsAllFlagsOK(ftf...)
+	}
+	return ctx.Params.isAllFlagsOK(ftf...)
+}
+
 //
 
 //
 
 //
 
-type toConverterBase struct{}
+type cvtbase struct{}
 
-func (c *toConverterBase) checkSource(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, processed bool) {
+func (c *cvtbase) safeType(tgt, tgtptr reflect.Value) reflect.Type {
+	if tgt.IsValid() {
+		return tgt.Type()
+	}
+	if tgtptr.IsValid() {
+		return tgtptr.Type().Elem()
+	}
+	log.Panicf("niltyp !! CANNOT fetch type: tgt = %v, tgtptr = %v", typfmtv(&tgt), typfmtv(&tgtptr))
+	return niltyp
+}
+
+// processUnexportedField try to set newval into target if it's an unexported field
+func (c *cvtbase) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
+	if ctx == nil || ctx.Params == nil {
+		return
+	}
+	processed = ctx.Params.processUnexportedField(target, newval)
+	return
+}
+
+func (c *cvtbase) checkSource(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, processed bool) {
 	if ctx == nil {
 		return
 	}
@@ -170,20 +249,24 @@ func (c *toConverterBase) checkSource(ctx *ValueConverterContext, source reflect
 	}
 	if processed = isZero(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty); processed {
 		target = reflect.Zero(targetType)
-		return
 	}
 	return
 }
 
-func (c *toConverterBase) checkTarget(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, processed bool) {
+func (c *cvtbase) checkTarget(ctx *ValueConverterContext, target reflect.Value, targetType reflect.Type) (processed bool) {
+	if processed = !target.IsValid(); processed {
+		return
+	}
 	if processed = isNil(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil); processed {
 		return
 	}
-	if processed = isZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero); processed {
-		return
-	}
+	processed = isZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero)
 	return
 }
+
+//
+
+type toConverterBase struct{ cvtbase }
 
 func (c *toConverterBase) fallback(target reflect.Value) (err error) {
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
@@ -191,19 +274,11 @@ func (c *toConverterBase) fallback(target reflect.Value) (err error) {
 	return
 }
 
-func (c *toConverterBase) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
-	if ctx == nil || ctx.Params == nil {
-		return
-	}
-	processed = ctx.Params.processUnexportedField(target, newval)
-	return
-}
-
 //
 
 var niltyp = reflect.TypeOf((*string)(nil))
 
-type fromConverterBase struct{}
+type fromConverterBase struct{ cvtbase }
 
 func (c *fromConverterBase) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	panic("not impl")
@@ -235,22 +310,32 @@ func (c *fromConverterBase) preprocess(ctx *ValueConverterContext, source reflec
 }
 
 func (c *fromConverterBase) postCopyTo(source, target reflect.Value) (err error) {
-	if source.IsValid() {
-		if canConvert(&source, target.Type()) {
-			nv := source.Convert(target.Type())
+	//if source.IsValid() {
+	//	if canConvert(&source, target.Type()) {
+	//		nv := source.Convert(target.Type())
+	//		target.Set(nv)
+	//		return
+	//		//} else {
+	//		//	nv := fmt.Sprintf("%v", source.Interface())
+	//		//	target.Set(reflect.ValueOf(nv))
+	//	}
+	//}
+	//
+	//target = reflect.Zero(target.Type())
+	//return
+	var nv reflect.Value
+	nv, err = c.convertToOrZeroTarget(source, target.Type())
+	if err == nil {
+		if target.CanSet() {
 			target.Set(nv)
-			return
-			//} else {
-			//	nv := fmt.Sprintf("%v", source.Interface())
-			//	target.Set(reflect.ValueOf(nv))
+		} else {
+			err = ErrCannotSet.FormatWith(valfmt(&target), typfmtv(&target), valfmt(&nv), typfmtv(&nv))
 		}
 	}
-
-	target = reflect.Zero(target.Type())
 	return
 }
 
-func (c *fromConverterBase) defaultTypes(source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromConverterBase) convertToOrZeroTarget(source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if canConvert(&source, targetType) {
 		nv := source.Convert(targetType)
 		// target.Set(nv)
@@ -259,17 +344,6 @@ func (c *fromConverterBase) defaultTypes(source reflect.Value, targetType reflec
 		target = reflect.Zero(targetType)
 	}
 	return
-}
-
-func (c *fromConverterBase) safeType(tgt, tgtptr reflect.Value) reflect.Type {
-	if tgt.IsValid() {
-		return tgt.Type()
-	}
-	if tgtptr.IsValid() {
-		return tgtptr.Type().Elem()
-	}
-	log.Panicf("niltyp !! CANNOT fetch type: tgt = %v, tgtptr = %v", typfmtv(&tgt), typfmtv(&tgtptr))
-	return niltyp
 }
 
 //
@@ -303,10 +377,13 @@ func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, targe
 }
 
 func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgtType := target.Type()
+	//tgtType := target.Type()
+	tgt, tgtptr := rdecode(target)
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
-		target.Set(ret)
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//tgtptr.Set(ret)
 		return
 	}
 
@@ -315,7 +392,7 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 			return
 		}
 		dbglog.Log("set: %v (%v) <- %v", valfmt(&target), typfmtv(&target), valfmt(&ret))
-		target.Set(ret)
+		tgtptr.Set(ret)
 	} else {
 		err = c.postCopyTo(ctx, source, target)
 	}
@@ -358,6 +435,11 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
 
+	if processed := c.checkTarget(ctx, tgt, tgttyp); processed {
+		//target.Set(ret)
+		return
+	}
+
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
 			tgtptr.Set(ret)
@@ -369,9 +451,9 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
 		}
 		dbglog.Log("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
-	} else {
+	} else if !errors.Is(e, strconv.ErrSyntax) && !errors.Is(e, strconv.ErrRange) {
 		dbglog.Log("  Transform() failed: %v", e)
-		dbglog.Log("  trying to postCopyTo()")
+		dbglog.Log("  try running postCopyTo()")
 		err = c.postCopyTo(source, target)
 	}
 	return
@@ -384,6 +466,11 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 		//if processed, target, err = c.preprocess(ctx, source, targetType); processed {
 		//	return
 		//}
+
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
 
 		switch k := targetType.Kind(); k {
 		case reflect.Bool:
@@ -419,10 +506,10 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 		//reflect.Struct
 
 		default:
-			target, err = c.defaultTypes(source, targetType)
+			target, err = c.convertToOrZeroTarget(source, targetType)
 		}
 	} else {
-		target, err = c.defaultTypes(source, targetType)
+		target, err = c.convertToOrZeroTarget(source, targetType)
 	}
 	return
 }
@@ -440,22 +527,53 @@ func (c *fromStringConverter) Match(params *Params, source, target reflect.Type)
 
 //
 
-type fromBytesBufferConverter struct{}
+type fromBytesBufferConverter struct{ fromConverterBase }
+
+func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	tgt, tgtptr := rdecode(target)
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	//tgtType := target.Type()
+	dbglog.Log(" target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
+		typfmtv(&target), typfmt(target.Type()),
+		typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
+
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//target.Set(ret)
+		return
+	}
+
+	from := source.Interface().(bytes.Buffer)
+	tv := tgtptr.Interface()
+	switch to := tv.(type) {
+	case bytes.Buffer:
+		to.Reset()
+		to.Write(from.Bytes())
+		//dbglog.Log("     to: %v", to.String())
+	case *bytes.Buffer:
+		to.Reset()
+		to.Write(from.Bytes())
+		//dbglog.Log("    *to: %v", to.String())
+	case *[]byte:
+		tgtptr.Elem().Set(reflect.ValueOf(from.Bytes()))
+	case []byte:
+		tgtptr.Elem().Set(reflect.ValueOf(from.Bytes()))
+	}
+	return
+}
 
 func (c *fromBytesBufferConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+
+	var processed bool
+	if target, processed = c.checkSource(ctx, source, targetType); processed {
+		return
+	}
+
 	//TO/DO implement me
 	//panic("implement me")
 	from := source.Interface().(bytes.Buffer)
 	var to bytes.Buffer
 	to.Write(from.Bytes())
 	target = reflect.ValueOf(to)
-	return
-}
-
-func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	from, to := source.Interface().(bytes.Buffer), target.Interface().(bytes.Buffer)
-	to.Reset()
-	to.Write(from.Bytes())
 	return
 }
 
@@ -480,10 +598,15 @@ type fromTimeConverter struct{ fromConverterBase }
 
 func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgt, tgtptr := rdecode(target)
-	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
-	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//tgtptr.Set(ret)
+		return
+	}
+
+	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
 			tgtptr.Set(ret)
 		} else if tgtptr.Kind() == reflect.Ptr {
@@ -504,6 +627,12 @@ func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target re
 
 func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() {
+
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
+
 		switch k := targetType.Kind(); k {
 		case reflect.Bool:
 			b := isNil(source) || isZero(source)
@@ -535,10 +664,10 @@ func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect
 			target, err = rToString(t, targetType)
 
 		default:
-			target, err = c.defaultTypes(source, targetType)
+			target, err = c.convertToOrZeroTarget(source, targetType)
 		}
 	} else {
-		target, err = c.defaultTypes(source, targetType)
+		target, err = c.convertToOrZeroTarget(source, targetType)
 	}
 	return
 }
@@ -601,10 +730,13 @@ type toTimeConverter struct{ toConverterBase }
 //}
 
 func (c *toTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgtType := target.Type()
+	//tgtType := target.Type()
+	tgt, tgtptr := rdecode(target)
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
-		target.Set(ret)
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//target.Set(ret)
 		return
 	}
 
@@ -687,6 +819,11 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
 
+	var processed bool
+	if target, processed = c.checkSource(ctx, source, tgttyp); processed {
+		return
+	}
+
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if tgtptr.Kind() == reflect.Interface {
 			tgtptr.Set(ret)
@@ -712,6 +849,11 @@ func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source ref
 		//if processed, target, err = c.preprocess(ctx, source, targetType); processed {
 		//	return
 		//}
+
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
 
 		switch k := targetType.Kind(); k {
 		case reflect.Bool:
@@ -747,10 +889,10 @@ func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source ref
 		//reflect.Struct
 
 		default:
-			target, err = c.defaultTypes(source, targetType)
+			target, err = c.convertToOrZeroTarget(source, targetType)
 		}
 	} else {
-		target, err = c.defaultTypes(source, targetType)
+		target, err = c.convertToOrZeroTarget(source, targetType)
 	}
 	return
 }
@@ -773,10 +915,13 @@ func (c *fromDurationConverter) Match(params *Params, source, target reflect.Typ
 type toDurationConverter struct{ toConverterBase }
 
 func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgtType := target.Type()
+	//tgtType := target.Type()
+	tgt, tgtptr := rdecode(target)
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if ret, processed := c.checkTarget(ctx, source, tgtType); processed {
-		target.Set(ret)
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//tgtptr.Set(ret)
 		return
 	}
 
@@ -858,7 +1003,7 @@ func (c *toDurationConverter) Match(params *Params, source, target reflect.Type)
 
 //
 
-type toFuncConverter struct{}
+type toFuncConverter struct{ fromConverterBase }
 
 func copyToFuncImpl(controller *cpController, source, target reflect.Value, targetType reflect.Type) (err error) {
 	var presets []log.Any
@@ -919,18 +1064,17 @@ func (c *toFuncConverter) copyTo(ctx *ValueConverterContext, source, src, tgt, t
 
 func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	src := rdecodesimple(source)
-	tgt, tsetter := rdecode(target)
-	//tgttyp := tgt.Type()
-	// Log("  CopyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgttyp))
+	tgt, tgtptr := rdecode(target)
+	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
+	// Log("  CopyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgtType))
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if isNil(tgt) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil) {
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//tgtptr.Set(ret)
 		return
 	}
-	if isZero(tgt) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero) {
-		return
-	}
 
-	err = c.copyTo(ctx, source, src, tgt, tsetter)
+	err = c.copyTo(ctx, source, src, tgt, tgtptr)
 	return
 }
 
@@ -939,18 +1083,14 @@ func (c *toFuncConverter) Transform(ctx *ValueConverterContext, source reflect.V
 	target = reflect.New(targetType).Elem()
 
 	src := rdecodesimple(source)
-	tgt, tsetter := rdecode(target)
+	tgt, tgtptr := rdecode(target)
 
-	if isNil(src) && ctx.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) {
-		target = reflect.Zero(targetType)
-		return
-	}
-	if isZero(src) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty) {
-		target = reflect.Zero(targetType)
+	var processed bool
+	if target, processed = c.checkSource(ctx, source, targetType); processed {
 		return
 	}
 
-	err = c.copyTo(ctx, source, src, tgt, tsetter)
+	err = c.copyTo(ctx, source, src, tgt, tgtptr)
 	return
 }
 
@@ -963,7 +1103,7 @@ func (c *toFuncConverter) Match(params *Params, source, target reflect.Type) (ct
 
 //
 
-type fromFuncConverter struct{}
+type fromFuncConverter struct{ fromConverterBase }
 
 func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	// tsetter might not be equal to tgt when:
@@ -977,18 +1117,24 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	//    // 'decoded bool(a)'.
 	//
 	src := rdecodesimple(source)
-	tgt, tsetter := rdecode(target)
-	tgttyp := tgt.Type()
-	dbglog.Log("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
+	tgt, tgtptr := rdecode(target)
+	tgtType := tgt.Type()
+	//dbglog.Log("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
-	if k := tgttyp.Kind(); k != reflect.Func && ctx.IsCopyFunctionResultToTarget() {
+	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+		//target.Set(ret)
+		return
+	}
+
+	if k := tgtType.Kind(); k != reflect.Func && ctx.IsCopyFunctionResultToTarget() {
 		err = c.funcResultToTarget(ctx, src, target)
 		return
 
 	} else if k == reflect.Func {
 
 		if !c.processUnexportedField(ctx, tgt, src) {
-			tsetter.Set(src)
+			tgtptr.Set(src)
 		}
 		dbglog.Log("    function pointer copied: %v (%v) -> %v", source.Kind(), source.Interface(), target.Kind())
 	}
@@ -1049,16 +1195,21 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 	return
 }
 
-// processUnexportedField try to set newval into target if it's an unexported field
-func (c *fromFuncConverter) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
-	if ctx == nil || ctx.Params == nil {
-		return
-	}
-	processed = ctx.Params.processUnexportedField(target, newval)
-	return
-}
+//// processUnexportedField try to set newval into target if it's an unexported field
+//func (c *fromFuncConverter) processUnexportedField(ctx *ValueConverterContext, target, newval reflect.Value) (processed bool) {
+//	if ctx == nil || ctx.Params == nil {
+//		return
+//	}
+//	processed = ctx.Params.processUnexportedField(target, newval)
+//	return
+//}
 
 func (c *fromFuncConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	var processed bool
+	if target, processed = c.checkSource(ctx, source, targetType); processed {
+		return
+	}
+
 	target = reflect.New(targetType).Elem()
 	err = c.CopyTo(ctx, source, target)
 

@@ -15,6 +15,7 @@ import (
 	mrand "math/rand"
 	"reflect"
 	"runtime"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -44,6 +45,25 @@ func TestErrorsTmpl(t *testing.T) {
 	t.Logf("The error is: %v", err)
 	err = errTmpl.FormatWith(true, false)
 	t.Logf("The error is: %v", err)
+}
+
+// TestErrorsIs _
+func TestErrorsIs(t *testing.T) {
+	_, err := strconv.ParseFloat("hello", 64)
+	t.Logf("err = %+v", err)
+
+	//e1:=errors2.Unwrap(err)
+	//t.Logf("e1 = %+v", e1)
+
+	t.Logf("errors.Is(err, strconv.ErrSyntax): %v", errors.Is(err, strconv.ErrSyntax))
+	t.Logf("errors.Is(err, &strconv.NumError{}): %v", errors.Is(err, &strconv.NumError{}))
+
+	var e2 *strconv.NumError
+	if errors.As(err, &e2) {
+		t.Logf("As() ok, e2 = %v", e2)
+	} else {
+		t.Logf("As() not ok")
+	}
 }
 
 func TestSliceLen(t *testing.T) {
@@ -225,9 +245,9 @@ func TestParamsBasics3(t *testing.T) {
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     flags.Flags     `copy:",cleareq,must"`
+			flags     flags.Flags     `copy:",clearifeq,must"`
 			converter *ValueConverter `copy:",ignore"`
-			wouldbe   int             `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
+			wouldbe   int             `copy:",must,keepifneq,omitzero,slicecopyappend,mapmerge"`
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)

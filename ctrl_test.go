@@ -1,9 +1,11 @@
 package deepcopy_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags/cms"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
@@ -458,6 +460,69 @@ func TestTypeConvert3Func(t *testing.T) {
 			},
 		),
 	)
+}
+
+func TestStructStdlib(t *testing.T) {
+
+	//timeZone, _ := time.LoadLocation("America/Phoenix")
+	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	tm1 := time.Date(1979, 1, 29, 13, 3, 49, 19730313, timeZone2)
+	var tgt time.Time
+	var dur time.Duration
+	var dur1 = 13*time.Second + 3*time.Nanosecond
+	var bb, bb1 bytes.Buffer
+	bb1.WriteString("hellp world")
+	var b, be []byte
+	be = bb1.Bytes()
+
+	var bbn *bytes.Buffer = nil
+
+	for _, tc := range []deepcopy.TestCase{
+		deepcopy.NewTestCase(
+			"stdlib - time.Time 1",
+			tm1, &tgt, &tm1,
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"stdlib - time.Duration 1",
+			dur1, &dur, &dur1,
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"stdlib - bytes.Buffer 1",
+			bb1, &bb, &bb1,
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"stdlib - bytes.Buffer 2",
+			bb1, &b, &be,
+			nil,
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"stdlib - bytes.Buffer 2 - target is nil",
+			bb1, &bbn, &bb1,
+			nil,
+			func(src, dst, expect interface{}, e error) (err error) {
+				if err = e; e != nil {
+					return
+				}
+				if p, ok := dst.(**bytes.Buffer); ok && *p == nil {
+					return
+				} else {
+					dbglog.Log("p = %v, ok = %v, dst = %v/%v", p, ok, dst, &bbn)
+				}
+				err = errors.InvalidArgument
+				return
+			},
+		),
+	} {
+		t.Run(deepcopy.RunTestCasesWith(&tc))
+	}
+
 }
 
 func TestStructSimple(t *testing.T) {

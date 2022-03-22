@@ -15,16 +15,16 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flags     flags.Flags `copy:",cleareq"`
+	flags     flags.Flags `copy:",clearifeq"`
 	converter *ValueConverter
-	wouldbe   int `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
+	wouldbe   int `copy:",must,keepifneq,omitzero,slicecopyappend,mapmerge"`
 }
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
 	expects = []flags.Flags{
-		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Must: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfNotEq: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Must: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
 		{cms.ByOrdinal: true, cms.ByName: true},
 	}
 
@@ -54,9 +54,9 @@ func subtestParse(t *testing.T) {
 
 func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
-		flags     flags.Flags     `copy:",cleareq,must"`
+		flags     flags.Flags     `copy:",clearifeq,must"`
 		converter *ValueConverter `copy:",ignore"`
-		wouldbe   int             `copy:",must,omitneq,omitzero,slicecopyappend,mapmerge"`
+		wouldbe   int             `copy:",must,keepifneq,omitzero,slicecopyappend,mapmerge"`
 	}
 	var a AFS1
 	v := reflect.ValueOf(&a)
