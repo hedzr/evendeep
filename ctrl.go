@@ -1,9 +1,10 @@
 package deepcopy
 
 import (
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/deepcopy/typ"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
@@ -18,7 +19,7 @@ type cpController struct {
 	makeNewClone bool        // make a new clone by copying to a fresh new object
 	flags        flags.Flags // CopyMergeStrategies globally
 	ignoreNames  []string    // optional ignored names with wild-matching
-	funcInputs   []log.Any   // preset input args for function invoking
+	funcInputs   []typ.Any   // preset input args for function invoking
 	rethrow      bool        // panic when error occurs
 
 	valueConverters ValueConverters

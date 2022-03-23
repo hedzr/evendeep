@@ -3,6 +3,6 @@
 
 // for go1.18+
 
-package dctyp
+package typ
 
 type Any = any

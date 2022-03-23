@@ -3,10 +3,11 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
-	"github.com/hedzr/deepcopy/syscalls"
+	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/deepcopy/internal/syscalls"
+	"github.com/hedzr/deepcopy/typ"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
@@ -1010,7 +1011,7 @@ func (c *toDurationConverter) Match(params *Params, source, target reflect.Type)
 type toFuncConverter struct{ fromConverterBase }
 
 func copyToFuncImpl(controller *cpController, source, target reflect.Value, targetType reflect.Type) (err error) {
-	var presets []log.Any
+	var presets []typ.Any
 	if controller != nil {
 		presets = controller.funcInputs
 	}

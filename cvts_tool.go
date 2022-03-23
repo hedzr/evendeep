@@ -2,9 +2,9 @@ package deepcopy
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy/cl"
-	"github.com/hedzr/deepcopy/dbglog"
-	"github.com/hedzr/deepcopy/syscalls"
+	"github.com/hedzr/deepcopy/internal/cl"
+	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/deepcopy/internal/syscalls"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"

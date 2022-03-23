@@ -1,9 +1,9 @@
 package deepcopy
 
 import (
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/deepcopy/internal/dbglog"
 	"reflect"
 )
 

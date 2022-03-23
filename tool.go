@@ -4,7 +4,7 @@ package deepcopy
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy/dbglog"
+	"github.com/hedzr/deepcopy/internal/dbglog"
 	"reflect"
 	"strings"
 	"unsafe"

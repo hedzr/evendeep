@@ -2,9 +2,9 @@ package deepcopy
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy/cl"
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/deepcopy/internal/cl"
+	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
@@ -696,7 +696,7 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 }
 
 func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if from.IsNil() {
+	if from.IsNil() && params.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) { // an empty slice found
 		return
 	}
 
@@ -711,6 +711,10 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 	if tk != reflect.Map {
 		dbglog.Log("from map -> %v", typfmtv(&tgt))
 		//
+	}
+
+	if isNil(tgt) && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
+		return
 	}
 
 	ec := errors.New("map copy/merge errors")

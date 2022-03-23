@@ -1,10 +1,10 @@
 package deepcopy
 
 import (
-	"github.com/hedzr/deepcopy/cl"
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/deepcopy/internal/cl"
+	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
 	"reflect"
 )

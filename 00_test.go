@@ -3,10 +3,10 @@ package deepcopy
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/deepcopy/cl"
-	"github.com/hedzr/deepcopy/dbglog"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/deepcopy/internal/cl"
+	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
@@ -42,9 +42,9 @@ func TestErrorsTmpl(t *testing.T) {
 
 	var err error
 	err = errTmpl.FormatWith("789", "123")
-	t.Logf("The error is: %v", err)
+	t.Logf("The error is expected: %v", err)
 	err = errTmpl.FormatWith(true, false)
-	t.Logf("The error is: %v", err)
+	t.Logf("The error is expected: %v", err)
 }
 
 // TestErrorsIs _
