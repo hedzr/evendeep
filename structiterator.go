@@ -378,16 +378,16 @@ func (s *structIterator) iitop() *fieldaccessor {
 
 // sourceStructFieldsTable _
 type sourceStructFieldsTable interface {
-	gettablerecords() tablerecords
-	getcurrrecord() tablerec
-	gettablerec(index int) tablerec
-	step(delta int)
+	TableRecords() tablerecords
+	CurrRecord() tablerec
+	TableRecord(index int) tablerec
+	Step(delta int)
 }
 
-func (s *structIterator) gettablerecords() tablerecords  { return s.srcFields.tablerecords }
-func (s *structIterator) getcurrrecord() tablerec        { return s.srcFields.tablerecords[s.srcIndex] }
-func (s *structIterator) gettablerec(index int) tablerec { return s.srcFields.tablerecords[index] }
-func (s *structIterator) step(delta int)                 { s.withSourceIteratorIndexIncrease(delta) }
+func (s *structIterator) TableRecords() tablerecords     { return s.srcFields.tablerecords }
+func (s *structIterator) CurrRecord() tablerec           { return s.srcFields.tablerecords[s.srcIndex] }
+func (s *structIterator) TableRecord(index int) tablerec { return s.srcFields.tablerecords[index] }
+func (s *structIterator) Step(delta int)                 { s.withSourceIteratorIndexIncrease(delta) }
 
 func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sourcefield tablerec, ok bool) {
 	if s.srcIndex < 0 {

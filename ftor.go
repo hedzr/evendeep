@@ -117,14 +117,14 @@ func copyStructInternal(
 		paramsChild = newParams(withOwners(c, params, &from, &to, nil, nil))
 	)
 
-	defer ec.Defer(&err)
 	defer paramsChild.revoke()
+	defer ec.Defer(&err)
 
 	defer func() {
 		if e := recover(); e != nil {
-			srcstructtable := paramsChild.targetIterator.(sourceStructFieldsTable)
+			sst := paramsChild.targetIterator.(sourceStructFieldsTable)
 
-			ff := srcstructtable.gettablerec(i).FieldValue()
+			ff := sst.TableRecord(i).FieldValue()
 			tf := paramsChild.accessor.FieldValue()
 			tft := paramsChild.accessor.FieldType()
 
@@ -153,30 +153,19 @@ func copyStructInternal(
 	}
 
 	err = fn(paramsChild, ec, i, amount, padding)
-
-	////inspectStructV(to)
-	//for i, amount = 0, f.NumField(); i < amount; i++ {
-	//	fv := f.Field(i + params.srcOffset)
-	//	if !fv.IsValid() {
-	//		Log("%s  IGNORED invalid source", padding)
-	//		continue
-	//	}
-	//
-	//	err = transformField(c, params, from, to, f, t, i, padding)
-	//}
 	return
 }
 
 func forEachField(paramsChild *Params, ec errors.Error, i, amount int, padding string) (err error) {
 
-	srcstructtable := paramsChild.targetIterator.(sourceStructFieldsTable)
+	sst := paramsChild.targetIterator.(sourceStructFieldsTable)
 	c := paramsChild.controller
 
-	for i, amount = 0, len(srcstructtable.gettablerecords()); i < amount; i++ {
-		sourcefield := srcstructtable.getcurrrecord()
+	for i, amount = 0, len(sst.TableRecords()); i < amount; i++ {
+		sourceField := sst.CurrRecord()
 
-		if c.isIgnoreName(sourcefield.ShortFieldName()) {
-			srcstructtable.step(1) // skip this source field
+		if c.isIgnoreName(sourceField.ShortFieldName()) {
+			sst.Step(1) // skip this source field
 			continue
 		}
 
@@ -184,12 +173,12 @@ func forEachField(paramsChild *Params, ec errors.Error, i, amount int, padding s
 			continue
 		}
 
-		if paramsChild.parseFieldTags(sourcefield.structField.Tag) {
+		if paramsChild.parseFieldTags(sourceField.structField.Tag) {
 			continue
 		}
 
-		srcval, dstval := sourcefield.FieldValue(), paramsChild.accessor.FieldValue()
-		log.VDebugf("%d. %s (%v) %v-> %s (%v) %v", i, sourcefield.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
+		srcval, dstval := sourceField.FieldValue(), paramsChild.accessor.FieldValue()
+		log.VDebugf("%d. %s (%v) %v-> %s (%v) %v", i, sourceField.FieldName(), valfmt(srcval), typfmtv(srcval), paramsChild.accessor.StructFieldName(), valfmt(dstval), typfmt(*paramsChild.accessor.FieldType()))
 
 		if srcval != nil && dstval != nil && srcval.IsValid() {
 			if err = invokeStructFieldTransformer(c, paramsChild, *srcval, *dstval, padding); err != nil {
