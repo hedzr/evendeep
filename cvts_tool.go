@@ -413,7 +413,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 			target, _, err = tryStringerIt(source, desiredType)
 		}
 	} else {
-		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
+		target = reflect.Zero(stringType)
 	}
 	return
 }
