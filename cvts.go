@@ -309,7 +309,7 @@ func (c *fromConverterBase) preprocess(ctx *ValueConverterContext, source reflec
 	return
 }
 
-func (c *fromConverterBase) postCopyTo(source, target reflect.Value) (err error) {
+func (c *fromConverterBase) postCopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	//if source.IsValid() {
 	//	if canConvert(&source, target.Type()) {
 	//		nv := source.Convert(target.Type())
@@ -324,7 +324,7 @@ func (c *fromConverterBase) postCopyTo(source, target reflect.Value) (err error)
 	//target = reflect.Zero(target.Type())
 	//return
 	var nv reflect.Value
-	nv, err = c.convertToOrZeroTarget(source, target.Type())
+	nv, err = c.convertToOrZeroTarget(ctx, source, target.Type())
 	if err == nil {
 		if target.CanSet() {
 			target.Set(nv)
@@ -335,12 +335,12 @@ func (c *fromConverterBase) postCopyTo(source, target reflect.Value) (err error)
 	return
 }
 
-func (c *fromConverterBase) convertToOrZeroTarget(source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromConverterBase) convertToOrZeroTarget(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if canConvert(&source, targetType) {
 		nv := source.Convert(targetType)
 		// target.Set(nv)
 		target = nv
-	} else {
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(targetType)
 	}
 	return
@@ -413,7 +413,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 		}
 
 		target, err = rToString(source, targetType)
-	} else {
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
 	}
 	return
@@ -454,7 +454,7 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 	} else if !errors.Is(e, strconv.ErrSyntax) && !errors.Is(e, strconv.ErrRange) {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  try running postCopyTo()")
-		err = c.postCopyTo(source, target)
+		err = c.postCopyTo(ctx, source, target)
 	}
 	return
 }
@@ -506,10 +506,10 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 		//reflect.Struct
 
 		default:
-			target, err = c.convertToOrZeroTarget(source, targetType)
+			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 		}
 	} else {
-		target, err = c.convertToOrZeroTarget(source, targetType)
+		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 	}
 	return
 }
@@ -620,7 +620,7 @@ func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	} else {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  trying to postCopyTo()")
-		err = c.postCopyTo(source, target)
+		err = c.postCopyTo(ctx, source, target)
 	}
 	return
 }
@@ -664,10 +664,10 @@ func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect
 			target, err = rToString(t, targetType)
 
 		default:
-			target, err = c.convertToOrZeroTarget(source, targetType)
+			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 		}
 	} else {
-		target, err = c.convertToOrZeroTarget(source, targetType)
+		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 	}
 	return
 }
@@ -742,7 +742,7 @@ func (c *toTimeConverter) CopyTo(ctx *ValueConverterContext, source, target refl
 
 	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		target.Set(ret)
-	} else {
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		err = c.fallback(target)
 	}
 	return
@@ -791,6 +791,8 @@ func (c *toTimeConverter) Transform(ctx *ValueConverterContext, source reflect.V
 		default:
 			err = ErrCannotConvertTo.FormatWith(source, typfmtv(&source), targetType, targetType.Kind())
 		}
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
+		target = reflect.Zero(targetType)
 	} else {
 		err = errors.New("source (%v) is invalid", valfmt(&source))
 	}
@@ -838,7 +840,7 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 	} else {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  trying to postCopyTo()")
-		err = c.postCopyTo(source, target)
+		err = c.postCopyTo(ctx, source, target)
 	}
 	return
 }
@@ -889,10 +891,10 @@ func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source ref
 		//reflect.Struct
 
 		default:
-			target, err = c.convertToOrZeroTarget(source, targetType)
+			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 		}
 	} else {
-		target, err = c.convertToOrZeroTarget(source, targetType)
+		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 	}
 	return
 }
@@ -927,7 +929,7 @@ func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target 
 
 	if ret, e := c.Transform(ctx, source, tgtType); e == nil {
 		target.Set(ret)
-	} else {
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		err = c.fallback(target)
 	}
 	return
@@ -984,6 +986,8 @@ func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source refle
 		default:
 			err = ErrCannotConvertTo.FormatWith(source, typfmtv(&source), targetType, targetType.Kind())
 		}
+	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
+		target = reflect.Zero(targetType)
 	} else {
 		err = errors.New("source (%v) is invalid", valfmt(&source))
 	}

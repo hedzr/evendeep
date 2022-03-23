@@ -752,7 +752,8 @@ func TestFromStringConverter_defaultTypes(t *testing.T) {
 	var svv = reflect.ValueOf(src)
 	var dvv = reflect.ValueOf(&dst)
 
-	ret, err := fss.convertToOrZeroTarget(svv, dvv.Type().Elem())
+	ctx := newValueConverterContextForTest(newDeepCopier())
+	ret, err := fss.convertToOrZeroTarget(ctx, svv, dvv.Type().Elem())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -766,7 +767,8 @@ func TestFromStringConverter_postCopyTo(t *testing.T) {
 	var svv = reflect.ValueOf(src)
 	var dvv = reflect.ValueOf(&dst)
 
-	err := fss.postCopyTo(svv, dvv.Elem())
+	ctx := newValueConverterContextForTest(newDeepCopier())
+	err := fss.postCopyTo(ctx, svv, dvv.Elem())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}

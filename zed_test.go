@@ -123,10 +123,11 @@ func TestDeepCopyExternal(t *testing.T) {
 	t.Run("DeepCopy()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &deepcopy.X2{N: nn[1:3]}
+		x2ind := deepcopy.X2{N: nn[1:3]}
+		x2 := &x2ind
 
 		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
-		testIfBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
+		testIfBadCopy(t, x1, x2ind, ret, "DeepCopy x1 -> x2", true)
 
 	})
 

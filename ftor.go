@@ -299,6 +299,7 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 
 	fft, dft := ff.Type(), df.Type()
 	fftk, dftk := fft.Kind(), dft.Kind()
+
 	if fftk == reflect.Struct && ff.NumField() == 0 {
 		// never get into here because tablerecords.getallfields skip empty struct
 		log.Warnf("should never get into here, might be algor wrong ?")
@@ -336,8 +337,7 @@ func tryConverters(c *cpController, params *Params, ff, df reflect.Value) (proce
 
 // copySlice transforms from slice to target with slice or other types
 func copySlice(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if from.IsNil() { // an empty slice found
-		//TODO omitempty, omitnil, omitzero, ...
+	if from.IsNil() && params.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) { // an empty slice found
 		return
 	}
 
@@ -358,8 +358,20 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 		if processed, err = tryConverters(c, params, from, tgt); processed {
 			return
 		}
-		log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
+		//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
+		err = ErrCannotCopy.FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
+		return
 	}
+
+	if isNil(tgt) && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
+		return
+	}
+
+	err = copySliceInternal(c, params, from, to, tgt, tgtptr)
+	return
+}
+
+func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr reflect.Value) (err error) {
 
 	ec := errors.New("slice copy/merge errors")
 	defer ec.Defer(&err)
@@ -610,13 +622,12 @@ func _sliceMergeOperation(c *cpController, params *Params, src, tgt reflect.Valu
 }
 
 func copyArray(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if isZero(from) {
+	if isZero(from) && params.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty) {
 		return
 	}
 
 	src := rindirect(from)
 	tgt, tgtptr := rdecode(to)
-	sl, tl := src.Len(), tgt.Len()
 
 	//if !to.CanAddr() && params != nil {
 	//	if !params.isStruct() {
@@ -633,6 +644,21 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 	dbglog.Log("    from.type: %v, len: %v, cap: %v", src.Type().Kind(), src.Len(), src.Cap())
 	dbglog.Log("      to.type: %v, len: %v, cap: %v, tgtptr.canSet: %v, tgtptr.canaddr: %v", tgt.Type().Kind(), tgt.Len(), tgt.Cap(), tgtptr.CanSet(), tgtptr.CanAddr())
 
+	if tgt.Kind() != reflect.Array {
+		var processed bool
+		if processed, err = tryConverters(c, params, from, tgt); processed {
+			return
+		}
+		//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
+		err = ErrCannotCopy.FormatWith(valfmt(&src), typfmtv(&src), valfmt(&tgt), typfmtv(&tgt))
+		return
+	}
+
+	if isZero(tgt) && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
+		return
+	}
+
+	sl, tl := src.Len(), tgt.Len()
 	eltyp := tgt.Type().Elem()
 	//set := src.Index(0).Type()
 	//if set != tgt.Index(0).Type() {

@@ -2,7 +2,6 @@ package deepcopy_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/hedzr/deepcopy"
 	"github.com/hedzr/deepcopy/dbglog"
@@ -546,6 +545,8 @@ func TestStructSimple(t *testing.T) {
 
 	expect1 := &deepcopy.X2{
 		A: uintptr(unsafe.Pointer(&x0)),
+		//D: []string{},
+		//E: []*deepcopy.X0{},
 		H: x1.H,
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
@@ -575,6 +576,7 @@ func TestStructSimple(t *testing.T) {
 			expect1,
 			[]deepcopy.Opt{
 				deepcopy.WithStrategiesReset(),
+				deepcopy.WithStrategies(cms.OmitIfEmpty),
 			},
 			nil,
 			//func(src, dst, expect interface{}) (err error) {
@@ -904,55 +906,71 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 	//	return
 	//}
 
-	if !reflect.DeepEqual(src, tgt) {
-
-		var b1, b2 []byte
-		var err error
-		if b1, err = json.MarshalIndent(src, "", "  "); err == nil {
-			if b2, err = json.MarshalIndent(src, "", "  "); err == nil {
-				if string(b1) == string(b2) {
-					return
-				}
-				t.Logf("testIfBadCopy - src: %v\ntgt: %v\n", string(b1), string(b2))
-			}
-		}
-		if err != nil {
-			t.Logf("testIfBadCopy - json marshal not ok (just a warning): %v", err)
-
-			//if b1, err = yaml.Marshal(src); err == nil {
-			//	if b2, err = yaml.Marshal(src); err == nil {
-			//		if string(b1) == string(b2) {
-			//			return
-			//		}
-			//	}
-			//}
-
-			//gob.Register(X1{})
-			//
-			//buf1 := new(bytes.Buffer)
-			//enc1 := gob.NewEncoder(buf1)
-			//if err = enc1.Encode(&src); err != nil {
-			//	t.Fatal(err)
-			//}
-			//
-			//buf2 := new(bytes.Buffer)
-			//enc2 := gob.NewEncoder(buf2)
-			//if err = enc2.Encode(&tgt); err != nil {
-			//	t.Fatal(err)
-			//}
-			//
-			//s1, s2 := buf1.String(), buf2.String()
-			//if s1 == s2 {
-			//	return
-			//}
-		}
-
-		for _, b := range notFailed {
-			if yes, ok := b.(bool); yes && ok {
-				return
-			}
-		}
-
-		t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
+	diff, equal := messagediff.PrettyDiff(src, tgt)
+	if equal {
+		return
 	}
+
+	fmt.Println(diff)
+	err := errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+
+	for _, b := range notFailed {
+		if yes, ok := b.(bool); yes && ok {
+			return
+		}
+	}
+
+	t.Fatal(err)
+
+	//if !reflect.DeepEqual(src, tgt) {
+	//
+	//	var b1, b2 []byte
+	//	var err error
+	//	if b1, err = json.MarshalIndent(src, "", "  "); err == nil {
+	//		if b2, err = json.MarshalIndent(src, "", "  "); err == nil {
+	//			if string(b1) == string(b2) {
+	//				return
+	//			}
+	//			t.Logf("testIfBadCopy - src: %v\ntgt: %v\n", string(b1), string(b2))
+	//		}
+	//	}
+	//	if err != nil {
+	//		t.Logf("testIfBadCopy - json marshal not ok (just a warning): %v", err)
+	//
+	//		//if b1, err = yaml.Marshal(src); err == nil {
+	//		//	if b2, err = yaml.Marshal(src); err == nil {
+	//		//		if string(b1) == string(b2) {
+	//		//			return
+	//		//		}
+	//		//	}
+	//		//}
+	//
+	//		//gob.Register(X1{})
+	//		//
+	//		//buf1 := new(bytes.Buffer)
+	//		//enc1 := gob.NewEncoder(buf1)
+	//		//if err = enc1.Encode(&src); err != nil {
+	//		//	t.Fatal(err)
+	//		//}
+	//		//
+	//		//buf2 := new(bytes.Buffer)
+	//		//enc2 := gob.NewEncoder(buf2)
+	//		//if err = enc2.Encode(&tgt); err != nil {
+	//		//	t.Fatal(err)
+	//		//}
+	//		//
+	//		//s1, s2 := buf1.String(), buf2.String()
+	//		//if s1 == s2 {
+	//		//	return
+	//		//}
+	//	}
+	//
+	//	for _, b := range notFailed {
+	//		if yes, ok := b.(bool); yes && ok {
+	//			return
+	//		}
+	//	}
+	//
+	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
+	//}
 }
