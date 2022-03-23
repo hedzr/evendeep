@@ -204,7 +204,7 @@ func TestCopyChan(t *testing.T) {
 	var so = make(chan struct{})
 	var to chan struct{}
 
-	err = copyChan(c, nil, reflect.ValueOf(so), reflect.ValueOf(to))
+	err = copyChan(c, nil, reflect.ValueOf(so), reflect.ValueOf(&to))
 	if err != nil {
 		t.Errorf("bad: %v", err)
 	} else {

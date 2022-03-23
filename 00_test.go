@@ -365,13 +365,12 @@ func TestDeferCatchers(t *testing.T) {
 		//
 		// ec := errors.New("error container")
 
-		err := copyStructInternal(c, nil, svv, dvv, func(paramsChild *Params, ec errors.Error, i, amount int, padding string) {
-
-			paramsChild.nextTargetField()
-
-			slicePanic()
-			return
-		})
+		err := copyStructInternal(c, nil, svv, dvv,
+			func(paramsChild *Params, ec errors.Error, i, amount int, padding string) (err error) {
+				paramsChild.nextTargetField()
+				slicePanic()
+				return
+			})
 		t.Log(err)
 
 	})
