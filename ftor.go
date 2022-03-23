@@ -100,11 +100,6 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 }
 
 func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	//if ff, ok := from.Interface().(time.Time); ok {
-	//	to.Set(reflect.ValueOf(ff))
-	//	return
-	//}
-
 	err = copyStructInternal(c, params, from, to, forEachField)
 	return
 }
@@ -133,7 +128,7 @@ func copyStructInternal(
 			tf := paramsChild.accessor.FieldValue()
 			tft := paramsChild.accessor.FieldType()
 
-			err = errors.New("[recovered] copyStruct unsatisfied ([%v] -> [%v]), causes: %v",
+			ec.Attach(errors.New("[recovered] copyStruct unsatisfied ([%v] -> [%v]), causes: %v",
 				typfmtv(ff), typfmt(*tft), e).
 				WithData(e).                      // collect e if it's an error object else store it simply
 				WithTaggedData(errors.TaggedData{ // record the sites
@@ -141,8 +136,7 @@ func copyStructInternal(
 					"target-field": tf,
 					"source":       valfmt(ff),
 					"target":       valfmt(tf),
-				})
-			ec.Attach(err)
+				}))
 			//n := log.CalcStackFrames(1)   // skip defer-recover frame at first
 			//log.Skip(n).Errorf("%v", err) // skip golib frames and defer-recover frame, back to the point throwing panic
 			if c.rethrow {
@@ -154,7 +148,8 @@ func copyStructInternal(
 	}()
 
 	if dbglog.LogValid {
-		dbgFrontOfStruct(params, paramsChild, padding, func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
+		//dbgFrontOfStruct(params, paramsChild, padding, func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
+		dbgFrontOfStruct(params, paramsChild, padding, dbglog.Log)
 	}
 
 	err = fn(paramsChild, ec, i, amount, padding)
