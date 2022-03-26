@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/deepcopy/internal/cl"
 	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
@@ -28,7 +29,17 @@ type tablerec struct {
 
 func (rec tablerec) FieldValue() *reflect.Value        { return rec.structFieldValue }
 func (rec tablerec) StructField() *reflect.StructField { return rec.structField }
-func (rec tablerec) FieldName() string                 { return strings.Join(reverseStringSlice(rec.names), ".") }
+func (rec tablerec) FieldName() string {
+	//return strings.Join(reverseStringSlice(rec.names), ".")
+	var sb strings.Builder
+	for i := len(rec.names) - 1; i >= 0; i-- {
+		if sb.Len() > 0 {
+			sb.WriteRune('.')
+		}
+		sb.WriteString(rec.names[i])
+	}
+	return sb.String()
+}
 func (rec tablerec) ShortFieldName() string {
 	if len(rec.names) > 0 {
 		return rec.names[0]
@@ -147,7 +158,10 @@ type structIterable interface {
 	//
 	// For an empty struct, Next return it exactly rather than
 	// field since it has nothing to iterate.
-	Next() (accessor *fieldaccessor, ok bool)
+	Next() (accessor accessor, ok bool)
+
+	// SourceFieldShouldBeIgnored _
+	SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool)
 }
 
 type structIterableOpt func(s *structIterator)
@@ -208,11 +222,34 @@ type structIterator struct {
 	autoNew                  bool             // create new inner objects for the child ptr,map,chan,..., if necessary
 }
 
+type accessor interface {
+	Set(v reflect.Value)
+
+	IsStruct() bool
+
+	Type() reflect.Type
+	ValueValid() bool
+	FieldValue() *reflect.Value
+	FieldType() *reflect.Type
+	StructField() *reflect.StructField
+	StructFieldName() string
+	NumField() int
+
+	SourceField() tablerec
+	//SourceFieldShouldBeIgnored(ignoredNames []string) bool
+
+	IsFlagOK(f cms.CopyMergeStrategy) bool
+	IsGroupedFlagOK(f ...cms.CopyMergeStrategy) bool
+	IsAnyFlagsOK(f ...cms.CopyMergeStrategy) bool
+	IsAllFlagsOK(f ...cms.CopyMergeStrategy) bool
+}
+
 type fieldaccessor struct {
 	structvalue *reflect.Value
 	structtype  reflect.Type
 	index       int
 	structfield *reflect.StructField
+	isstruct    bool
 
 	sourceTableRec tablerec             // a copy of structIterator.sourcefields
 	srcStructField *reflect.StructField // source field type
@@ -221,37 +258,89 @@ type fieldaccessor struct {
 
 func (s *fieldaccessor) Set(v reflect.Value) {
 	if s.ValueValid() {
-		sv := s.structvalue.Field(s.index)
-		sv.Set(v)
+		if s.isstruct {
+			sv := s.structvalue.Field(s.index)
+			dbglog.Log("    set %v (%v) -> struct.%q", valfmt(&v), typfmtv(&v), s.structtype.Field(s.index).Name)
+			sv.Set(v)
+		} else if s.structtype.Kind() == reflect.Map {
+			key := s.mapkey()
+			dbglog.Log("    set %v (%v) -> map[%v]", valfmt(&v), typfmtv(&v), valfmt(&key))
+			s.structvalue.SetMapIndex(key, v)
+		}
 	}
 }
-
+func (s *fieldaccessor) SourceField() tablerec { return s.sourceTableRec }
+func (s *fieldaccessor) IsFlagOK(f cms.CopyMergeStrategy) bool {
+	if s.fieldTags != nil {
+		return s.fieldTags.flags.IsFlagOK(f)
+	}
+	return false
+}
+func (s *fieldaccessor) IsGroupedFlagOK(f ...cms.CopyMergeStrategy) bool {
+	if s.fieldTags != nil {
+		return s.fieldTags.flags.IsGroupedFlagOK(f...)
+	}
+	return false
+}
+func (s *fieldaccessor) IsAnyFlagsOK(f ...cms.CopyMergeStrategy) bool {
+	if s.fieldTags != nil {
+		return s.fieldTags.flags.IsAnyFlagsOK(f...)
+	}
+	return false
+}
+func (s *fieldaccessor) IsAllFlagsOK(f ...cms.CopyMergeStrategy) bool {
+	if s.fieldTags != nil {
+		return s.fieldTags.flags.IsAllFlagsOK(f...)
+	}
+	return false
+}
+func (s *fieldaccessor) IsStruct() bool {
+	return s.isstruct // s.structtype != nil && s.structtype.Kind() == reflect.Struct
+}
 func (s *fieldaccessor) Type() reflect.Type { return s.structtype }
 func (s *fieldaccessor) ValueValid() bool   { return s.structvalue != nil && s.structvalue.IsValid() }
 func (s *fieldaccessor) FieldValue() *reflect.Value {
-	if s.ValueValid() {
-		vind := rindirect(*s.structvalue)
-		if vind.IsValid() {
-			r := vind.Field(s.index)
-			return &r
+	if s != nil {
+		if s.isstruct {
+			if s.ValueValid() {
+				vind := rindirect(*s.structvalue)
+				if vind.IsValid() && s.index < vind.NumField() {
+					r := vind.Field(s.index)
+					return &r
+				}
+			}
+		} else if s.structtype.Kind() == reflect.Map {
+			key := s.mapkey()
+			val := s.structvalue.MapIndex(key)
+			return &val
 		}
 	}
 	return nil
 }
 func (s *fieldaccessor) FieldType() *reflect.Type {
-	sf := s.StructField()
-	if sf != nil {
-		return &sf.Type
+	if s != nil {
+		if s.isstruct {
+			sf := s.StructField()
+			if sf != nil {
+				return &sf.Type
+			}
+		} else if s.structtype.Kind() == reflect.Map {
+			//name := s.sourceTableRec.FieldName()
+			vt := s.structtype.Elem()
+			return &vt
+		}
 	}
 	return nil
 }
 func (s *fieldaccessor) NumField() int {
-	sf := s.structtype
-	return sf.NumField()
-	//if s.ValueValid() {
-	//	return s.structvalue.NumField()
-	//}
-	//return 0
+	if s.isstruct {
+		sf := s.structtype
+		return sf.NumField()
+		//if s.ValueValid() {
+		//	return s.structvalue.NumField()
+		//}
+	}
+	return 0
 }
 func (s *fieldaccessor) StructField() *reflect.StructField {
 	//if s.ValueValid() {
@@ -262,15 +351,18 @@ func (s *fieldaccessor) StructField() *reflect.StructField {
 	return s.getStructField()
 }
 func (s *fieldaccessor) getStructField() *reflect.StructField {
-	if s.structfield == nil && s.index < s.structtype.NumField() {
-		r := s.structtype.Field(s.index)
-		s.structfield = &r
+	if s.isstruct {
+		if s.structfield == nil && s.index < s.structtype.NumField() {
+			r := s.structtype.Field(s.index)
+			s.structfield = &r
+		}
+		//if s.ValueValid() {
+		//	r := s.structvalue.Type().Field(s.index)
+		//	s.structfield = &r
+		//}
+		return s.structfield
 	}
-	//if s.ValueValid() {
-	//	r := s.structvalue.Type().Field(s.index)
-	//	s.structfield = &r
-	//}
-	return s.structfield
+	return nil
 }
 func (s *fieldaccessor) StructFieldName() string {
 	fld := s.StructField()
@@ -285,7 +377,7 @@ func (s *fieldaccessor) incr() *fieldaccessor {
 	return s
 }
 func (s *fieldaccessor) ensurePtrField() {
-	if s.index < s.structtype.NumField() {
+	if s.isstruct && s.index < s.structtype.NumField() {
 		if s.structvalue == nil {
 			return // cannot do anything except return
 		}
@@ -307,13 +399,29 @@ func (s *fieldaccessor) ensurePtrField() {
 		}
 	}
 }
+func (s *fieldaccessor) mapkey() reflect.Value {
+	name := s.sourceTableRec.ShortFieldName()
+	kt := s.structtype.Key() // , s.structtype.Elem()
+	var key reflect.Value
+	if kk := kt.Kind(); kk == reflect.String || kk == reflect.Interface {
+		key = reflect.ValueOf(name)
+	} else {
+		namev := reflect.ValueOf(name)
+		kp := reflect.New(kt)
+		fsc := &fromStringConverter{}
+		if err := fsc.CopyTo(nil, namev, kp.Elem()); err == nil {
+			key = kp.Elem()
+		}
+	}
+	return key
+}
 
 //
 
 //
 
 func (s *structIterator) iipush(structvalue *reflect.Value, structtype reflect.Type, index int) *fieldaccessor {
-	s.stack = append(s.stack, &fieldaccessor{structvalue: structvalue, structtype: structtype, index: index})
+	s.stack = append(s.stack, &fieldaccessor{isstruct: true, structvalue: structvalue, structtype: structtype, index: index})
 	return s.iitop()
 }
 func (s *structIterator) iiempty() bool { return len(s.stack) == 0 }
@@ -389,6 +497,16 @@ func (s *structIterator) CurrRecord() tablerec           { return s.srcFields.ta
 func (s *structIterator) TableRecord(index int) tablerec { return s.srcFields.tablerecords[index] }
 func (s *structIterator) Step(delta int)                 { s.withSourceIteratorIndexIncrease(delta) }
 
+func (s *structIterator) SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool) {
+	shortName := s.srcFields.tablerecords[s.srcIndex].ShortFieldName()
+	for _, x := range ignoredNames {
+		if yes = isWildMatch(shortName, x); yes {
+			break
+		}
+	}
+	return
+}
+
 func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sourcefield tablerec, ok bool) {
 	if s.srcIndex < 0 {
 		s.srcIndex = 0
@@ -412,34 +530,60 @@ func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sou
 	return
 }
 
-func (s *structIterator) Next() (accessor *fieldaccessor, ok bool) {
+func (s *structIterator) Next() (acc accessor, ok bool) {
 	var sourceTableRec tablerec
+	var accessorTmp *fieldaccessor
 	sourceTableRec, ok = s.withSourceIteratorIndexIncrease(+1)
 	if ok {
 		srcStructField := sourceTableRec.StructField()
 		isfn := srcStructField.Type.Kind() == reflect.Func
 
-		accessor, ok = s.doNext(isfn && !s.noExpandIfSrcFieldIsFunc)
-		if ok {
-			accessor.sourceTableRec = sourceTableRec
-			accessor.srcStructField = srcStructField
-			accessor.fieldTags = parseFieldTags(accessor.srcStructField.Tag)
+		kind := s.dstStruct.Kind()
+		if kind == reflect.Map {
+			eltyp := s.dstStruct.Type().Elem()
+			tk := eltyp.Kind()
+			if srcStructField.Type.ConvertibleTo(eltyp) ||
+				srcStructField.Type.AssignableTo(eltyp) ||
+				tk == reflect.String || tk == reflect.Interface {
+				acc = &fieldaccessor{
+					structvalue:    &s.dstStruct,
+					structtype:     s.dstStruct.Type(),
+					index:          s.dstIndex,
+					structfield:    nil,
+					isstruct:       false,
+					sourceTableRec: sourceTableRec,
+					srcStructField: srcStructField,
+					fieldTags:      nil,
+				}
+				s.dstIndex++
+			}
+			return
+		}
 
-			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v)",
-				s.srcIndex, accessor.sourceTableRec.FieldName(),
-				typfmt(accessor.srcStructField.Type),
-				accessor.StructFieldName(), typfmt(accessor.Type()))
+		accessorTmp, ok = s.doNext(isfn && !s.noExpandIfSrcFieldIsFunc)
+		if ok {
+			accessorTmp.sourceTableRec = sourceTableRec
+			accessorTmp.srcStructField = srcStructField
+			accessorTmp.fieldTags = parseFieldTags(accessorTmp.srcStructField.Tag)
+
+			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v) | autoexpd: (%v, %v)",
+				s.srcIndex, accessorTmp.sourceTableRec.FieldName(),
+				typfmt(accessorTmp.srcStructField.Type),
+				accessorTmp.StructFieldName(), typfmt(accessorTmp.Type()),
+				s.srcFields.autoExpandStruct, s.autoExpandStruct,
+			)
 			s.dstIndex++
 		}
 	} else {
-		accessor, ok = s.doNext(false)
+		accessorTmp, ok = s.doNext(false)
 		if ok {
 			dbglog.Log("   | Next %d | -> %v (%v)",
 				s.dstIndex,
-				accessor.StructFieldName(), typfmt(accessor.Type()))
+				accessorTmp.StructFieldName(), typfmt(accessorTmp.Type()))
 			s.dstIndex++
 		}
 	}
+	acc = accessorTmp
 	return
 }
 

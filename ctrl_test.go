@@ -661,8 +661,87 @@ func TestStructEmbedded(t *testing.T) {
 
 }
 
-func TestStructOthers(t *testing.T) {
+func TestStructToSliceOrMap(t *testing.T) {
 
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+
+	src := deepcopy.Employee2{
+		Base: deepcopy.Base{
+			Name:      "Bob",
+			Birthday:  &tm,
+			Age:       24,
+			EmployeID: 7,
+		},
+		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:   &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:  true,
+	}
+
+	var slice1 []deepcopy.User
+	var slice2 []*deepcopy.User
+
+	var map1 = make(map[string]interface{})
+
+	expect1 := deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:     true,
+	}
+
+	expect3 := map[string]interface{}{
+		"Name":      "Bob",
+		"Birthday":  tm,
+		"Age":       24,
+		"EmployeID": int64(7),
+		"Avatar":    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		"Image":     []byte{95, 27, 43, 66, 0, 21, 210},
+		"Attrs":     []string{"hello", "world"},
+		"Valid":     true,
+		"Deleted":   false,
+	}
+
+	t.Run("struct - slice - 1", func(t *testing.T) {
+		//
+	})
+
+	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"struct -> map[string]Any",
+			src, &map1, &expect3,
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+
+		deepcopy.NewTestCase(
+			"struct -> slice []obj",
+			src, &slice1, &[]deepcopy.User{expect1},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+		deepcopy.NewTestCase(
+			"struct -> slice []*obj",
+			src, &slice2, &[]*deepcopy.User{&expect1},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+	)
+}
+
+func TestStructToMap(t *testing.T) {
+}
+
+func TestStructOthers(t *testing.T) {
 }
 
 func TestSliceSimple(t *testing.T) {

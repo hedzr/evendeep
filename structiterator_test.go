@@ -309,7 +309,7 @@ func teststructiteratorNextUser(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v)%v | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index, field)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
 	}
 
 }
@@ -341,7 +341,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v)%v | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -374,7 +374,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v)%v | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -421,7 +421,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v)%v | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -449,26 +449,26 @@ func teststructiteratorNextA4New(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v (%v) %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
+1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
+3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
+7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
+8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
+12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
+13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {
@@ -509,26 +509,26 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v (%v) %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
+1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
+3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
+7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
+8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
+12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
+13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {
@@ -569,26 +569,26 @@ func teststructiteratorNextA4(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v (%v) %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), accessor.index, field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
+1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
+3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
+7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
+8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
+12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
+13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
+14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {

@@ -29,7 +29,7 @@ type Params struct {
 	//mergingMode    bool                 // base state
 
 	targetIterator structIterable //
-	accessor       *fieldaccessor //
+	accessor       accessor       //
 	// srcIndex       int                  //
 	// field     *reflect.StructField // source field type
 	// fieldTags *fieldTags           // tag of source field
@@ -141,9 +141,20 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 //	return
 //}
 
-func (params *Params) nextTargetField() (ok bool) {
+func (params *Params) sourceFieldShouldBeIgnored() (yes bool) {
+	if params.targetIterator != nil {
+		yes = params.targetIterator.SourceFieldShouldBeIgnored(params.controller.ignoreNames)
+	}
+	return
+}
+
+func (params *Params) nextTargetField() (sourceField tablerec, ok bool) {
 	if params.targetIterator != nil {
 		params.accessor, ok = params.targetIterator.Next()
+		if ok {
+			sourceField = params.accessor.SourceField()
+			ok = !params.parseFieldTags(sourceField.structField.Tag)
+		}
 	}
 	return
 }
@@ -159,7 +170,7 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	if params == nil || params.controller == nil || params.accessor == nil {
 		return
 	}
-	if fld := params.accessor.srcStructField; fld != nil && params.controller.copyUnexportedFields {
+	if fld := params.accessor.StructField(); fld != nil && params.controller.copyUnexportedFields {
 		// in a struct
 		if !isExported(fld) {
 			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, typfmt(fld.Type), valfmt(&target), valfmt(&newval))
@@ -226,8 +237,8 @@ func (params *Params) addChildParams(ppChild *Params) {
 	}
 
 	// if struct
-	if ppChild.accessor != nil && ppChild.accessor.srcStructField != nil {
-		fieldName := ppChild.accessor.srcStructField.Name
+	if ppChild.accessor != nil && ppChild.accessor.StructField() != nil {
+		fieldName := ppChild.accessor.StructFieldName()
 
 		if ppChild.children == nil {
 			ppChild.children = make(map[string]*Params)
@@ -253,8 +264,8 @@ func (params *Params) addChildParams(ppChild *Params) {
 // revoke does revoke itself from parent params if necessary
 func (params *Params) revoke() {
 	if pp := params.owner; pp != nil {
-		if pp.accessor != nil && pp.accessor.srcStructField != nil {
-			fieldName := pp.accessor.srcStructField.Name
+		if pp.accessor != nil && pp.accessor.StructField() != nil {
+			fieldName := pp.accessor.StructFieldName()
 			delete(pp.children, fieldName)
 		} else {
 			for i := 0; i < len(pp.childrenAnonymous); i++ {
@@ -284,7 +295,7 @@ func (params *Params) revoke() {
 //}
 
 func (params *Params) isStruct() bool {
-	return params != nil && params.accessor != nil && params.accessor.fieldTags != nil && params.dstOwner != nil
+	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil
 }
 
 func (params *Params) parseFieldTags(tag reflect.StructTag) (isIgnored bool) {
@@ -303,10 +314,10 @@ func (params *Params) isFlagExists(ftf cms.CopyMergeStrategy) (ret bool) {
 	if !ret && params.flags != nil {
 		ret = params.flags.IsFlagOK(ftf)
 	}
-	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return
+	if !ret && params.accessor != nil {
+		ret = params.accessor.IsFlagOK(ftf)
 	}
-	return ret || params.accessor.fieldTags.flags.IsFlagOK(ftf)
+	return
 }
 
 // isGroupedFlagOK tests if the given flag is exists or valid.
@@ -326,10 +337,10 @@ func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if !ret && params.flags != nil {
 		ret = params.flags.IsGroupedFlagOK(ftf...)
 	}
-	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return false
+	if !ret && params.accessor != nil {
+		ret = params.accessor.IsGroupedFlagOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.IsGroupedFlagOK(ftf...)
+	return
 }
 
 // isGroupedFlagOKDeeply tests if the given flag is exists or valid.
@@ -355,10 +366,10 @@ func (params *Params) isGroupedFlagOKDeeply(ftf ...cms.CopyMergeStrategy) (ret b
 	if !ret && params.flags != nil {
 		ret = params.flags.IsGroupedFlagOK(ftf...)
 	}
-	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return ret || flags.New().IsGroupedFlagOK(ftf...)
+	if !ret && params.accessor != nil {
+		ret = params.accessor.IsGroupedFlagOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.IsGroupedFlagOK(ftf...)
+	return
 }
 
 func (params *Params) isAnyFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
@@ -371,10 +382,10 @@ func (params *Params) isAnyFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if !ret && params.flags != nil {
 		ret = params.flags.IsAnyFlagsOK(ftf...)
 	}
-	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return
+	if !ret && params.accessor != nil {
+		ret = params.accessor.IsAnyFlagsOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.IsAnyFlagsOK(ftf...)
+	return
 }
 
 func (params *Params) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
@@ -387,10 +398,10 @@ func (params *Params) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	if !ret && params.flags != nil {
 		ret = params.flags.IsAllFlagsOK(ftf...)
 	}
-	if params.accessor == nil || params.accessor.fieldTags == nil {
-		return
+	if !ret && params.accessor != nil {
+		ret = params.accessor.IsAllFlagsOK(ftf...)
 	}
-	return ret || params.accessor.fieldTags.flags.IsAllFlagsOK(ftf...)
+	return
 }
 
 func (params *Params) depth() (depth int) {

@@ -336,7 +336,7 @@ func TestDeferCatchers(t *testing.T) {
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
 
-		dbgFrontOfStruct(p1, p2, "    ", func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
+		dbgFrontOfStruct(p2, "    ", func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
 	})
 
 	slicePanic := func() {
@@ -646,19 +646,20 @@ func runtestcasesverifier(t *testing.T) Verifier {
 		aa, _ := rdecode(a)
 		bb, _ := rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
-		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)",
-			bv, typfmtv(&bb), aa.Type(), av, typfmtv(&aa), bb.Type())
+		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)\n   err: %v",
+			bv, typfmtv(&bb), aa.Type(), av, typfmtv(&aa), bb.Type(), e)
 
 		diff, equal := messagediff.PrettyDiff(expect, dst)
 		if !equal {
 			fmt.Println(diff)
-			err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+			err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff).WithErrors(e)
 			return
 		}
 
 		//if !reflect.DeepEqual(av, bv) {
 		//	err = errors.New("reflect.DeepEqual identified its not equal")
 		//}
+		err = e
 		return
 	}
 }

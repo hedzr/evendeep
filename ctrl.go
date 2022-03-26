@@ -176,11 +176,11 @@ func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController 
 	return c
 }
 
-func (c *cpController) isIgnoreName(name string) (yes bool) {
-	for _, x := range c.ignoreNames {
-		if yes = isWildMatch(name, x); yes {
-			break
-		}
-	}
-	return
-}
+//func (c *cpController) isIgnoreName(name string) (yes bool) {
+//	for _, x := range c.ignoreNames {
+//		if yes = isWildMatch(name, x); yes {
+//			break
+//		}
+//	}
+//	return
+//}

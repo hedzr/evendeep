@@ -156,6 +156,13 @@ func typfmt(t reflect.Type) string {
 	return fmt.Sprintf("%v (%v)", t, t.Kind())
 }
 
+func typfmtptr(t *reflect.Type) string {
+	if t == nil {
+		return "???"
+	}
+	return fmt.Sprintf("%v (%v)", *t, (*t).Kind())
+}
+
 func valfmt(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"

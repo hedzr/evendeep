@@ -7,8 +7,8 @@ github.com/go-test/deep v1.0.8/go.mod h1:5C2ZWiW0ErCdrYzpqxLbTX7MG14M9iiw8DgHncV
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/google/go-cmp v0.5.7/go.mod h1:n+brtR0CgQNWTVd5ZUFpTBC8YFBDLK/h/bpaJ8/DtOE=
 github.com/hedzr/log v1.5.31/go.mod h1:IdcEUJ+Ae6VhtxSR0ZWAPhLGD9f1otXPAnUJ9QXaOJg=
-github.com/hedzr/log v1.5.41 h1:aTRWBcLNy+PE3R/cds5+YKZRZTFOei1hYE0ZJxEF8E0=
-github.com/hedzr/log v1.5.41/go.mod h1:bJMSkT/9RWYaxkQnPsGoisT7VcaNa0fBUNIrlKaU9AQ=
+github.com/hedzr/log v1.5.43 h1:ExfceNMakDex1vRKMnfcU8he5F3dGLAI503A9Rg74q8=
+github.com/hedzr/log v1.5.43/go.mod h1:wQKZ/WG7qSq7LwNoVonj6lS+MUd7x06jEklQ1ABYPR4=
 github.com/hedzr/logex v1.5.31/go.mod h1:jXUQ9vtdvJm/BGKwuxmVea3I/Bf3kFHUsnBTz7gADoI=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
@@ -27,8 +27,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-gitlab.com/gopriv/localtest v1.0.1 h1:xNf4BGj3Acjy+t02vYuBTKFGDQXSvh6KLYnUm6lHAtw=
-gitlab.com/gopriv/localtest v1.0.1/go.mod h1:v2I4NgcpHktI4sp+MsFM8COwLbodQNHj6HSFqLJ/Igg=
+gitlab.com/gopriv/localtest v1.0.2 h1:+UCYz2UYwf9MqVYfpL9IBKHLA0SCsSPH4pziVOLx/ig=
+gitlab.com/gopriv/localtest v1.0.2/go.mod h1:wj+V/Z0fuhvuW708sqXrYgXbosH6wB56diFc0jy1Aiw=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/goleak v1.1.11/go.mod h1:cwTWslyiVhfpKIDGSZEM2HlOvcqm+tG4zioyIeLoqMQ=
 go.uber.org/multierr v1.6.0/go.mod h1:cdWPpRnG4AhwMwsgIHip0KRBQjJy5kYEpYjJxpXp9iU=
@@ -79,8 +79,8 @@ golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8T
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/hedzr/errors.v3 v3.0.11/go.mod h1:UwtyepqtGTIAmdZGSc7wxXT5Gfd/BjcfRMhPpxwkJM4=
-gopkg.in/hedzr/errors.v3 v3.0.15 h1:HiwmszqoYk+RMPa7kVX3R3vfFJof0Xju/6dPcF5RCZQ=
-gopkg.in/hedzr/errors.v3 v3.0.15/go.mod h1:UwtyepqtGTIAmdZGSc7wxXT5Gfd/BjcfRMhPpxwkJM4=
+gopkg.in/hedzr/errors.v3 v3.0.16 h1:ixOE6KIUxImF6fAgpU/5gBUJPXU361CCvINkL1xdTR8=
+gopkg.in/hedzr/errors.v3 v3.0.16/go.mod h1:UwtyepqtGTIAmdZGSc7wxXT5Gfd/BjcfRMhPpxwkJM4=
 gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
 gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

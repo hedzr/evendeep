@@ -34,6 +34,36 @@ func TestTestDeepEqual(t *testing.T) {
 	testDeepEqual(t.Errorf, mm[0], mm[1])
 }
 
+func TestCopyChan(t *testing.T) {
+
+	c := newCopier()
+	//params := newParams(withOwnersSimple(c, nil))
+
+	var err error
+	var so = make(chan struct{})
+	var to chan struct{}
+
+	err = copyChan(c, nil, reflect.ValueOf(so), reflect.ValueOf(&to))
+	if err != nil {
+		t.Errorf("bad: %v", err)
+	} else {
+		t.Logf("tgt = %v", to)
+		//testDeepEqual(t, to2, [2]int{9, 77})
+	}
+}
+
+func TestCopyUnsafePointer(t *testing.T) {
+	// defer newCaptureLog(t).Release()
+
+	//c := newDeepCopier()
+	//params := newParams(withOwnersSimple(c, nil))
+	//
+	//var so = struct{ foo int }{42}
+	//var to int
+	//reflect.NewAt()
+	//copyUnsafePointer(c, from, to)
+}
+
 func TestCopySlice_differModes(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
@@ -195,32 +225,6 @@ func TestCopyArray(t *testing.T) {
 
 }
 
-func TestCopyChan(t *testing.T) {
+func TestCopyStructSlice(t *testing.T) {
 
-	c := newCopier()
-	//params := newParams(withOwnersSimple(c, nil))
-
-	var err error
-	var so = make(chan struct{})
-	var to chan struct{}
-
-	err = copyChan(c, nil, reflect.ValueOf(so), reflect.ValueOf(&to))
-	if err != nil {
-		t.Errorf("bad: %v", err)
-	} else {
-		t.Logf("tgt = %v", to)
-		//testDeepEqual(t, to2, [2]int{9, 77})
-	}
-}
-
-func TestCopyUnsafePointer(t *testing.T) {
-	// defer newCaptureLog(t).Release()
-
-	//c := newDeepCopier()
-	//params := newParams(withOwnersSimple(c, nil))
-	//
-	//var so = struct{ foo int }{42}
-	//var to int
-	//reflect.NewAt()
-	//copyUnsafePointer(c, from, to)
 }
