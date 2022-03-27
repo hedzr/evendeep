@@ -18,6 +18,26 @@ import (
 	"time"
 )
 
+// RegisterDefaultConverters registers the ValueConverter list into
+// default converters registry.
+//
+// It takes effects on DefaultCopyController, MakeClone, DeepCopy,
+// and New, ....
+func RegisterDefaultConverters(ss ...ValueConverter) {
+	defValueConverters = append(defValueConverters, ss...)
+	initGlobalOperators()
+}
+
+// RegisterDefaultCopiers registers the ValueCopier list into
+// default copiers registry.
+//
+// It takes effects on DefaultCopyController, MakeClone, DeepCopy,
+// and New, ....
+func RegisterDefaultCopiers(ss ...ValueCopier) {
+	defValueCopiers = append(defValueCopiers, ss...)
+	initGlobalOperators()
+}
+
 func initConverters() {
 	dbglog.Log("initializing default converters and copiers ...")
 	defValueConverters = ValueConverters{ // Transform()

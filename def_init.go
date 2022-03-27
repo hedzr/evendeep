@@ -10,8 +10,12 @@ func init() {
 
 		initConverters()
 
-		DefaultCopyController = newDeepCopier()
-		defaultCloneController = newCloner()
+		initGlobalOperators()
 
 	})
+}
+
+func initGlobalOperators() {
+	DefaultCopyController = newDeepCopier()
+	defaultCloneController = newCloner()
 }
