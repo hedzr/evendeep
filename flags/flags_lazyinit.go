@@ -41,9 +41,9 @@ func lazyInitFieldTagsFlags() {
 		conflictsAdd("slicecopy", "slicecopyappend", "slicemerge")
 		conflictsAdd("mapcopy", "mapmerge")
 
-		conflictsAdd("clearinvalid")
-		conflictsAdd("cleareq")
-		conflictsAdd("keepneq")
+		//conflictsAdd("clearinvalid")
+		//conflictsAdd("cleareq")
+		//conflictsAdd("keepneq")
 
 		conflictsAdd("std", "-", "must")
 
@@ -53,9 +53,9 @@ func lazyInitFieldTagsFlags() {
 			{cms.NoOmitTarget, cms.OmitIfTargetEmpty, cms.OmitIfTargetNil, cms.OmitIfTargetZero},
 			{cms.SliceCopy, cms.SliceCopyAppend, cms.SliceMerge},
 			{cms.MapCopy, cms.MapMerge},
-			{cms.ClearIfInvalid},
-			{cms.ClearIfEq},
-			{cms.KeepIfNotEq},
+			//{cms.ClearIfInvalid},
+			//{cms.ClearIfEq},
+			//{cms.KeepIfNotEq},
 			{cms.Default, cms.Ignore, cms.Must},
 		}
 	})
