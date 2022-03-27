@@ -135,8 +135,12 @@ func copyStructInternal(
 			sst := paramsChild.targetIterator.(sourceStructFieldsTable)
 
 			ff := sst.TableRecord(i).FieldValue()
-			tf := paramsChild.accessor.FieldValue()
-			tft := paramsChild.accessor.FieldType()
+			var tf = paramsChild.dstOwner
+			var tft = &paramsChild.dstType
+			if paramsChild.accessor != nil {
+				tf = paramsChild.accessor.FieldValue()
+				tft = paramsChild.accessor.FieldType()
+			}
 
 			ec.Attach(errors.New("[recovered] copyStruct unsatisfied ([%v] -> [%v]), causes: %v",
 				typfmtv(ff), typfmtptr(tft), e).
@@ -183,24 +187,27 @@ func copyStructInternal(
 		}
 		ec.Attach(err)
 		return
-		//case reflect.Map:
-		//	dbglog.Log("     * struct -> map case, ...")
-		//	err = cpStructToMap(paramsChild)
-		//	return
+
+	case reflect.String:
+		dbglog.Log("     * struct -> string case, ...")
+		var str string
+		if str, err = doMarshalling(*paramsChild.srcOwner); err == nil {
+			target := reflect.ValueOf(str)
+			if paramsChild.dstDecoded.CanSet() {
+				paramsChild.dstDecoded.Set(target)
+			} else {
+				err = ErrCannotSet.FormatWith(valfmt(paramsChild.srcDecoded),
+					typfmtv(paramsChild.srcDecoded), valfmt(paramsChild.dstDecoded),
+					typfmtv(paramsChild.dstDecoded))
+			}
+		}
+
 	}
 
 	err = fn(paramsChild, ec, i, amount, padding)
 	ec.Attach(err)
 	return
 }
-
-//func cpStructToMap(params *Params) (err error) {
-//	eltyp := params.dstType.Elem()
-//	et, _ := rdecodetype(eltyp)
-//	dst := params.dstDecoded
-//	for
-//	return
-//}
 
 func cpStructToNewSliceElem0(params *Params) (err error) {
 	eltyp := params.dstType.Elem()

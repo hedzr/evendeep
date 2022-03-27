@@ -715,7 +715,32 @@ func TestStructToSliceOrMap(t *testing.T) {
 		//
 	})
 
+	var str string
+	expectJSON := `{
+  "Name": "Bob",
+  "Birthday": "1999-03-13T05:57:11.000001901-07:00",
+  "Age": 24,
+  "EmployeID": 7,
+  "Avatar": "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet\u0026rs=1",
+  "Image": "XxsrQgAV0g==",
+  "Attr": {
+    "Attrs": [
+      "hello",
+      "world"
+    ]
+  },
+  "Valid": true,
+  "Deleted": false
+}`
+
 	deepcopy.RunTestCases(t,
+		deepcopy.NewTestCase(
+			"struct -> string",
+			src, &str, &expectJSON,
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			nil,
+		),
+
 		deepcopy.NewTestCase(
 			"struct -> map[string]Any",
 			src, &map1, &expect3,
