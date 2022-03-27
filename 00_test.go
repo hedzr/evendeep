@@ -478,6 +478,8 @@ func NewForTest() DeepCopier {
 		WithIgnoreNames("Bugs*", "Test*"),
 
 		WithoutPanic(),
+
+		WithStringMarshaller(nil),
 	)
 
 	lazyInitRoutines()

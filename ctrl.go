@@ -13,7 +13,7 @@ import (
 type cpController struct {
 	copyUnexportedFields       bool
 	copyFunctionResultToTarget bool
-	passSourceToTargetFunction bool
+	passSourceAsFunctionInArgs bool
 	autoExpandStruct           bool
 
 	makeNewClone bool        // make a new clone by copying to a fresh new object
@@ -63,7 +63,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 			}
 
 			// source is primitive type, or in a reserved package such as time, os, ...
-			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, to.Type())
+			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, typfmtv(&to))
 			err = copyDefaultHandler(c, params, from, to)
 			return
 		})

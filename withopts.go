@@ -1,6 +1,7 @@
 package deepcopy
 
 import (
+	"encoding/json"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/log/dir"
@@ -123,7 +124,7 @@ var WithCopyFunctionResultToTargetOpt = WithCopyFunctionResultToTarget(true)
 // pass the source as its input parameters.
 func WithPassSourceToTargetFunction(b bool) Opt {
 	return func(c *cpController) {
-		c.passSourceToTargetFunction = b
+		c.passSourceAsFunctionInArgs = b
 	}
 }
 
@@ -161,3 +162,22 @@ func WithoutPanic() Opt {
 		c.rethrow = false
 	}
 }
+
+// WithStringMarshaller provides a string marshaller which will
+// be applied when a map is going to be copied to string.
+//
+// Default is json marshaller.
+//
+// If BinaryMarshaler has been implemented, the source.Marshal() will
+// be applied.
+func WithStringMarshaller(m TextMarshaller) Opt {
+	return func(c *cpController) {
+		if m == nil {
+			m = json.Marshal
+		}
+		textMarshaller = m
+	}
+}
+
+// TextMarshaller for string
+type TextMarshaller func(v interface{}) ([]byte, error)

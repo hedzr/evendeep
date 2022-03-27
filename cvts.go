@@ -2,6 +2,8 @@ package deepcopy
 
 import (
 	"bytes"
+	"encoding"
+	"encoding/json"
 	"fmt"
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
@@ -31,6 +33,7 @@ func initConverters() {
 		&fromTimeConverter{},
 
 		&fromBytesBufferConverter{},
+		&fromMapConverter{},
 	}
 	defValueCopiers = ValueCopiers{
 		&fromStringConverter{},
@@ -45,6 +48,7 @@ func initConverters() {
 		&fromTimeConverter{},
 
 		&fromBytesBufferConverter{},
+		&fromMapConverter{},
 	}
 }
 
@@ -129,12 +133,12 @@ func (ctx *ValueConverterContext) IsCopyFunctionResultToTarget() bool {
 	return ctx.controller.copyFunctionResultToTarget
 }
 
-// IsPassSourceToTargetFunction does SAFELY test if passSourceToTargetFunction is true or not.
+// IsPassSourceToTargetFunction does SAFELY test if passSourceAsFunctionInArgs is true or not.
 func (ctx *ValueConverterContext) IsPassSourceToTargetFunction() bool {
 	if ctx == nil || ctx.Params == nil || ctx.controller == nil {
 		return false
 	}
-	return ctx.controller.passSourceToTargetFunction
+	return ctx.controller.passSourceAsFunctionInArgs
 }
 
 // Preprocess find out a converter to transform source to target.
@@ -413,6 +417,14 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 			return
 		}
 
+		var str string
+		if str, processed, err = tryMarshalling(source); processed {
+			if err == nil {
+				target = reflect.ValueOf(str)
+			}
+			return
+		}
+
 		target, err = rToString(source, targetType)
 	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
@@ -423,6 +435,60 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 func (c *toStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	if yes = target.Kind() == reflect.String; yes {
 		ctx = &ValueConverterContext{params}
+	}
+	return
+}
+
+//
+
+var marshallableTypes = map[string]reflect.Type{
+	// "MarshalBinary": reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem(),
+	"MarshalText": reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem(),
+	"MarshalJSON": reflect.TypeOf((*json.Marshaler)(nil)).Elem(),
+}
+
+var textMarshaller = TextMarshaller(func(v interface{}) ([]byte, error) {
+	return json.MarshalIndent(v, "", "  ")
+})
+
+func canMarshalling(source reflect.Value) (mtd reflect.Value, yes bool) {
+	st := source.Type()
+	for fnn, t := range marshallableTypes {
+		if st.Implements(t) {
+			yes, mtd = true, source.MethodByName(fnn)
+			break
+		}
+	}
+	return
+}
+
+func doMarshalling(source reflect.Value) (str string, err error) {
+	var data []byte
+	if mtd, yes := canMarshalling(source); yes {
+		ret := mtd.Call(nil)
+		if err, yes = (ret[1].Interface()).(error); err == nil && yes {
+			data = ret[0].Interface().([]byte)
+		}
+	} else {
+		data, err = textMarshaller(source.Interface())
+	}
+	if err == nil {
+		str = string(data)
+	}
+	return
+}
+
+func tryMarshalling(source reflect.Value) (str string, processed bool, err error) {
+	var data []byte
+	var mtd reflect.Value
+	if mtd, processed = canMarshalling(source); processed {
+		ret := mtd.Call(nil)
+		if err, _ = (ret[1].Interface()).(error); err == nil {
+			data = ret[0].Interface().([]byte)
+		}
+	}
+	if err == nil {
+		str = string(data)
 	}
 	return
 }
