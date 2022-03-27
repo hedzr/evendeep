@@ -757,17 +757,19 @@ func TestFromStringConverter_defaultTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	t.Logf("ret: %v (%v)", ret.Interface(), typfmtv(&ret))
+	t.Logf("ret: %v (%v)", valfmt(&ret), typfmtv(&ret))
 }
 
 func TestFromStringConverter_postCopyTo(t *testing.T) {
 	var fss fromStringConverter
+
 	var src = "987"
 	var dst = 3.3
 	var svv = reflect.ValueOf(src)
 	var dvv = reflect.ValueOf(&dst)
 
-	ctx := newValueConverterContextForTest(newDeepCopier())
+	c := newDeepCopier().withFlags(cms.ClearIfInvalid)
+	ctx := newValueConverterContextForTest(c)
 	err := fss.postCopyTo(ctx, svv, dvv.Elem())
 	if err != nil {
 		t.Fatalf("err: %v", err)

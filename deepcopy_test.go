@@ -168,6 +168,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 		//x2 := &X2{N: nn[1:3]}
 
 		ret = deepcopy.MakeClone(&x1)
+		x1.K = &x0
 		testIfBadCopy(t, x1, ret, ret, "MakeClone x1 -> new")
 		t.Log("MakeClone is done.")
 

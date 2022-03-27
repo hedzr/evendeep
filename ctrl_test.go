@@ -548,6 +548,7 @@ func TestStructSimple(t *testing.T) {
 		//D: []string{},
 		//E: []*deepcopy.X0{},
 		H: x1.H,
+		K: &x0,
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
 		N: nn[1:5],
@@ -558,6 +559,7 @@ func TestStructSimple(t *testing.T) {
 	expect2 := &deepcopy.X2{
 		A: uintptr(unsafe.Pointer(&x0)),
 		H: x1.H,
+		K: &x0,
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
 		N: []int{23, 8, 9, 77, 111}, // Note: [23,8] + [9,77,111,23] -> [23,8,9,77,111]
@@ -572,11 +574,11 @@ func TestStructSimple(t *testing.T) {
 	deepcopy.RunTestCases(t,
 		deepcopy.NewTestCase(
 			"struct - 1",
-			x1, &deepcopy.X2{N: nn[1:3]},
-			expect1,
+			x1, &deepcopy.X2{N: nn[1:3]}, expect1,
 			[]deepcopy.Opt{
 				deepcopy.WithStrategiesReset(),
-				deepcopy.WithStrategies(cms.OmitIfEmpty),
+				//deepcopy.WithStrategies(cms.OmitIfEmpty),
+				deepcopy.WithAutoNewForStructFieldOpt,
 			},
 			nil,
 			//func(src, dst, expect interface{}) (err error) {
@@ -593,6 +595,7 @@ func TestStructSimple(t *testing.T) {
 			expect2,
 			[]deepcopy.Opt{
 				deepcopy.WithStrategies(cms.SliceMerge),
+				deepcopy.WithAutoNewForStructFieldOpt,
 			},
 			nil,
 		),
@@ -737,27 +740,27 @@ func TestStructToSliceOrMap(t *testing.T) {
 		deepcopy.NewTestCase(
 			"struct -> string",
 			src, &str, &expectJSON,
-			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt, deepcopy.WithAutoNewForStructFieldOpt},
 			nil,
 		),
 
 		deepcopy.NewTestCase(
 			"struct -> map[string]Any",
 			src, &map1, &expect3,
-			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt, deepcopy.WithAutoNewForStructFieldOpt},
 			nil,
 		),
 
 		deepcopy.NewTestCase(
 			"struct -> slice []obj",
 			src, &slice1, &[]deepcopy.User{expect1},
-			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt, deepcopy.WithAutoNewForStructFieldOpt},
 			nil,
 		),
 		deepcopy.NewTestCase(
 			"struct -> slice []*obj",
 			src, &slice2, &[]*deepcopy.User{&expect1},
-			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt, deepcopy.WithAutoNewForStructFieldOpt},
 			nil,
 		),
 	)
@@ -973,7 +976,11 @@ func TestMapAndStruct(t *testing.T) {
 		deepcopy.NewTestCase(
 			"map (map[int64]Employee2 -> map[int]User)",
 			srcmap, &tgtmap, &expmap,
-			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
+			[]deepcopy.Opt{
+				deepcopy.WithMergeStrategyOpt,
+				deepcopy.WithAutoExpandStructOpt,
+				deepcopy.WithAutoNewForStructFieldOpt,
+			},
 			nil,
 		),
 		//deepcopy.NewTestCase(
@@ -1263,12 +1270,12 @@ func TestExample3(t *testing.T) {
 	t.Logf("newRecord: %v", newRecord)
 
 	newRecord.Name = "Barbara"
-	deepcopy.DeepCopy(originRec, &newRecord, deepcopy.WithClearIfEqualOpt)
+	deepcopy.DeepCopy(originRec, &newRecord, deepcopy.WithORMDiffOpt)
 	if len(newRecord.Attr.Attrs) == len(expectRec.Attr.Attrs) {
 		newRecord.Attr = expectRec.Attr
 	}
-	if newRecord.Birthday.Nanosecond() == expectRec.Birthday.Nanosecond() {
-		newRecord.Birthday = expectRec.Birthday
+	if newRecord.Birthday == nil || newRecord.Birthday.Nanosecond() == 0 {
+		newRecord.Birthday = &t0
 	}
 	if !reflect.DeepEqual(newRecord, expectRec) {
 		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())

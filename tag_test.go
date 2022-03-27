@@ -22,9 +22,9 @@ type AFT struct {
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
 	expects = []flags.Flags{
-		{cms.Default: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Default: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Must: true, cms.ClearIfEq: true, cms.KeepIfNotEq: true, cms.ClearIfInvalid: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
 		{cms.ByOrdinal: true, cms.ByName: true},
 	}
 

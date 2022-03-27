@@ -116,7 +116,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			t := *p.dstDecoded
 			p.targetIterator = newStructIterator(t,
 				withStructPtrAutoExpand(c.autoExpandStruct),
-				withStructFieldPtrAutoNew(true),
+				withStructFieldPtrAutoNew(c.autoNewStruct),
 				withStructSource(p.srcDecoded, c.autoExpandStruct),
 			)
 		}

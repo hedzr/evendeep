@@ -344,6 +344,7 @@ func (c *fromConverterBase) postCopyTo(ctx *ValueConverterContext, source, targe
 	nv, err = c.convertToOrZeroTarget(ctx, source, target.Type())
 	if err == nil {
 		if target.CanSet() {
+			dbglog.Log("    postCopyTo: set nv(%v) into target (%v)", valfmt(&nv), valfmt(&target))
 			target.Set(nv)
 		} else {
 			err = ErrCannotSet.FormatWith(valfmt(&target), typfmtv(&target), valfmt(&nv), typfmtv(&nv))
@@ -438,7 +439,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect
 		}
 
 		target, err = rToString(source, targetType)
-	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
+	} else if ctx == nil || ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(reflect.TypeOf((*string)(nil)).Elem())
 	}
 	return

@@ -74,8 +74,8 @@ var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
 // WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge
 var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
 
-// WithClearIfEqualOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid
-var WithClearIfEqualOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
+// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid
+var WithORMDiffOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
@@ -109,6 +109,16 @@ func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
 
 // WithAutoExpandStructOpt is synonym of WithAutoExpandForInnerStruct(true)
 var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
+
+// WithAutoNewForStructField does create new instance on ptr field of a struct.
+func WithAutoNewForStructField(autoNew bool) Opt {
+	return func(c *cpController) {
+		c.autoNewStruct = autoNew
+	}
+}
+
+// WithAutoNewForStructFieldOpt is synonym of WithAutoNewForStructField(true)
+var WithAutoNewForStructFieldOpt = WithAutoNewForStructField(true)
 
 // WithCopyUnexportedField try to copy the unexported fields
 // with special way.

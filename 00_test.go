@@ -470,6 +470,7 @@ func NewForTest() DeepCopier {
 		WithStrategies(cms.SliceMerge, cms.MapMerge),
 
 		WithAutoExpandStructOpt,
+		WithAutoNewForStructFieldOpt,
 		WithCopyUnexportedFieldOpt,
 		WithCopyFunctionResultToTargetOpt,
 		WithPassSourceToTargetFunctionOpt,

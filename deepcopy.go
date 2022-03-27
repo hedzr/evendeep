@@ -146,6 +146,7 @@ func newDeepCopier() *cpController {
 		copyFunctionResultToTarget: true,
 		passSourceAsFunctionInArgs: true,
 		autoExpandStruct:           true,
+		autoNewStruct:              true,
 
 		flags:        flags.New(cms.SliceMerge, cms.MapMerge),
 		rethrow:      true,
@@ -170,8 +171,12 @@ func newCloner() *cpController {
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
 		passSourceAsFunctionInArgs: true,
-		rethrow:                    true,
-		makeNewClone:               true,
+		autoExpandStruct:           true,
+		autoNewStruct:              true,
+
+		flags:        flags.New(cms.Default),
+		rethrow:      true,
+		makeNewClone: true,
 	}
 }
 

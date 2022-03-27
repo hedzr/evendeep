@@ -333,23 +333,30 @@ func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type {
 	return *deftyp
 }
 
-func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, padding string) (err error) {
-
-	fft, dft := ff.Type(), dtypzz(&df, dftyp)
-	fftk, dftk := fft.Kind(), dft.Kind()
-
+func checkClearIfEqualOpt(params *Params, ff, df reflect.Value, dft reflect.Type) (processed bool) {
 	if params.isFlagExists(cms.ClearIfEq) {
 		if equal(ff, df) {
 			df.Set(reflect.Zero(dft))
 		} else if params.isFlagExists(cms.ClearIfInvalid) && !df.IsValid() {
 			df.Set(reflect.Zero(dft))
 		}
+		processed = true
 		if params.isFlagExists(cms.KeepIfNotEq) {
 			return
 		}
 	}
+	return
+}
+
+func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, padding string) (err error) {
+
+	fft, dft := ff.Type(), dtypzz(&df, dftyp)
+	fftk, dftk := fft.Kind(), dft.Kind()
 
 	var processed bool
+	if processed = checkClearIfEqualOpt(params, ff, df, dft); processed {
+		return
+	}
 	if processed, err = tryConverters(c, params, ff, df, dftyp, false); processed {
 		return
 	}
