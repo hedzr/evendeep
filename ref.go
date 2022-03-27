@@ -206,6 +206,7 @@ var errtyp = reflect.TypeOf((*error)(nil)).Elem()
 
 var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem()
 var stringType = reflect.TypeOf((*string)(nil)).Elem()
+var niltyp = reflect.TypeOf((*string)(nil))
 
 // isZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero

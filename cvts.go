@@ -293,8 +293,6 @@ func (c *toConverterBase) fallback(target reflect.Value) (err error) {
 
 //
 
-var niltyp = reflect.TypeOf((*string)(nil))
-
 type fromConverterBase struct{ cvtbase }
 
 func (c *fromConverterBase) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
