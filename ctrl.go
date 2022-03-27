@@ -15,6 +15,7 @@ type cpController struct {
 	copyFunctionResultToTarget bool
 	passSourceAsFunctionInArgs bool
 	autoExpandStruct           bool
+	tryApplyConverterAtFirst   bool
 
 	makeNewClone bool        // make a new clone by copying to a fresh new object
 	flags        flags.Flags // CopyMergeStrategies globally

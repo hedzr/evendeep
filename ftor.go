@@ -393,10 +393,8 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 	return
 }
 
-func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type) (processed bool, err error) {
-	fft, dft := ff.Type(), dtypzz(&df, dftyp)
-
-	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft); ctx != nil {
+func findAndApplyCopiers(c *cpController, params *Params, ff, df reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft, userDefinedOnly); ctx != nil {
 		dbglog.Log("-> using Copier %v", reflect.ValueOf(cvt).Type())
 
 		if df.IsValid() {
@@ -415,11 +413,13 @@ func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp 
 		if err == nil && !params.accessor.IsStruct() {
 			params.accessor.Set(nv.Elem())
 			processed = true
-			return
 		}
 	}
+	return
+}
 
-	if cvt, ctx := c.valueConverters.findConverters(params, fft, dft); ctx != nil {
+func findAndApplyConverters(c *cpController, params *Params, ff, df reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	if cvt, ctx := c.valueConverters.findConverters(params, fft, dft, userDefinedOnly); ctx != nil {
 		dbglog.Log("-> using Converter %v", reflect.ValueOf(cvt).Type())
 		var result reflect.Value
 		result, err = cvt.Transform(ctx, ff, dft) // use user-defined value converter to transform from source to destination
@@ -430,9 +430,24 @@ func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp 
 		}
 		df.Set(result)
 		processed = true
-		return
 	}
+	return
+}
 
+func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	fft, dft := ff.Type(), dtypzz(&df, dftyp)
+	if c.tryApplyConverterAtFirst {
+		if processed, err = findAndApplyConverters(c, params, ff, df, fft, dft, userDefinedOnly); processed {
+			return
+		}
+		processed, err = findAndApplyCopiers(c, params, ff, df, fft, dft, userDefinedOnly)
+
+	} else {
+		if processed, err = findAndApplyCopiers(c, params, ff, df, fft, dft, userDefinedOnly); processed {
+			return
+		}
+		processed, err = findAndApplyConverters(c, params, ff, df, fft, dft, userDefinedOnly)
+	}
 	return
 }
 
