@@ -28,15 +28,15 @@ const (
 
 	// ClearIfEq the target field will be reset/clear to zero if it equals to the source.
 	// Just for struct fields
-	ClearIfEq CopyMergeStrategy = iota + 10 // clearifeq
+	ClearIfEq CopyMergeStrategy = iota + 10 // cleareq
 
 	// KeepIfNotEq the source field will not be copied if it does not equal to the target
 	// Just for struct fields
-	KeepIfNotEq // keepifneq
+	KeepIfNotEq // keepneq
 
 	// ClearIfInvalid the target field will be reset/cleart to zero if source is invalid.
 	// default is ON.
-	ClearIfInvalid // clearifinvalid
+	ClearIfInvalid // clearinvalid
 
 	// NoOmit never omit any source fields
 	NoOmit CopyMergeStrategy = iota + 20 - 5 //noomit

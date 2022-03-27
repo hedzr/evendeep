@@ -41,9 +41,9 @@ func lazyInitFieldTagsFlags() {
 		conflictsAdd("slicecopy", "slicecopyappend", "slicemerge")
 		conflictsAdd("mapcopy", "mapmerge")
 
-		conflictsAdd("clearifinvalid")
-		conflictsAdd("clearifeq")
-		conflictsAdd("keepifneq")
+		conflictsAdd("clearinvalid")
+		conflictsAdd("cleareq")
+		conflictsAdd("keepneq")
 
 		conflictsAdd("std", "-", "must")
 

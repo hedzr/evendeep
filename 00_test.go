@@ -245,9 +245,9 @@ func TestParamsBasics3(t *testing.T) {
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     flags.Flags     `copy:",clearifeq,must"`
+			flags     flags.Flags     `copy:",cleareq,must"`
 			converter *ValueConverter `copy:",ignore"`
-			wouldbe   int             `copy:",must,keepifneq,omitzero,slicecopyappend,mapmerge"`
+			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"`
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
@@ -517,6 +517,8 @@ func NewForTest() DeepCopier {
 
 	return copier
 }
+
+//
 
 //
 
