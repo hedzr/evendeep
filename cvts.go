@@ -594,6 +594,146 @@ func (c *fromStringConverter) Match(params *Params, source, target reflect.Type)
 
 //
 
+// fromMapConverter transforms a map to other types (esp string, slice, struct)
+type fromMapConverter struct{ fromConverterBase }
+
+func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	tgt, tgtptr := rdecode(target)
+	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid so we fetch tgt type via its pointer
+	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgttyp))
+
+	if processed := c.checkTarget(ctx, tgt, tgttyp); processed {
+		//target.Set(ret)
+		return
+	}
+
+	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
+		if tgtptr.Kind() == reflect.Interface {
+			tgtptr.Set(ret)
+		} else if tgtptr.Kind() == reflect.Ptr {
+			tgtptr.Elem().Set(ret)
+		} else if tgt.CanSet() {
+			tgt.Set(ret)
+		} else {
+			err = ErrCannotSet.FormatWith(valfmt(&tgt), typfmtv(&tgt), valfmt(&ret), typfmtv(&ret))
+		}
+		dbglog.Log("  tgt: %v (ret = %v)", valfmt(&tgt), valfmt(&ret))
+	} else if !errors.Is(e, strconv.ErrSyntax) && !errors.Is(e, strconv.ErrRange) {
+		dbglog.Log("  Transform() failed: %v", e)
+		dbglog.Log("  try running postCopyTo()")
+		err = c.postCopyTo(ctx, source, target)
+	}
+	return
+}
+
+// Transform will transform source string to target type (bool, int, ...)
+func (c *fromMapConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	if source.IsValid() {
+
+		var processed bool
+		if target, processed = c.checkSource(ctx, source, targetType); processed {
+			return
+		}
+
+		switch k := targetType.Kind(); k {
+		case reflect.String:
+			var str string
+			if str, err = doMarshalling(source); err == nil {
+				target = reflect.ValueOf(str)
+			}
+
+		case reflect.Struct:
+			target, err = c.toStruct(ctx, source, targetType)
+
+		case reflect.Slice:
+			fallthrough // todo map -> slice
+		case reflect.Array:
+			fallthrough // todo map -> array
+
+		default:
+			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
+		}
+	} else {
+		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
+	}
+	return
+}
+
+func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	keys := source.MapKeys()
+	target = reflect.New(targetType).Elem()
+	for _, key := range keys {
+		src := source.MapIndex(key)
+		st := src.Kind()
+		if st == reflect.Interface {
+			src = src.Elem()
+		}
+
+		key, err = rToString(key, stringType)
+		if err != nil {
+			continue
+		}
+		ks := key.String()
+		//dbglog.Log("  key %q, src: %v (%v)", ks, valfmt(&src), typfmtv(&src))
+
+		tsf, ok := targetType.FieldByName(ks)
+		if !ok {
+			continue
+		}
+
+		fld := target.FieldByName(ks)
+		//dbglog.Log("  fld %q: ", ks)
+		tsft := tsf.Type
+		tsfk := tsft.Kind()
+		if tsfk == reflect.Interface {
+			tsft, fld = tsft.Elem(), fld.Elem()
+		} else if tsfk == reflect.Ptr {
+			dbglog.Log("  fld.%q: %v (%v)", ks, valfmt(&fld), typfmtv(&fld))
+			if fld.IsNil() {
+				n := reflect.New(fld.Type().Elem())
+				target.FieldByName(ks).Set(n)
+				fld = target.FieldByName(ks)
+			}
+			tsft, fld = tsft.Elem(), fld.Elem()
+			dbglog.Log("  fld.%q: %v (%v)", ks, valfmt(&fld), typfmtv(&fld))
+		}
+
+		err = ctx.controller.copyTo(ctx.Params, src, fld)
+		dbglog.Log("  nv.%q: %v (%v) ", ks, valfmt(&fld), typfmtv(&fld))
+
+		//var nv reflect.Value
+		//nv, err = c.fromConverterBase.convertToOrZeroTarget(ctx, src, tsft)
+		//dbglog.Log("  nv.%q: %v (%v) ", ks, valfmt(&nv), typfmtv(&nv))
+		//if err == nil {
+		//	if fld.CanSet() {
+		//		if tsfk == reflect.Ptr {
+		//			n := reflect.New(fld.Type().Elem())
+		//			n.Elem().Set(nv)
+		//			nv = n
+		//		}
+		//		fld.Set(nv)
+		//	} else {
+		//		err = ErrCannotSet.FormatWith(valfmt(&fld), typfmtv(&fld), valfmt(&nv), typfmtv(&nv))
+		//	}
+		//}
+	}
+	dbglog.Log("  target: %v (%v) ", valfmt(&target), typfmtv(&target))
+	return
+}
+
+func (c *fromMapConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+	if yes = source.Kind() == reflect.Map && target.Kind() != reflect.Map; yes {
+		ctx = &ValueConverterContext{params}
+	}
+	return
+}
+
+//
+
+//
+
+//
+
 type fromBytesBufferConverter struct{ fromConverterBase }
 
 func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {

@@ -430,14 +430,14 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 		log.Panicf("[copySlice] c *cpController != params.controller, what's up??")
 	}
 
-	tk, tgttyp := tgt.Kind(), tgt.Type()
+	tk, typ := tgt.Kind(), tgt.Type()
 	if tk != reflect.Slice {
+		dbglog.Log("from slice -> %v", typfmt(typ))
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &tgttyp); processed {
-			return
+		if processed, err = tryConverters(c, params, from, tgt, &typ); !processed {
+			//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
+			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		}
-		//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
-		err = ErrCannotCopy.FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		return
 	}
 
@@ -786,10 +786,15 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 		return
 	}
 
-	tk := tgt.Kind()
+	tk, typ := tgt.Kind(), tgt.Type()
 	if tk != reflect.Map {
-		dbglog.Log("from map -> %v", typfmtv(&tgt))
-		// todo copy map to String, Slice, Struct
+		dbglog.Log("from map -> %v", typfmt(typ))
+		// copy map to String, Slice, Struct
+		var processed bool
+		if processed, err = tryConverters(c, params, from, tgt, &typ); !processed {
+			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
+		}
+		return
 	}
 
 	if isNil(tgt) && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
