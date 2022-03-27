@@ -20,7 +20,22 @@ import (
 
 func initConverters() {
 	dbglog.Log("initializing default converters and copiers ...")
-	defValueConverters = ValueConverters{
+	defValueConverters = ValueConverters{ // Transform()
+		&fromStringConverter{},
+		&toStringConverter{},
+
+		// &toFuncConverter{},
+		&fromFuncConverter{},
+
+		&toDurationConverter{},
+		&fromDurationConverter{},
+		&toTimeConverter{},
+		&fromTimeConverter{},
+
+		&fromBytesBufferConverter{},
+		&fromMapConverter{},
+	}
+	defValueCopiers = ValueCopiers{ // CopyTo()
 		&fromStringConverter{},
 		&toStringConverter{},
 
@@ -35,32 +50,25 @@ func initConverters() {
 		&fromBytesBufferConverter{},
 		&fromMapConverter{},
 	}
-	defValueCopiers = ValueCopiers{
-		&fromStringConverter{},
-		&toStringConverter{},
 
-		&toFuncConverter{},
-		&fromFuncConverter{},
-
-		&toDurationConverter{},
-		&fromDurationConverter{},
-		&toTimeConverter{},
-		&fromTimeConverter{},
-
-		&fromBytesBufferConverter{},
-		&fromMapConverter{},
-	}
+	lenValueConverters = len(defValueConverters)
+	lenValueCopiers = len(defValueCopiers)
 }
 
 var defValueConverters ValueConverters
 var defValueCopiers ValueCopiers
+var lenValueConverters, lenValueCopiers int
 
 func defaultValueConverters() ValueConverters { return defValueConverters }
 func defaultValueCopiers() ValueCopiers       { return defValueCopiers }
 
-func (valueConverters ValueConverters) findConverters(params *Params, from, to reflect.Type) (converter ValueConverter, ctx *ValueConverterContext) {
+func (valueConverters ValueConverters) findConverters(params *Params, from, to reflect.Type, userDefinedOnly bool) (converter ValueConverter, ctx *ValueConverterContext) {
 	var yes bool
-	for i := len(valueConverters) - 1; i >= 0; i-- {
+	var min int
+	if userDefinedOnly {
+		min = lenValueConverters
+	}
+	for i := len(valueConverters) - 1; i >= min; i-- {
 		// FILO: the last added converter has the first priority
 		cvt := valueConverters[i]
 		if cvt != nil {
@@ -73,9 +81,13 @@ func (valueConverters ValueConverters) findConverters(params *Params, from, to r
 	return
 }
 
-func (valueCopiers ValueCopiers) findCopiers(params *Params, from, to reflect.Type) (copier ValueCopier, ctx *ValueConverterContext) {
+func (valueCopiers ValueCopiers) findCopiers(params *Params, from, to reflect.Type, userDefinedOnly bool) (copier ValueCopier, ctx *ValueConverterContext) {
 	var yes bool
-	for i := len(valueCopiers) - 1; i >= 0; i-- {
+	var min int
+	if userDefinedOnly {
+		min = lenValueCopiers
+	}
+	for i := len(valueCopiers) - 1; i >= min; i-- {
 		// FILO: the last added converter has the first priority
 		cpr := valueCopiers[i]
 		if cpr != nil {
@@ -146,7 +158,7 @@ func (ctx *ValueConverterContext) IsPassSourceToTargetFunction() bool {
 func (ctx *ValueConverterContext) Preprocess(source reflect.Value, targetType reflect.Type, cvtOuter ValueConverter) (processed bool, target reflect.Value, err error) {
 	if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
 		sourceType := source.Type()
-		if cvt, ctx := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType); cvt != nil && cvt != cvtOuter {
+		if cvt, ctx := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType, false); cvt != nil && cvt != cvtOuter {
 			target, err = cvt.Transform(ctx, source, targetType)
 			processed = true
 			return
@@ -288,9 +300,11 @@ type fromConverterBase struct{ cvtbase }
 func (c *fromConverterBase) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	panic("not impl")
 }
+
 func (c *fromConverterBase) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	panic("not impl")
 }
+
 func (c *fromConverterBase) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	panic("not impl")
 }
@@ -298,7 +312,7 @@ func (c *fromConverterBase) Match(params *Params, source, target reflect.Type) (
 func (c *fromConverterBase) preprocess(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (processed bool, target reflect.Value, err error) {
 	if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
 		sourceType := source.Type()
-		if cvt, ctx := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType); cvt != nil {
+		if cvt, ctx := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType, false); cvt != nil {
 			if cvt == c {
 				return
 			}
@@ -460,6 +474,13 @@ func canMarshalling(source reflect.Value) (mtd reflect.Value, yes bool) {
 		}
 	}
 	return
+}
+
+// FallbackToBuiltinStringMarshalling exposes the builtin string
+// marshalling mechanism for your customized ValueConverter or
+// ValueCopier.
+func FallbackToBuiltinStringMarshalling(source reflect.Value) (str string, err error) {
+	return doMarshalling(source)
 }
 
 func doMarshalling(source reflect.Value) (str string, err error) {
@@ -1289,21 +1310,21 @@ func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target refl
 	return
 }
 
-func (c *toFuncConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-
-	target = reflect.New(targetType).Elem()
-
-	src := rdecodesimple(source)
-	tgt, tgtptr := rdecode(target)
-
-	var processed bool
-	if target, processed = c.checkSource(ctx, source, targetType); processed {
-		return
-	}
-
-	err = c.copyTo(ctx, source, src, tgt, tgtptr)
-	return
-}
+//func (c *toFuncConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+//
+//	target = reflect.New(targetType).Elem()
+//
+//	src := rdecodesimple(source)
+//	tgt, tgtptr := rdecode(target)
+//
+//	var processed bool
+//	if target, processed = c.checkSource(ctx, source, targetType); processed {
+//		return
+//	}
+//
+//	err = c.copyTo(ctx, source, src, tgt, tgtptr)
+//	return
+//}
 
 func (c *toFuncConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
 	if tk := target.Kind(); tk == reflect.Func {
@@ -1329,7 +1350,7 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	//
 	src := rdecodesimple(source)
 	tgt, tgtptr := rdecode(target)
-	tgtType := tgt.Type()
+	tgtType := c.safeType(tgt, tgtptr)
 	//dbglog.Log("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v", typfmtv(&target), typfmt(target.Type()), typfmtv(&tgtptr), typfmtv(&tgt), typfmt(tgtType))
 
@@ -1391,6 +1412,7 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 
 			if len(results) > 0 {
 				if controllerIsValid {
+					//if tk := target.Kind(); tk == reflect.Ptr && isNil(target) {}
 					err = ctx.controller.copyTo(ctx.Params, results[0], target)
 					return
 				}

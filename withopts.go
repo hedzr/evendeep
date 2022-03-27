@@ -26,6 +26,17 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 	}
 }
 
+// WithTryApplyConverterAtFirst specifies which is first when
+// trying/applying ValueConverters and ValueCopiers.
+func WithTryApplyConverterAtFirst(b bool) Opt {
+	return func(c *cpController) {
+		c.tryApplyConverterAtFirst = b
+	}
+}
+
+// WithTryApplyConverterAtFirstOpt is shortcut of WithTryApplyConverterAtFirst(true)
+var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true)
+
 // WithCloneStyle sets the cpController to clone mode.
 // In this mode, source object will be cloned to a new
 // object and returned as new target object.
@@ -57,22 +68,25 @@ func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	}
 }
 
-// WithCopyStrategyOpt is synonym of SliceCopy + MapCopy
+// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy
 var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
 
-// WithMergeStrategyOpt is synonym of SliceMerge + MapMerge
+// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge
 var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
+
+// WithClearIfEqualOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid
+var WithClearIfEqualOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
 //
-// In generally, WithStrategiesReset is synonym of SliceCopy +
-// MapCopy, since all strategies are cleared. A nothing Flags
+// In generally, WithStrategiesReset is synonym of cms.SliceCopy +
+// cms.MapCopy, since all strategies are cleared. A nothing Flags
 // means that a set of default strategies will be applied,
-// in another words, its include:
+// in other words, its include:
 //
-//    Default, OmitIfEmpty, SliceCopy,
-//    MapCopy, ByOrdinal.
+//    cms.Default, cms.OmitIfEmpty, cms.SliceCopy,
+//    cms.MapCopy, cms.ByOrdinal.
 //
 //
 func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
@@ -93,7 +107,7 @@ func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
 	}
 }
 
-// WithAutoExpandStructOpt is synonym of SliceMerge + MapMerge
+// WithAutoExpandStructOpt is synonym of WithAutoExpandForInnerStruct(true)
 var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
 
 // WithCopyUnexportedField try to copy the unexported fields

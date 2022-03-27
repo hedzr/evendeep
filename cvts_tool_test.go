@@ -925,14 +925,14 @@ func TestFromFuncConverter(t *testing.T) {
 		target interface{}
 		expect interface{}
 	}{
-		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
-			&map[string]interface{}{"k": 1, "hello": "bob"},
-			map[string]interface{}{"hello": "world", "k": 1},
-		},
-
 		{func() A { return a0 },
 			&b0,
 			b1,
+		},
+
+		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
+			&map[string]interface{}{"k": 1, "hello": "bob"},
+			map[string]interface{}{"hello": "world", "k": 1},
 		},
 
 		{func() string { return "hello" }, &stringTgt, "hello"},
@@ -961,8 +961,8 @@ func TestFromFuncConverter(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("has error: %v", err)
-			} else if reflect.DeepEqual(tt.Interface(), fncase.expect) == false {
-				t.Fatalf("unexpect result: expect %v but got %v", fncase.expect, tt.Interface())
+			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fncase.expect) == false {
+				t.Fatalf("unexpect result: expect %v but got %v", fncase.expect, ret)
 			}
 		}
 	}

@@ -139,14 +139,17 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 
 func newDeepCopier() *cpController {
 	return &cpController{
-		valueConverters:            defaultValueConverters(),
-		valueCopiers:               defaultValueCopiers(),
+		valueConverters: defaultValueConverters(),
+		valueCopiers:    defaultValueCopiers(),
+
 		copyUnexportedFields:       true,
 		copyFunctionResultToTarget: true,
+		passSourceAsFunctionInArgs: true,
 		autoExpandStruct:           true,
-		flags:                      flags.New(cms.SliceMerge, cms.MapMerge),
-		rethrow:                    true,
-		makeNewClone:               false,
+
+		flags:        flags.New(cms.SliceMerge, cms.MapMerge),
+		rethrow:      true,
+		makeNewClone: false,
 	}
 }
 
@@ -155,6 +158,7 @@ func newCopier() *cpController {
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
+		passSourceAsFunctionInArgs: true,
 		rethrow:                    true,
 		makeNewClone:               false,
 	}
@@ -165,6 +169,7 @@ func newCloner() *cpController {
 		valueConverters:            defaultValueConverters(),
 		valueCopiers:               defaultValueCopiers(),
 		copyFunctionResultToTarget: true,
+		passSourceAsFunctionInArgs: true,
 		rethrow:                    true,
 		makeNewClone:               true,
 	}

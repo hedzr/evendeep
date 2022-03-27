@@ -78,15 +78,20 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 		if p.srcDecoded == nil && p.srcOwner != nil {
 			d, _ := rdecode(*p.srcOwner)
 			p.srcDecoded = &d
+			if p.srcOwner.IsValid() {
+				p.srcType = p.srcOwner.Type()
+			}
 		}
 
 		if p.srcDecoded != nil && p.srcDecoded.IsValid() {
 			st = p.srcDecoded.Type()
 			p.parseSourceStruct(ownerParams, st)
+			p.dstType = p.dstOwner.Type()
 		} else if p.srcOwner != nil {
 			st = p.srcOwner.Type()
 			st = rindirectType(st)
 			p.parseSourceStruct(ownerParams, st)
+			p.dstType = st
 		}
 
 		if p.dstDecoded == nil && p.dstOwner != nil {

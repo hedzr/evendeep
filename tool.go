@@ -183,3 +183,15 @@ func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	}
 	return
 }
+
+func equal(lhs, rhs reflect.Value) bool {
+	lv, rv := lhs.IsValid(), rhs.IsValid()
+	if !lv {
+		return !rv
+	}
+	if !rv {
+		return !lv
+	}
+
+	return reflect.DeepEqual(lhs.Interface(), rhs.Interface())
+}

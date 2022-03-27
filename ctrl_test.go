@@ -1165,3 +1165,112 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
 	//}
 }
+
+func TestExample1(t *testing.T) {
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	src := deepcopy.Employee2{
+		Base: deepcopy.Base{
+			Name:      "Bob",
+			Birthday:  &tm,
+			Age:       24,
+			EmployeID: 7,
+		},
+		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:   &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:  true,
+	}
+	var dst deepcopy.User
+
+	// direct way but no error report: deepcopy.DeepCopy(src, &dst)
+	c := deepcopy.New()
+	if err := c.CopyTo(src, &dst); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(dst, deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:     true,
+	}) {
+		t.Fatalf("bad, got %v", dst)
+	}
+}
+
+type MyType struct {
+	I int
+}
+
+type MyTypeToStringConverter struct{}
+
+// Uncomment this line if you wanna take a ValueCopier implementation too:
+// func (c *MyTypeToStringConverter) CopyTo(ctx *deepcopy.ValueConverterContext, source, target reflect.Value) (err error) { return }
+
+func (c *MyTypeToStringConverter) Transform(ctx *deepcopy.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	if source.IsValid() && targetType.Kind() == reflect.String {
+		var str string
+		if str, err = deepcopy.FallbackToBuiltinStringMarshalling(source); err == nil {
+			target = reflect.ValueOf(str)
+		}
+	}
+	return
+}
+
+func (c *MyTypeToStringConverter) Match(params *deepcopy.Params, source, target reflect.Type) (ctx *deepcopy.ValueConverterContext, yes bool) {
+	sn, sp := source.Name(), source.PkgPath()
+	sk, tk := source.Kind(), target.Kind()
+	if yes = sk == reflect.Struct && tk == reflect.String &&
+		sn == "MyType" && sp == "github.com/hedzr/deepcopy_test"; yes {
+		ctx = &deepcopy.ValueConverterContext{Params: params}
+	}
+	return
+}
+
+func TestExample2(t *testing.T) {
+	var myData = MyType{I: 9}
+	var dst string
+	deepcopy.DeepCopy(myData, &dst, deepcopy.WithValueConverters(&MyTypeToStringConverter{}))
+	if dst != `{
+  "I": 9
+}` {
+		t.Fatalf("bad, got %v", dst)
+	}
+}
+
+func TestExample3(t *testing.T) {
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	var originRec = deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:     true,
+	}
+	var newRecord deepcopy.User
+	var t0 = time.Unix(0, 0)
+	var expectRec = deepcopy.User{Name: "Barbara", Birthday: &t0, Attr: &deepcopy.Attr{}}
+
+	deepcopy.DeepCopy(originRec, &newRecord)
+	t.Logf("newRecord: %v", newRecord)
+
+	newRecord.Name = "Barbara"
+	deepcopy.DeepCopy(originRec, &newRecord, deepcopy.WithClearIfEqualOpt)
+	if len(newRecord.Attr.Attrs) == len(expectRec.Attr.Attrs) {
+		newRecord.Attr = expectRec.Attr
+	}
+	if newRecord.Birthday.Nanosecond() == expectRec.Birthday.Nanosecond() {
+		newRecord.Birthday = expectRec.Birthday
+	}
+	if !reflect.DeepEqual(newRecord, expectRec) {
+		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
+	}
+}

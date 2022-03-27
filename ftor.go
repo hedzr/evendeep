@@ -166,6 +166,11 @@ func copyStructInternal(
 		dbgFrontOfStruct(paramsChild, padding, dbglog.Log)
 	}
 
+	var processed bool
+	if processed, err = tryConverters(c, paramsChild, from, *paramsChild.dstDecoded, &paramsChild.dstType, true); processed {
+		return
+	}
+
 	switch k := paramsChild.dstDecoded.Kind(); k {
 	case reflect.Slice:
 		dbglog.Log("     * struct -> slice case, ...")
@@ -201,7 +206,7 @@ func copyStructInternal(
 					typfmtv(paramsChild.dstDecoded))
 			}
 		}
-
+		return
 	}
 
 	err = fn(paramsChild, ec, i, amount, padding)
@@ -330,13 +335,24 @@ func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type {
 
 func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, padding string) (err error) {
 
-	var processed bool
-	if processed, err = tryConverters(c, params, ff, df, dftyp); processed {
-		return
-	}
-
 	fft, dft := ff.Type(), dtypzz(&df, dftyp)
 	fftk, dftk := fft.Kind(), dft.Kind()
+
+	if params.isFlagExists(cms.ClearIfEq) {
+		if equal(ff, df) {
+			df.Set(reflect.Zero(dft))
+		} else if params.isFlagExists(cms.ClearIfInvalid) && !df.IsValid() {
+			df.Set(reflect.Zero(dft))
+		}
+		if params.isFlagExists(cms.KeepIfNotEq) {
+			return
+		}
+	}
+
+	var processed bool
+	if processed, err = tryConverters(c, params, ff, df, dftyp, false); processed {
+		return
+	}
 
 	if fftk == reflect.Struct && ff.NumField() == 0 {
 		// never get into here because tablerecords.getallfields skip empty struct
@@ -441,7 +457,7 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 	if tk != reflect.Slice {
 		dbglog.Log("from slice -> %v", typfmt(typ))
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &typ); !processed {
+		if processed, err = tryConverters(c, params, from, tgt, &typ, false); !processed {
 			//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
 			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		}
@@ -540,7 +556,7 @@ func _sliceCopyOperation(c *cpController, params *Params, src, tgt reflect.Value
 				ec   = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
 			)
 			if el.Type() != tgtelemtype {
-				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype, false); cc != nil {
 					if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 						ec.Attach(err)
 						ecTotal.Attach(ec)
@@ -601,7 +617,7 @@ func _sliceCopyAppendOperation(c *cpController, params *Params, src, tgt reflect
 			)
 			//elv := el.Interface()
 			if el.Type() != tgtelemtype {
-				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype, false); cc != nil {
 					if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 						ec.Attach(err)
 						ecTotal.Attach(ec)
@@ -666,7 +682,7 @@ func _sliceMergeOperation(c *cpController, params *Params, src, tgt reflect.Valu
 				ec    = errors.New("cannot convert %v to %v", el.Type(), tgtelemtype)
 			)
 			if el.Type() != tgtelemtype {
-				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype); cc != nil {
+				if cc, ctx := c.valueConverters.findConverters(params, el.Type(), tgtelemtype, false); cc != nil {
 					if enew, err = cc.Transform(ctx, el, tgtelemtype); err != nil {
 						var ve *strconv.NumError
 						if !errors.As(err, &ve) {
@@ -732,7 +748,7 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 	tk, tgttyp := tgt.Kind(), tgt.Type()
 	if tk != reflect.Array {
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &tgttyp); processed {
+		if processed, err = tryConverters(c, params, from, tgt, &tgttyp, false); processed {
 			return
 		}
 		//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
@@ -798,7 +814,7 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 		dbglog.Log("from map -> %v", typfmt(typ))
 		// copy map to String, Slice, Struct
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &typ); !processed {
+		if processed, err = tryConverters(c, params, from, tgt, &typ, false); !processed {
 			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		}
 		return
@@ -1032,7 +1048,7 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	sourceType, targetType := from.Type(), to.Type()
 
 	if c != nil {
-		if cvt, ctx := c.valueCopiers.findCopiers(params, sourceType, targetType); cvt != nil {
+		if cvt, ctx := c.valueCopiers.findCopiers(params, sourceType, targetType, false); cvt != nil {
 			err = cvt.CopyTo(ctx, from, to)
 			return
 		}
