@@ -1247,6 +1247,19 @@ func TestExample2(t *testing.T) {
 }` {
 		t.Fatalf("bad, got %v", dst)
 	}
+
+	// a stub call for coverage
+	deepcopy.RegisterDefaultCopiers()
+
+	var dst1 string
+	deepcopy.RegisterDefaultConverters(&MyTypeToStringConverter{})
+	deepcopy.DeepCopy(myData, &dst1)
+	if dst1 != `{
+  "I": 9
+}` {
+		t.Fatalf("bad, got %v", dst)
+	}
+
 }
 
 func TestExample3(t *testing.T) {
@@ -1279,5 +1292,43 @@ func TestExample3(t *testing.T) {
 	}
 	if !reflect.DeepEqual(newRecord, expectRec) {
 		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
+	}
+	t.Logf("newRecord: %v", newRecord)
+
+}
+
+func TestExample4(t *testing.T) {
+	timeZone, _ := time.LoadLocation("America/Phoenix")
+	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	var originRec = deepcopy.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Valid:     true,
+	}
+	var dstRecord deepcopy.User
+	var t0 = time.Unix(0, 0)
+	var emptyRecord = deepcopy.User{Name: "Barbara", Birthday: &t0}
+	var expectRecord = deepcopy.User{Name: "Barbara", Birthday: &t0,
+		Image: []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:  &deepcopy.Attr{},
+		// Attr:  &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		// Valid: true,
+	}
+
+	// prepare a hard copy at first
+	deepcopy.DeepCopy(originRec, &dstRecord)
+	t.Logf("dstRecord: %v", dstRecord)
+	dbglog.Log("---- dstRecord: %v", dstRecord)
+
+	// now update dstRecord with the non-empty fields.
+	deepcopy.DeepCopy(emptyRecord, &dstRecord, deepcopy.WithOmitEmptyOpt)
+	t.Logf("dstRecord (WithOmitEmptyOpt): %v", dstRecord)
+	if !reflect.DeepEqual(dstRecord, expectRecord) {
+		t.Fatalf("bad, \n   got %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, expectRecord, dstRecord.Attr, expectRecord.Attr)
 	}
 }

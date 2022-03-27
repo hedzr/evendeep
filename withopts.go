@@ -77,6 +77,9 @@ var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
 // WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid
 var WithORMDiffOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
 
+// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty
+var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
+
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
 //
