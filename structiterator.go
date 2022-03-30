@@ -259,8 +259,9 @@ type fieldaccessor struct {
 func (s *fieldaccessor) Set(v reflect.Value) {
 	if s.ValueValid() {
 		if s.isstruct {
-			sv := s.structvalue.Field(s.index)
-			dbglog.Log("    set %v (%v) -> struct.%q", valfmt(&v), typfmtv(&v), s.structtype.Field(s.index).Name)
+			dbglog.Log("    setting struct.%q", s.structtype.Field(s.index).Name)
+			sv := rindirect(*s.structvalue).Field(s.index)
+			dbglog.Log("      set %v (%v) -> struct.%q", valfmt(&v), typfmtv(&v), s.structtype.Field(s.index).Name)
 			sv.Set(v)
 		} else if s.structtype.Kind() == reflect.Map {
 			key := s.mapkey()
@@ -564,7 +565,7 @@ func (s *structIterator) Next() (acc accessor, ok bool) {
 		if ok {
 			accessorTmp.sourceTableRec = sourceTableRec
 			accessorTmp.srcStructField = srcStructField
-			accessorTmp.fieldTags = parseFieldTags(accessorTmp.srcStructField.Tag)
+			accessorTmp.fieldTags = parseFieldTags(accessorTmp.srcStructField.Tag, "")
 
 			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v) | autoexpd: (%v, %v)",
 				s.srcIndex, accessorTmp.sourceTableRec.FieldName(),
