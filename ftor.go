@@ -167,7 +167,7 @@ func copyStructInternal(
 	}
 
 	var processed bool
-	if processed, err = tryConverters(c, paramsChild, from, *paramsChild.dstDecoded, &paramsChild.dstType, true); processed {
+	if processed, err = tryConverters(c, paramsChild, &from, paramsChild.dstDecoded, &paramsChild.dstType, true); processed {
 		return
 	}
 
@@ -257,7 +257,7 @@ func forEachField(params *Params, ec errors.Error, i, amount int, padding string
 
 		if srcval != nil && dstval != nil && srcval.IsValid() {
 			typ := params.accessor.FieldType()
-			if err = invokeStructFieldTransformer(c, params, *srcval, *dstval, typ, padding); err != nil {
+			if err = invokeStructFieldTransformer(c, params, srcval, dstval, typ, padding); err != nil {
 				ec.Attach(err)
 				log.Errorf("error: %v", err)
 			}
@@ -269,12 +269,14 @@ func forEachField(params *Params, ec errors.Error, i, amount int, padding string
 			dbglog.Log("    new object for %v", typfmt(*typ))
 
 			// create new object and pointer
-			toobjcopyptrv := reflect.New(*typ)
+			toobjcopyptrv := reflect.New(*typ).Elem()
 			dbglog.Log("    toobjcopyptrv: %v", typfmtv(&toobjcopyptrv))
 
-			if err = invokeStructFieldTransformer(c, params, *srcval, toobjcopyptrv, typ, padding); err != nil {
+			if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
 				ec.Attach(err)
 				log.Errorf("error: %v", err)
+			} else if toobjcopyptrv.Kind() == reflect.Slice {
+				params.accessor.Set(toobjcopyptrv)
 			} else {
 				params.accessor.Set(toobjcopyptrv.Elem())
 			}
@@ -326,31 +328,10 @@ func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, ar
 //	return
 //}
 
-func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type {
-	if df != nil && df.IsValid() {
-		return df.Type()
-	}
-	return *deftyp
-}
+func invokeStructFieldTransformer(c *cpController, params *Params, ff, df *reflect.Value, dftyp *reflect.Type, padding string) (err error) {
 
-func checkClearIfEqualOpt(params *Params, ff, df reflect.Value, dft reflect.Type) (processed bool) {
-	if params.isFlagExists(cms.ClearIfEq) {
-		if equal(ff, df) {
-			df.Set(reflect.Zero(dft))
-		} else if params.isFlagExists(cms.ClearIfInvalid) && !df.IsValid() {
-			df.Set(reflect.Zero(dft))
-		}
-		processed = true
-		if params.isFlagExists(cms.KeepIfNotEq) {
-			return
-		}
-	}
-	return
-}
-
-func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, padding string) (err error) {
-
-	fft, dft := ff.Type(), dtypzz(&df, dftyp)
+	fv, dv := ff != nil && ff.IsValid(), df != nil && df.IsValid()
+	fft, dft := dtypzz(ff, dftyp), dtypzz(df, dftyp)
 	fftk, dftk := fft.Kind(), dft.Kind()
 
 	var processed bool
@@ -371,11 +352,16 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 		log.Errorf("shouldn't get into here because we have a failover branch at the callee")
 	}
 
-	if df.IsValid() {
-		err = c.copyTo(params, ff, df) // or, use internal standard implementation version
+	if fv && dv {
+		err = c.copyTo(params, *ff, *df) // or, use internal standard implementation version
 		return
 	}
 
+	if !fv {
+		dbglog.Log("   ff is invalid: %v", typfmtv(ff))
+		nv := reflect.New(fft).Elem()
+		ff = &nv
+	}
 	if dftk == reflect.Interface {
 		dft, dftk = fft, fftk
 	}
@@ -384,14 +370,14 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 		nv := reflect.New(dft.Elem())
 		tt := nv.Elem()
 		dbglog.Log("   nv.tt: %v", typfmtv(&tt))
-		ff1 := rindirect(ff)
+		ff1 := rindirect(*ff)
 		err = c.copyTo(params, ff1, tt) // use user-defined copy-n-merger to merge or copy source to destination
 		if err == nil && !params.accessor.IsStruct() {
 			params.accessor.Set(tt)
 		}
 	} else {
 		nv := reflect.New(dft)
-		ff1 := rindirect(ff)
+		ff1 := rindirect(*ff)
 		err = c.copyTo(params, ff1, nv.Elem()) // use user-defined copy-n-merger to merge or copy source to destination
 		if err == nil && !params.accessor.IsStruct() {
 			params.accessor.Set(nv.Elem())
@@ -400,49 +386,30 @@ func invokeStructFieldTransformer(c *cpController, params *Params, ff, df reflec
 	return
 }
 
-func findAndApplyCopiers(c *cpController, params *Params, ff, df reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
-	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft, userDefinedOnly); ctx != nil {
-		dbglog.Log("-> using Copier %v", reflect.ValueOf(cvt).Type())
-
-		if df.IsValid() {
-			if err = cvt.CopyTo(ctx, ff, df); err == nil { // use user-defined copy-n-merger to merge or copy source to destination
-				processed = true
-			}
-			return
-		}
-
-		if dft.Kind() == reflect.Interface {
-			dft = fft
-		}
-		dbglog.Log("  dft: %v", typfmt(dft))
-		nv := reflect.New(dft)
-		err = cvt.CopyTo(ctx, ff, nv) // use user-defined copy-n-merger to merge or copy source to destination
-		if err == nil && !params.accessor.IsStruct() {
-			params.accessor.Set(nv.Elem())
-			processed = true
-		}
+func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type {
+	if df != nil && df.IsValid() {
+		return df.Type()
 	}
-	return
+	return *deftyp
 }
 
-func findAndApplyConverters(c *cpController, params *Params, ff, df reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
-	if cvt, ctx := c.valueConverters.findConverters(params, fft, dft, userDefinedOnly); ctx != nil {
-		dbglog.Log("-> using Converter %v", reflect.ValueOf(cvt).Type())
-		var result reflect.Value
-		result, err = cvt.Transform(ctx, ff, dft) // use user-defined value converter to transform from source to destination
-		if err == nil && !df.IsValid() && !params.accessor.IsStruct() {
-			params.accessor.Set(result)
-			processed = true
-			return
+func checkClearIfEqualOpt(params *Params, ff, df *reflect.Value, dft reflect.Type) (processed bool) {
+	if params.isFlagExists(cms.ClearIfEq) {
+		if equalClassical(*ff, *df) {
+			df.Set(reflect.Zero(dft))
+		} else if params.isFlagExists(cms.ClearIfInvalid) && !df.IsValid() {
+			df.Set(reflect.Zero(dft))
 		}
-		df.Set(result)
 		processed = true
+		if params.isFlagExists(cms.KeepIfNotEq) {
+			return
+		}
 	}
 	return
 }
 
-func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp *reflect.Type, userDefinedOnly bool) (processed bool, err error) {
-	fft, dft := ff.Type(), dtypzz(&df, dftyp)
+func tryConverters(c *cpController, params *Params, ff, df *reflect.Value, dftyp *reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	fft, dft := dtypzz(ff, dftyp), dtypzz(df, dftyp)
 	if c.tryApplyConverterAtFirst {
 		if processed, err = findAndApplyConverters(c, params, ff, df, fft, dft, userDefinedOnly); processed {
 			return
@@ -454,6 +421,47 @@ func tryConverters(c *cpController, params *Params, ff, df reflect.Value, dftyp 
 			return
 		}
 		processed, err = findAndApplyConverters(c, params, ff, df, fft, dft, userDefinedOnly)
+	}
+	return
+}
+
+func findAndApplyCopiers(c *cpController, params *Params, ff, df *reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	if cvt, ctx := c.valueCopiers.findCopiers(params, fft, dft, userDefinedOnly); ctx != nil {
+		dbglog.Log("-> using Copier %v", reflect.ValueOf(cvt).Type())
+
+		if df.IsValid() {
+			if err = cvt.CopyTo(ctx, *ff, *df); err == nil { // use user-defined copy-n-merger to merge or copy source to destination
+				processed = true
+			}
+			return
+		}
+
+		if dft.Kind() == reflect.Interface {
+			dft = fft
+		}
+		dbglog.Log("  dft: %v", typfmt(dft))
+		nv := reflect.New(dft)
+		err = cvt.CopyTo(ctx, *ff, nv) // use user-defined copy-n-merger to merge or copy source to destination
+		if err == nil && !params.accessor.IsStruct() {
+			params.accessor.Set(nv.Elem())
+			processed = true
+		}
+	}
+	return
+}
+
+func findAndApplyConverters(c *cpController, params *Params, ff, df *reflect.Value, fft, dft reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+	if cvt, ctx := c.valueConverters.findConverters(params, fft, dft, userDefinedOnly); ctx != nil {
+		dbglog.Log("-> using Converter %v", reflect.ValueOf(cvt).Type())
+		var result reflect.Value
+		result, err = cvt.Transform(ctx, *ff, dft) // use user-defined value converter to transform from source to destination
+		if err == nil && !df.IsValid() && !params.accessor.IsStruct() {
+			params.accessor.Set(result)
+			processed = true
+			return
+		}
+		df.Set(result)
+		processed = true
 	}
 	return
 }
@@ -479,7 +487,7 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 	if tk != reflect.Slice {
 		dbglog.Log("from slice -> %v", typfmt(typ))
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &typ, false); !processed {
+		if processed, err = tryConverters(c, params, &from, &tgt, &typ, false); !processed {
 			//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
 			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		}
@@ -770,7 +778,7 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 	tk, tgttyp := tgt.Kind(), tgt.Type()
 	if tk != reflect.Array {
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &tgttyp, false); processed {
+		if processed, err = tryConverters(c, params, &from, &tgt, &tgttyp, false); processed {
 			return
 		}
 		//log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
@@ -836,7 +844,7 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 		dbglog.Log("from map -> %v", typfmt(typ))
 		// copy map to String, Slice, Struct
 		var processed bool
-		if processed, err = tryConverters(c, params, from, tgt, &typ, false); !processed {
+		if processed, err = tryConverters(c, params, &from, &tgt, &typ, false); !processed {
 			err = ErrCannotCopy.WithErrors(err).FormatWith(valfmt(&from), typfmtv(&from), valfmt(&tgt), typfmtv(&tgt))
 		}
 		return
