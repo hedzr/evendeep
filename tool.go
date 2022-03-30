@@ -184,7 +184,7 @@ func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	return
 }
 
-func equal(lhs, rhs reflect.Value) bool {
+func equalClassical(lhs, rhs reflect.Value) bool {
 	lv, rv := lhs.IsValid(), rhs.IsValid()
 	if !lv {
 		return !rv
