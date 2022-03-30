@@ -25,6 +25,8 @@ type cpController struct {
 	funcInputs   []typ.Any   // preset input args for function invoking
 	rethrow      bool        // panic when error occurs
 
+	tagName string
+
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
 }

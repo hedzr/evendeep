@@ -42,7 +42,7 @@ func subtestParse(t *testing.T) {
 
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
-		ft := parseFieldTags(fld.Tag)
+		ft := parseFieldTags(fld.Tag, "")
 		if !ft.isFlagExists(cms.Ignore) {
 			t.Logf("%q flags: %v", fld.Tag, ft)
 		} else {
@@ -66,9 +66,9 @@ func subtestFlagTests(t *testing.T) {
 	sf1, _ := v.Type().FieldByName("converter")
 
 	var ft fieldTags
-	ft.Parse(sf.Tag)
-	ft.Parse(sf0.Tag) // entering 'continue' branch
-	ft.Parse(sf1.Tag) // entering 'delete' branch
+	ft.Parse(sf.Tag, "")
+	ft.Parse(sf0.Tag, "") // entering 'continue' branch
+	ft.Parse(sf1.Tag, "") // entering 'delete' branch
 
 	var z *fieldTags
 	z.isFlagExists(cms.SliceCopy)

@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func parseFieldTags(tag reflect.StructTag) *fieldTags {
+func parseFieldTags(tag reflect.StructTag, tagName string) *fieldTags {
 	t := &fieldTags{}
-	t.Parse(tag)
+	t.Parse(tag, tagName)
 	return t
 }
 
@@ -50,6 +50,6 @@ func (f *fieldTags) isFlagExists(ftf cms.CopyMergeStrategy) bool {
 	return f.flags[ftf]
 }
 
-func (f *fieldTags) Parse(s reflect.StructTag) {
-	f.flags, f.targetNameRule = flags.Parse(s)
+func (f *fieldTags) Parse(s reflect.StructTag, tagName string) {
+	f.flags, f.targetNameRule = flags.Parse(s, tagName)
 }

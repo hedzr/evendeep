@@ -76,7 +76,9 @@ const (
 	// even if it's a slice, a pointer, another sub-map, and so on.
 	MapMerge // mapmerge
 
+	//
 	// // --- Globally settings ---
+	//
 
 	// The following constants are reserved for the future purpose.
 	// All of them should NOT be used in your user-side codes.

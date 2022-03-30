@@ -223,7 +223,7 @@ func TestParamsBasics(t *testing.T) {
 
 		for i := 0; i < v.NumField(); i++ {
 			fld := v.Type().Field(i)
-			fldTags := parseFieldTags(fld.Tag)
+			fldTags := parseFieldTags(fld.Tag, "")
 			if !p2.isFlagExists(cms.Ignore) {
 				t.Logf("%q flags: %v", fld.Tag, fldTags)
 			} else {
@@ -256,7 +256,7 @@ func TestParamsBasics3(t *testing.T) {
 		//sf0, _ := v.Type().FieldByName("flags")
 		//sf1, _ := v.Type().FieldByName("converter")
 
-		fldTags := parseFieldTags(sf.Tag)
+		fldTags := parseFieldTags(sf.Tag, "")
 		//ft.Parse(sf.Tag)
 		//ft.Parse(sf0.Tag) // entering 'continue' branch
 		//ft.Parse(sf1.Tag) // entering 'delete' branch
@@ -375,7 +375,7 @@ func TestDeferCatchers(t *testing.T) {
 
 	})
 
-	t.Run("defer in copyTo", func(t *testing.T) {
+	t.Run("defer rethrew in copyTo", func(t *testing.T) {
 
 		c := newCopier()
 		c.rethrow = false
@@ -477,6 +477,8 @@ func NewForTest() DeepCopier {
 
 		WithIgnoreNamesReset(),
 		WithIgnoreNames("Bugs*", "Test*"),
+
+		WithStructTagName("copy"),
 
 		WithoutPanic(),
 

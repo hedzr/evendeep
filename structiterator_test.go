@@ -63,7 +63,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 		sourcefields = sourcefields.getallfields(t1, false)
 		for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
 			sourcefield := sourcefields.tablerecords[i]
-			flags := parseFieldTags(sourcefield.structField.Tag)
+			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next()
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
@@ -88,7 +88,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 
 		for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
 			sourcefield := sourcefields.tablerecords[i]
-			flags := parseFieldTags(sourcefield.structField.Tag)
+			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next()
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue

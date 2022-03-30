@@ -183,6 +183,24 @@ func isWildMatch(s, pattern string) bool {
 	return dir.IsWildMatch(s, pattern)
 }
 
+// WithStructTagName set the name which is used for retrieve the struct tag pieces.
+//
+// Default is "copy", the corresponding struct with tag looks like:
+//
+//    type AFT struct {
+//        flags     flags.Flags `copy:",cleareq"`
+//        converter *ValueConverter
+//        wouldbe   int `copy:",must,keepneq,omitzero,mapmerge"`
+//        ignored1  int `copy:"-"`
+//        ignored2  int `copy:",-"`
+//    }
+//
+func WithStructTagName(name string) Opt {
+	return func(c *cpController) {
+		c.tagName = name
+	}
+}
+
 // WithoutPanic disable panic() call internally
 func WithoutPanic() Opt {
 	return func(c *cpController) {
@@ -199,11 +217,22 @@ func WithoutPanic() Opt {
 // be applied.
 func WithStringMarshaller(m TextMarshaller) Opt {
 	return func(c *cpController) {
-		if m == nil {
-			m = json.Marshal
-		}
-		textMarshaller = m
+		RegisterStringMarshaller(m)
 	}
+}
+
+// RegisterStringMarshaller provides a string marshaller which will
+// be applied when a map is going to be copied to string.
+//
+// Default is json marshaller (json.MarshalIndent).
+//
+// If encoding.TextMarshaler/json.Marshaler have been implemented, the
+// source.MarshalText/MarshalJSON() will be applied.
+func RegisterStringMarshaller(m TextMarshaller) {
+	if m == nil {
+		m = json.Marshal
+	}
+	textMarshaller = m
 }
 
 // TextMarshaller for string

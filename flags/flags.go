@@ -197,14 +197,18 @@ func toggleTheRadio(f cms.CopyMergeStrategy, flags Flags) {
 }
 
 // Parse _
-func Parse(s reflect.StructTag) (flags Flags, targetNameRule string) {
+func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule string) {
 	lazyInitFieldTagsFlags()
 
 	if flags == nil {
 		flags = New()
 	}
 
-	tags := s.Get("copy")
+	if tagName == "" {
+		tagName = "copy"
+	}
+
+	tags := s.Get(tagName)
 
 	for i, wh := range strings.Split(tags, ",") {
 		if i == 0 && wh != "-" {
