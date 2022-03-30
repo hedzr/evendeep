@@ -8,6 +8,7 @@ import (
 	"github.com/hedzr/log"
 	"gopkg.in/hedzr/errors.v3"
 	"reflect"
+	"unsafe"
 )
 
 type cpController struct {
@@ -72,6 +73,15 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	return
 }
 
+func kindis(k reflect.Kind, list ...reflect.Kind) bool {
+	for _, l := range list {
+		if k == l {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *cpController) copyToInternal(
 	params *Params, from, to reflect.Value,
 	cb func(c *cpController, params *Params, from, to reflect.Value) (err error),
@@ -88,6 +98,28 @@ func (c *cpController) copyToInternal(
 
 	if c.testCloneables(params, from, to) {
 		return
+	}
+
+	if from.CanAddr() && to.CanAddr() && kindis(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+		addr1 := unsafe.Pointer(from.UnsafeAddr())
+		addr2 := unsafe.Pointer(to.UnsafeAddr())
+		if uintptr(addr1) > uintptr(addr2) {
+			// Canonicalize order to reduce number of entries in visited.
+			// Assumes non-moving garbage collector.
+			addr1, addr2 = addr2, addr1
+		}
+
+		if params != nil {
+			params.visiting = visit{addr1, addr2, from.Type()}
+			if params.visited == nil {
+				params.visited = make(map[visit]visiteddestination)
+			}
+			if dest, ok := params.visited[params.visiting]; ok {
+				to.Set(dest.dst)
+				return
+			}
+			params.visited[params.visiting] = visiteddestination{}
+		}
 	}
 
 	//fromType := c.indirectType(from.Type())

@@ -7,6 +7,7 @@ import (
 	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
 	"reflect"
+	"unsafe"
 )
 
 // Params is params package
@@ -28,6 +29,9 @@ type Params struct {
 	//dstAnonymous bool                 //
 	//mergingMode    bool                 // base state
 
+	visited  map[visit]visiteddestination
+	visiting visit
+
 	targetIterator structIterable //
 	accessor       accessor       //
 	// srcIndex       int                  //
@@ -40,6 +44,15 @@ type Params struct {
 	childrenAnonymous []*Params          // or children without name (non-struct)
 	owner             *Params            //
 	controller        *cpController      //
+}
+
+type visit struct {
+	addr1, addr2 unsafe.Pointer
+	typ          reflect.Type
+}
+
+type visiteddestination struct {
+	dst reflect.Value
 }
 
 type paramsOpt func(p *Params)
@@ -304,7 +317,11 @@ func (params *Params) isStruct() bool {
 }
 
 func (params *Params) parseFieldTags(tag reflect.StructTag) (isIgnored bool) {
-	flagsInTag := parseFieldTags(tag) // todo pass and apply the flags in field tag
+	var tagName string
+	if params.controller != nil {
+		tagName = params.controller.tagName
+	}
+	flagsInTag := parseFieldTags(tag, tagName)
 	isIgnored = flagsInTag.isFlagExists(cms.Ignore)
 	return
 }
