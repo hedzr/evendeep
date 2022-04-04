@@ -1,4 +1,4 @@
-package deepcopy
+package evendeep
 
 import "gopkg.in/hedzr/errors.v3"
 

@@ -1,10 +1,10 @@
-package deepcopy
+package evendeep
 
 import (
 	"encoding/json"
 
-	"github.com/hedzr/deepcopy/flags"
-	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/log/dir"
 )
 

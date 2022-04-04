@@ -1,8 +1,8 @@
-package deepcopy_test
+package evendeep_test
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/evendeep"
 	"reflect"
 	"testing"
 	"time"
@@ -11,7 +11,7 @@ import (
 
 func TestWithXXX(t *testing.T) {
 
-	copier := deepcopy.NewForTest()
+	copier := evendeep.NewForTest()
 
 	type AA struct {
 		TestString string
@@ -53,7 +53,7 @@ func TestWithXXX(t *testing.T) {
 
 	t.Run("non-ignore names test", func(t *testing.T) {
 
-		copier = deepcopy.New()
+		copier = evendeep.New()
 
 		src1 := &AA{TestString: "well", X: "ok"}
 		tgt1 := &BB{X: "no"}
@@ -69,7 +69,7 @@ func TestWithXXX(t *testing.T) {
 	})
 
 	t.Run("ignore field test", func(t *testing.T) {
-		copier = deepcopy.New()
+		copier = evendeep.New()
 
 		type AAA struct {
 			X1 string `copy:"-"`
@@ -103,16 +103,16 @@ func TestWithXXX(t *testing.T) {
 
 		var from *AA
 		var to *BB
-		ret := deepcopy.DeepCopy(from, &to)
+		ret := evendeep.DeepCopy(from, &to)
 		t.Logf("to = %v, ret = %v", to, ret)
 
-		ret = deepcopy.DeepCopy(nil, &to)
+		ret = evendeep.DeepCopy(nil, &to)
 		t.Logf("to = %v, ret = %v", to, ret)
 
-		ret = deepcopy.MakeClone(from)
+		ret = evendeep.MakeClone(from)
 		t.Logf("ret = %v", ret)
 
-		ret = deepcopy.MakeClone(nil)
+		ret = evendeep.MakeClone(nil)
 		t.Logf("ret = %v", ret)
 
 	})
@@ -132,7 +132,7 @@ func TestWithXXX(t *testing.T) {
 		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
 
-		copier = deepcopy.NewForTest()
+		copier = evendeep.NewForTest()
 		err := copier.CopyTo(&src1, tgt1)
 		if err != nil {
 			t.Fatalf("err: %v", err)
@@ -151,8 +151,8 @@ func TestDeepCopyGenerally(t *testing.T) {
 	a[0] = "Hello"
 	a[1] = "World"
 
-	x0 := deepcopy.X0{}
-	x1 := deepcopy.X1{
+	x0 := evendeep.X0{}
+	x1 := evendeep.X1{
 		A: uintptr(unsafe.Pointer(&x0)),
 		H: make(chan int, 5),
 		M: unsafe.Pointer(&x0),
@@ -167,7 +167,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 		var ret interface{}
 		// x2 := &X2{N: nn[1:3]}
 
-		ret = deepcopy.MakeClone(&x1)
+		ret = evendeep.MakeClone(&x1)
 		x1.K = &x0
 		testIfBadCopy(t, x1, ret, ret, "MakeClone x1 -> new")
 		t.Log("MakeClone is done.")
@@ -177,9 +177,9 @@ func TestDeepCopyGenerally(t *testing.T) {
 	t.Run("DeepCopy()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &deepcopy.X2{N: nn[1:3]}
+		x2 := &evendeep.X2{N: nn[1:3]}
 
-		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		ret = evendeep.DeepCopy(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
 
 	})
@@ -187,9 +187,9 @@ func TestDeepCopyGenerally(t *testing.T) {
 	t.Run("NewDeepCopier().CopyTo()", func(t *testing.T) {
 
 		var ret interface{}
-		x2 := &deepcopy.X2{N: nn[1:3]}
+		x2 := &evendeep.X2{N: nn[1:3]}
 
-		ret = deepcopy.New().CopyTo(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		ret = evendeep.New().CopyTo(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
 
 	})
@@ -209,7 +209,7 @@ func TestPlainCopyFuncField(t *testing.T) {
 		}}
 		var b AA
 
-		err := deepcopy.New().CopyTo(&a, &b, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		err := evendeep.New().CopyTo(&a, &b, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -232,7 +232,7 @@ func TestPlainCopyFuncField(t *testing.T) {
 		}}
 		var b BB
 
-		err := deepcopy.New().CopyTo(&a, &b, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		err := evendeep.New().CopyTo(&a, &b, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}

@@ -1,8 +1,8 @@
-package deepcopy_test
+package evendeep_test
 
 import (
 	"bytes"
-	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/evendeep"
 	"reflect"
 	"testing"
 	"time"
@@ -68,7 +68,7 @@ func TestTimeStruct(t *testing.T) {
 
 func TestUintptr(t *testing.T) {
 
-	x0 := deepcopy.X0{}
+	x0 := evendeep.X0{}
 	up := unsafe.Pointer(&x0)
 
 	vv := reflect.ValueOf(&up)
@@ -96,8 +96,8 @@ func TestUintptr(t *testing.T) {
 }
 
 func TestInspectStruct(t *testing.T) {
-	em := new(deepcopy.Employee)
-	deepcopy.InspectStruct(em)
+	em := new(evendeep.Employee)
+	evendeep.InspectStruct(em)
 }
 
 func TestDeepCopyExternal(t *testing.T) {
@@ -109,8 +109,8 @@ func TestDeepCopyExternal(t *testing.T) {
 	a[0] = "Hello"
 	a[1] = "World"
 
-	x0 := deepcopy.X0{}
-	x1 := deepcopy.X1{
+	x0 := evendeep.X0{}
+	x1 := evendeep.X1{
 		A: uintptr(unsafe.Pointer(&x0)),
 		H: make(chan int, 5),
 		M: unsafe.Pointer(&x0),
@@ -123,10 +123,10 @@ func TestDeepCopyExternal(t *testing.T) {
 	t.Run("DeepCopy()", func(t *testing.T) {
 
 		var ret interface{}
-		x2ind := deepcopy.X2{N: nn[1:3]}
+		x2ind := evendeep.X2{N: nn[1:3]}
 		x2 := &x2ind
 
-		ret = deepcopy.DeepCopy(&x1, &x2, deepcopy.WithIgnoreNames("Shit", "Memo", "Name"))
+		ret = evendeep.DeepCopy(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, x2ind, ret, "DeepCopy x1 -> x2", true)
 
 	})

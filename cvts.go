@@ -1,4 +1,4 @@
-package deepcopy
+package evendeep
 
 import (
 	"bytes"
@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hedzr/deepcopy/flags"
-	"github.com/hedzr/deepcopy/flags/cms"
-	"github.com/hedzr/deepcopy/internal/dbglog"
-	"github.com/hedzr/deepcopy/internal/syscalls"
-	"github.com/hedzr/deepcopy/typ"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/syscalls"
+	"github.com/hedzr/evendeep/typ"
 	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"

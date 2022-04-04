@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"github.com/hedzr/deepcopy/flags/cms"
+	"github.com/hedzr/evendeep/flags/cms"
 
 	"reflect"
 	"strings"

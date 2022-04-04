@@ -1,4 +1,4 @@
-module github.com/hedzr/deepcopy
+module github.com/hedzr/evendeep
 
 go 1.11
 

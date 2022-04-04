@@ -1,11 +1,11 @@
-package deepcopy
+package evendeep
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/deepcopy/flags/cms"
-	"github.com/hedzr/deepcopy/internal/cl"
-	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/internal/dbglog"
 	"math"
 	"reflect"
 	"strconv"

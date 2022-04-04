@@ -1,4 +1,4 @@
-package deepcopy
+package evendeep
 
 // tool.go - tools functions here
 
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/dbglog"
 )
 
 //nolint:deadcode

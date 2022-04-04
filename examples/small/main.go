@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/hedzr/deepcopy"
+	"github.com/hedzr/evendeep"
 	"github.com/hedzr/log"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 )
@@ -44,7 +44,7 @@ func main() {
 	tgt := X2{N: nn[1:3]}
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", tgt)
-	deepcopy.Copy(x1, &tgt, deepcopy.WithStrategiesReset())
+	evendeep.Copy(x1, &tgt, evendeep.WithStrategiesReset())
 	if reflect.DeepEqual(tgt, *expect1) == false {
 		if delta, ok := messagediff.PrettyDiff(*expect1, x1); !ok {
 			log.Errorf("want %v but got %v", expect1, tgt)
@@ -66,7 +66,7 @@ func main() {
 	// log.Infof("--------------- test 2")
 	// log.Printf("   src: %+v", x1)
 	// log.Printf("   tgt: %+v", x2)
-	// deepcopy.Copy(x1, &x2, deepcopy.WithStrategies(deepcopy.SliceMerge))
+	// evendeep.Copy(x1, &x2, evendeep.WithStrategies(evendeep.SliceMerge))
 	// if reflect.DeepEqual(*expect2, x2) == false {
 	//	if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
 	//		log.Errorf("want: %v", *expect2)
@@ -80,7 +80,7 @@ func main() {
 	// x2 = X2{N: []int{23, 8}}
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", x2)
-	deepcopy.Copy(x1, &x2)
+	evendeep.Copy(x1, &x2)
 	if reflect.DeepEqual(*expect2, x2) == false {
 		if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
 			log.Errorf("want: %v", *expect2)

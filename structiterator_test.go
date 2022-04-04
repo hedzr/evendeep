@@ -1,9 +1,9 @@
-package deepcopy
+package evendeep
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy/flags/cms"
-	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/dbglog"
 	"reflect"
 	"strings"
 	"testing"
@@ -206,10 +206,10 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath))
 	}
 
-	if sb.String() != `0. "Base" (deepcopy.Base (struct)) [0] ""
+	if sb.String() != `0. "Base" (evendeep.Base (struct)) [0] ""
 1. "Avatar" (string (string)) [1] ""
 2. "Image" ([]uint8 (slice)) [2] ""
-3. "Attr" (*deepcopy.Attr (ptr)) [3] ""
+3. "Attr" (*evendeep.Attr (ptr)) [3] ""
 4. "Valid" (bool (bool)) [4] ""
 5. "Deleted" (bool (bool)) [5] ""
 ` {
@@ -453,22 +453,22 @@ func teststructiteratorNextA4New(t *testing.T) {
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
+1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
+3. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+4. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+6. "Name3" (string (string)) | evendeep.A3 (struct) [1]
+7. "Int3" (int (int)) | evendeep.A3 (struct) [2]
+8. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+9. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | evendeep.A3 (struct) [4]
+12. "Int4" (int (int)) | evendeep.A4 (struct) [1]
+13. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+14. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {
@@ -476,22 +476,22 @@ func teststructiteratorNextA4New(t *testing.T) {
 	}
 
 	// Output:
-	// 0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-	// 1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-	// 2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-	// 3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-	// 7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-	// 8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-	// 12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-	// 13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	// 0. "Name2" (string (string)) | evendeep.A2 (struct) (0) [0]
+	// 1. "Int2" (int (int)) | evendeep.A2 (struct) (1) [1]
+	// 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) (2) [2]
+	// 3. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 4. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 5. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 6. "Name3" (string (string)) | evendeep.A3 (struct) (1) [1]
+	// 7. "Int3" (int (int)) | evendeep.A3 (struct) (2) [2]
+	// 8. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 9. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 10. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 11. "Bool3" (bool (bool)) | evendeep.A3 (struct) (4) [4]
+	// 12. "Int4" (int (int)) | evendeep.A4 (struct) (1) [1]
+	// 13. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 14. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 15. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
 }
 
 func teststructiteratorNextA4Zero(t *testing.T) {
@@ -513,22 +513,22 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
+1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
+3. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+4. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+6. "Name3" (string (string)) | evendeep.A3 (struct) [1]
+7. "Int3" (int (int)) | evendeep.A3 (struct) [2]
+8. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+9. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | evendeep.A3 (struct) [4]
+12. "Int4" (int (int)) | evendeep.A4 (struct) [1]
+13. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+14. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {
@@ -536,22 +536,22 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 	}
 
 	// Output:
-	// 0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-	// 1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-	// 2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-	// 3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-	// 7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-	// 8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-	// 12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-	// 13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	// 0. "Name2" (string (string)) | evendeep.A2 (struct) (0) [0]
+	// 1. "Int2" (int (int)) | evendeep.A2 (struct) (1) [1]
+	// 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) (2) [2]
+	// 3. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 4. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 5. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 6. "Name3" (string (string)) | evendeep.A3 (struct) (1) [1]
+	// 7. "Int3" (int (int)) | evendeep.A3 (struct) (2) [2]
+	// 8. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 9. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 10. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 11. "Bool3" (bool (bool)) | evendeep.A3 (struct) (4) [4]
+	// 12. "Int4" (int (int)) | evendeep.A4 (struct) (1) [1]
+	// 13. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 14. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 15. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
 }
 
 func teststructiteratorNextA4(t *testing.T) {
@@ -573,22 +573,22 @@ func teststructiteratorNextA4(t *testing.T) {
 	}
 
 	t.Logf(sb.String())
-	if sb.String() != `0. "Name2" (string (string)) | deepcopy.A2 (struct) [0]
-1. "Int2" (int (int)) | deepcopy.A2 (struct) [1]
-2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) [2]
-3. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-4. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-6. "Name3" (string (string)) | deepcopy.A3 (struct) [1]
-7. "Int3" (int (int)) | deepcopy.A3 (struct) [2]
-8. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-9. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
-11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) [4]
-12. "Int4" (int (int)) | deepcopy.A4 (struct) [1]
-13. "Name1" (string (string)) | deepcopy.A1 (struct) [0]
-14. "Int1" (int (int)) | deepcopy.A1 (struct) [1]
-15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) [2]
+	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
+1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
+2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
+3. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+4. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+5. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+6. "Name3" (string (string)) | evendeep.A3 (struct) [1]
+7. "Int3" (int (int)) | evendeep.A3 (struct) [2]
+8. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+9. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+10. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
+11. "Bool3" (bool (bool)) | evendeep.A3 (struct) [4]
+12. "Int4" (int (int)) | evendeep.A4 (struct) [1]
+13. "Name1" (string (string)) | evendeep.A1 (struct) [0]
+14. "Int1" (int (int)) | evendeep.A1 (struct) [1]
+15. "Bool1" (bool (bool)) | evendeep.A1 (struct) [2]
 ` {
 		t.Fail()
 	} else {
@@ -596,22 +596,22 @@ func teststructiteratorNextA4(t *testing.T) {
 	}
 
 	// Output:
-	// 0. "Name2" (string (string)) | deepcopy.A2 (struct) (0) [0]
-	// 1. "Int2" (int (int)) | deepcopy.A2 (struct) (1) [1]
-	// 2. "Bool2" (bool (bool)) | deepcopy.A2 (struct) (2) [2]
-	// 3. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 4. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 5. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 6. "Name3" (string (string)) | deepcopy.A3 (struct) (1) [1]
-	// 7. "Int3" (int (int)) | deepcopy.A3 (struct) (2) [2]
-	// 8. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 9. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 10. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
-	// 11. "Bool3" (bool (bool)) | deepcopy.A3 (struct) (4) [4]
-	// 12. "Int4" (int (int)) | deepcopy.A4 (struct) (1) [1]
-	// 13. "Name1" (string (string)) | deepcopy.A1 (struct) (0) [0]
-	// 14. "Int1" (int (int)) | deepcopy.A1 (struct) (1) [1]
-	// 15. "Bool1" (bool (bool)) | deepcopy.A1 (struct) (2) [2]
+	// 0. "Name2" (string (string)) | evendeep.A2 (struct) (0) [0]
+	// 1. "Int2" (int (int)) | evendeep.A2 (struct) (1) [1]
+	// 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) (2) [2]
+	// 3. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 4. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 5. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 6. "Name3" (string (string)) | evendeep.A3 (struct) (1) [1]
+	// 7. "Int3" (int (int)) | evendeep.A3 (struct) (2) [2]
+	// 8. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 9. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 10. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
+	// 11. "Bool3" (bool (bool)) | evendeep.A3 (struct) (4) [4]
+	// 12. "Int4" (int (int)) | evendeep.A4 (struct) (1) [1]
+	// 13. "Name1" (string (string)) | evendeep.A1 (struct) (0) [0]
+	// 14. "Int1" (int (int)) | evendeep.A1 (struct) (1) [1]
+	// 15. "Bool1" (bool (bool)) | evendeep.A1 (struct) (2) [2]
 }
 
 func TestFieldsTable_getallfields(t *testing.T) {

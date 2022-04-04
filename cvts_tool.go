@@ -1,4 +1,4 @@
-package deepcopy
+package evendeep
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hedzr/deepcopy/internal/cl"
-	"github.com/hedzr/deepcopy/internal/dbglog"
-	"github.com/hedzr/deepcopy/internal/syscalls"
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/syscalls"
 
 	"gopkg.in/hedzr/errors.v3"
 )

@@ -1,9 +1,9 @@
-package deepcopy
+package evendeep
 
 import (
-	"github.com/hedzr/deepcopy/flags"
-	"github.com/hedzr/deepcopy/flags/cms"
-	"github.com/hedzr/deepcopy/internal/dbglog"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/dbglog"
 
 	"reflect"
 )
@@ -91,16 +91,16 @@ var (
 // Use New:
 //
 //     src, tgt := 123, 0
-//     deepcopy.New().CopyTo(src, &tgt)
+//     evendeep.New().CopyTo(src, &tgt)
 //
 // Use package functions:
 //
-//     deepcopy.Copy(src, &tgt) // or synonym: deepcopy.DeepCopy(src, &tgt)
-//     tgt = deepcopy.MakeClone(src)
+//     evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
+//     tgt = evendeep.MakeClone(src)
 //
 // Use DefaultCopyController:
 //
-//     deepcopy.DefaultCopyController.CopyTo(src, &tgt)
+//     evendeep.DefaultCopyController.CopyTo(src, &tgt)
 //
 func New(opts ...Opt) DeepCopier {
 	// lazyInitRoutines()
