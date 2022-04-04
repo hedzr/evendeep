@@ -96,7 +96,7 @@ retry:
 }
 
 func canElem(k reflect.Kind) bool {
-	switch k {
+	switch k { //nolint:exhaustive
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Ptr, reflect.Slice:
 		return true
 	}
@@ -117,7 +117,7 @@ func rindirectType(reflectType reflect.Type) reflect.Type {
 	return reflectType
 }
 
-func rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
+func rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value { //nolint:deadcode
 	k := reflectValue.Kind()
 retry:
 	for _, kk := range kinds {
@@ -135,14 +135,14 @@ retry:
 	return reflectValue
 }
 
-func isNumericType(t reflect.Type) bool     { return isNumericKind(t.Kind()) }
-func isNumIntegerType(t reflect.Type) bool  { return isNumIntegerKind(t.Kind()) }
+func isNumericType(t reflect.Type) bool     { return isNumericKind(t.Kind()) }    //nolint:deadcode
+func isNumIntegerType(t reflect.Type) bool  { return isNumIntegerKind(t.Kind()) } //nolint:deadcode
 func isNumericKind(k reflect.Kind) bool     { return k >= reflect.Int && k < reflect.Array }
-func isNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }
-func isNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 }
+func isNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }   //nolint:deadcode
+func isNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 } //nolint:deadcode
 func isNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= reflect.Uint64 }
-func isNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }
-func isNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 }
+func isNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }      //nolint:deadcode
+func isNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 } //nolint:deadcode
 
 func typfmtv(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
@@ -211,8 +211,7 @@ var niltyp = reflect.TypeOf((*string)(nil))
 // isZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
 func isZero(v reflect.Value) (ret bool) {
-	k := v.Kind()
-	switch k {
+	switch k := v.Kind(); k { //nolint:exhaustive
 	case reflect.Bool:
 		ret = !v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -257,8 +256,7 @@ func arrayIsZero(v reflect.Value) bool {
 // isNil for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsNil
 func isNil(v reflect.Value) bool {
-	k := v.Kind()
-	switch k {
+	switch k := v.Kind(); k { //nolint:exhaustive
 	case reflect.Uintptr:
 		if v.CanAddr() {
 			return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!
@@ -269,15 +267,15 @@ func isNil(v reflect.Value) bool {
 		return v.Pointer() == 0 // for go1.11, this is a workaround even not bad
 	case reflect.Interface, reflect.Slice:
 		return v.IsNil()
-		//case reflect.Array:
+		// case reflect.Array:
 		//	// never true, for an array, it is never IsNil
-		//case reflect.String:
-		//case reflect.Struct:
+		// case reflect.String:
+		// case reflect.Struct:
 	}
 	return false
 }
 
-//func (v Value) IsNil() bool {
+// func (v Value) IsNil() bool {
 //	k := v.kind()
 //	switch k {
 //	case Chan, Func, Map, Pointer, UnsafePointer:
@@ -295,13 +293,14 @@ func isNil(v reflect.Value) bool {
 //		return *(*unsafe.Pointer)(v.ptr) == nil
 //	}
 //	panic(&ValueError{"reflect.Value.IsNil", v.kind()})
-//}
+// }
 
 // isExported reports whether the field is exported.
 func isExported(f *reflect.StructField) bool {
 	return f.PkgPath == ""
 }
 
+//nolint:deadcode
 func canConvertHelper(v reflect.Value, t reflect.Type) bool {
 	return canConvert(&v, t)
 }
@@ -315,7 +314,6 @@ func canConvert(v *reflect.Value, t reflect.Type) bool {
 
 	vt := v.Type()
 	if !vt.ConvertibleTo(t) {
-
 		// Currently the only conversion that is OK in terms of type
 		// but that can panic depending on the value is converting
 		// from slice to pointer-to-array.

@@ -14,10 +14,10 @@ type sample struct {
 func TestUnsafePointer(t *testing.T) {
 	s := &sample{a: 1, b: "test"}
 
-	//Getting the address of field b in struct s
+	// Getting the address of field b in struct s
 	p := unsafe.Pointer(uintptr(unsafe.Pointer(s)) + unsafe.Offsetof(s.b))
 
-	//Typecasting it to a string pointer and printing the value of it
+	// Typecasting it to a string pointer and printing the value of it
 	fmt.Println(*(*string)(p))
 
 	str := *(*string)(p)
@@ -25,7 +25,7 @@ func TestUnsafePointer(t *testing.T) {
 		t.Fail()
 	}
 
-	//Get the address as a uintptr
+	// Get the address as a uintptr
 	startAddress := uintptr(unsafe.Pointer(s))
 	fmt.Printf("Start Address of s: %d, %x, %v\n",
 		startAddress, startAddress,

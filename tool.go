@@ -4,22 +4,24 @@ package deepcopy
 
 import (
 	"fmt"
-	"github.com/hedzr/deepcopy/internal/dbglog"
 	"reflect"
 	"strings"
 	"unsafe"
+
+	"github.com/hedzr/deepcopy/internal/dbglog"
 )
 
+//nolint:deadcode
 func ptrOf(tgt reflect.Value) reflect.Value {
-	//for tgt.Kind() != reflect.Ptr {
+	// for tgt.Kind() != reflect.Ptr {
 	//	Log("tgt: %v, get pointer", tgt.Kind())
 	//	tgt = reflect.NewAt(tgt.Elem().Type(), unsafe.Pointer(tgt.UnsafeAddr()))
-	//}
+	// }
 	ret := reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.UnsafeAddr()))
 	return ret
 }
 
-//func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
+// func ptr(tgt reflect.Value, want reflect.Type) (r reflect.Value) {
 //	//return reflect.PtrTo(tgt)
 //	//for tgt.Kind() != reflect.Ptr {
 //	//Log("tgt: %v, get pointer", tgt.Kind())
@@ -47,7 +49,7 @@ func ptrOf(tgt reflect.Value) reflect.Value {
 //
 //	Log("NOTE an temp pointer was created as *%v", want.Kind())
 //	return reflect.New(want)
-//}
+// }
 
 func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) {
 	addrStr = "not-addressable"
@@ -109,6 +111,7 @@ func minInt(a, b int) int {
 	return b
 }
 
+//nolint:deadcode
 func contains(names []string, name string) bool {
 	for _, n := range names {
 		if strings.EqualFold(n, name) {
@@ -118,6 +121,7 @@ func contains(names []string, name string) bool {
 	return false
 }
 
+//nolint:deadcode
 func containsPartialsOnly(partialNames []string, testedString string) (contains bool) {
 	for _, n := range partialNames {
 		if strings.Contains(testedString, n) {
@@ -127,6 +131,7 @@ func containsPartialsOnly(partialNames []string, testedString string) (contains 
 	return
 }
 
+//nolint:deadcode
 func partialContainsShort(names []string, partialNeedle string) (contains bool) {
 	for _, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -136,6 +141,7 @@ func partialContainsShort(names []string, partialNeedle string) (contains bool) 
 	return
 }
 
+//nolint:deadcode
 func partialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
 	for ix, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -146,6 +152,7 @@ func partialContains(names []string, partialNeedle string) (index int, matched s
 }
 
 // reverseAnySlice reverse any slice/array
+//nolint:deadcode
 func reverseAnySlice(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
@@ -155,20 +162,21 @@ func reverseAnySlice(s interface{}) {
 }
 
 // reverseStringSlice reverse a string slice
+//nolint:deadcode
 func reverseStringSlice(s []string) []string {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
 	return s
 
-	//// reverse it
-	//i := 0
-	//j := len(a) - 1
-	//for i < j {
-	//	a[i], a[j] = a[j], a[i]
-	//	i++
-	//	j--
-	//}
+	// // reverse it
+	// i := 0
+	// j := len(a) - 1
+	// for i < j {
+	// 	a[i], a[j] = a[j], a[i]
+	// 	i++
+	// 	j--
+	// }
 }
 
 func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {

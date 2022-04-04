@@ -2,10 +2,11 @@ package dbglog
 
 import (
 	log2 "github.com/hedzr/log"
+
 	"log"
 )
 
-func init() {
+func init() { //nolint:gochecknoinits
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
 
 	// enable debug level for hedzr/log and log.

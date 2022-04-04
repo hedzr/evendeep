@@ -3,15 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"reflect"
+	"unsafe"
+
 	"github.com/hedzr/deepcopy"
 	"github.com/hedzr/log"
 	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
-	"reflect"
-	"unsafe"
 )
 
 func main() {
-
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
 	a[0] = "Hello"
@@ -21,7 +21,7 @@ func main() {
 	x0 := X0{}
 	x1 := X1{
 		A: uintptr(unsafe.Pointer(&x0)),
-		H: make(chan int, 5),
+		H: make(chan int, 5), //nolint:gomnd
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
 		N: nn[1:5],
@@ -63,21 +63,21 @@ func main() {
 		Q: a3,
 	}
 
-	//log.Infof("--------------- test 2")
-	//log.Printf("   src: %+v", x1)
-	//log.Printf("   tgt: %+v", x2)
-	//deepcopy.Copy(x1, &x2, deepcopy.WithStrategies(deepcopy.SliceMerge))
-	//if reflect.DeepEqual(*expect2, x2) == false {
+	// log.Infof("--------------- test 2")
+	// log.Printf("   src: %+v", x1)
+	// log.Printf("   tgt: %+v", x2)
+	// deepcopy.Copy(x1, &x2, deepcopy.WithStrategies(deepcopy.SliceMerge))
+	// if reflect.DeepEqual(*expect2, x2) == false {
 	//	if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
 	//		log.Errorf("want: %v", *expect2)
 	//		log.Errorf(" got: %v", x2)
 	//		fmt.Println(delta)
 	//		panic("unmatched")
 	//	}
-	//}
+	// }
 
 	log.Infof("--------------- test 3")
-	x2 = X2{N: []int{23, 8}}
+	// x2 = X2{N: []int{23, 8}}
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", x2)
 	deepcopy.Copy(x1, &x2)
@@ -89,7 +89,6 @@ func main() {
 			panic("unmatched")
 		}
 	}
-
 }
 
 // X0 type for testing
