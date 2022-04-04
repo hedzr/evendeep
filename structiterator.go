@@ -5,6 +5,7 @@ import (
 	"github.com/hedzr/deepcopy/internal/cl"
 	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
+
 	"reflect"
 	"strings"
 	"sync"
@@ -30,7 +31,7 @@ type tablerec struct {
 func (rec tablerec) FieldValue() *reflect.Value        { return rec.structFieldValue }
 func (rec tablerec) StructField() *reflect.StructField { return rec.structField }
 func (rec tablerec) FieldName() string {
-	//return strings.Join(reverseStringSlice(rec.names), ".")
+	// return strings.Join(reverseStringSlice(rec.names), ".")
 	var sb strings.Builder
 	for i := len(rec.names) - 1; i >= 0; i-- {
 		if sb.Len() > 0 {
@@ -63,9 +64,9 @@ func (table *fieldstable) getallfields(structValue reflect.Value, autoexpandstru
 	styp := structValue.Type()
 	ret := table.getfields(&structValue, styp, "", -1)
 	table.tablerecords = append(table.tablerecords, ret...)
-	//for _, ni := range ret.records {
+	// for _, ni := range ret.records {
 	//	table.records = append(table.records, ni)
-	//}
+	// }
 	return *table
 }
 
@@ -111,19 +112,19 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 				// add empty struct
 				tr = table.tablerec(svind, &sf, sf.Index[0], 0, "")
 				ret = append(ret, tr)
-				//ret = append(ret, tablerec{
+				// ret = append(ret, tablerec{
 				//	names:            []string{sf.Name},
 				//	indexes:          sf.Index,
 				//	structFieldValue: svind,
 				//	structField:      &sf,
-				//})
+				// })
 			}
 		} else {
 			tr = table.tablerec(svind, &sf, i, fi, fieldname)
 			ret = append(ret, tr)
 		}
 	}
-	return
+	return //nolint:nakedret
 }
 
 func (table *fieldstable) tablerec(svind *reflect.Value, sf *reflect.StructField, index, parentIndex int, parentFieldName string) (tr tablerec) {
@@ -236,7 +237,7 @@ type accessor interface {
 	NumField() int
 
 	SourceField() tablerec
-	//SourceFieldShouldBeIgnored(ignoredNames []string) bool
+	// SourceFieldShouldBeIgnored(ignoredNames []string) bool
 
 	IsFlagOK(f cms.CopyMergeStrategy) bool
 	IsGroupedFlagOK(f ...cms.CopyMergeStrategy) bool
@@ -326,7 +327,7 @@ func (s *fieldaccessor) FieldType() *reflect.Type {
 				return &sf.Type
 			}
 		} else if s.structtype.Kind() == reflect.Map {
-			//name := s.sourceTableRec.FieldName()
+			// name := s.sourceTableRec.FieldName()
 			vt := s.structtype.Elem()
 			return &vt
 		}
@@ -337,18 +338,18 @@ func (s *fieldaccessor) NumField() int {
 	if s.isstruct {
 		sf := s.structtype
 		return sf.NumField()
-		//if s.ValueValid() {
+		// if s.ValueValid() {
 		//	return s.structvalue.NumField()
-		//}
+		// }
 	}
 	return 0
 }
 func (s *fieldaccessor) StructField() *reflect.StructField {
-	//if s.ValueValid() {
+	// if s.ValueValid() {
 	//	r := s.structvalue.Type().Field(s.index)
 	//	s.structfield = &r
-	//}
-	//return s.structfield
+	// }
+	// return s.structfield
 	return s.getStructField()
 }
 func (s *fieldaccessor) getStructField() *reflect.StructField {
@@ -357,17 +358,16 @@ func (s *fieldaccessor) getStructField() *reflect.StructField {
 			r := s.structtype.Field(s.index)
 			s.structfield = &r
 		}
-		//if s.ValueValid() {
+		// if s.ValueValid() {
 		//	r := s.structvalue.Type().Field(s.index)
 		//	s.structfield = &r
-		//}
+		// }
 		return s.structfield
 	}
 	return nil
 }
 func (s *fieldaccessor) StructFieldName() string {
-	fld := s.StructField()
-	if fld != nil {
+	if fld := s.StructField(); fld != nil {
 		return fld.Name
 	}
 	return ""
@@ -382,14 +382,14 @@ func (s *fieldaccessor) ensurePtrField() {
 		if s.structvalue == nil {
 			return // cannot do anything except return
 		}
-		//if s.structvalue.IsValid() {
+		// if s.structvalue.IsValid() {
 		//	return
-		//}
+		// }
 		sf := s.structtype.Field(s.index)
 		vind := rindirect(*s.structvalue)
 		fv := vind.Field(s.index)
-		kind := sf.Type.Kind()
-		switch kind {
+
+		switch kind := sf.Type.Kind(); kind { //nolint:exhaustive
 		case reflect.Ptr:
 			if isNil(fv) {
 				dbglog.Log("   autoNew")
@@ -397,6 +397,7 @@ func (s *fieldaccessor) ensurePtrField() {
 				nv := reflect.New(typ)
 				fv.Set(nv)
 			}
+		default:
 		}
 	}
 }
@@ -438,14 +439,14 @@ func (s *structIterator) iitop() *fieldaccessor {
 	return s.stack[len(s.stack)-1]
 }
 
-//func (s *structIterator) iiprev() *fieldaccessor {
+// func (s *structIterator) iiprev() *fieldaccessor {
 //	if len(s.stack) <= 1 {
 //		return nil
 //	}
 //	return s.stack[len(s.stack)-1-1]
-//}
+// }
 
-//func (s *structIterator) iiSafegetFieldType() (sf *reflect.StructField) {
+// func (s *structIterator) iiSafegetFieldType() (sf *reflect.StructField) {
 //
 //	var reprev func(position int) (sf *reflect.StructField)
 //	reprev = func(position int) (sf *reflect.StructField) {
@@ -479,11 +480,11 @@ func (s *structIterator) iitop() *fieldaccessor {
 //
 //	sf = reprev(len(s.stack) - 1)
 //	return nil
-//}
+// }
 //
-//func (s *structIterator) iiCheckNilPtr(lastone *fieldaccessor, field *reflect.StructField) {
+// func (s *structIterator) iiCheckNilPtr(lastone *fieldaccessor, field *reflect.StructField) {
 //	lastone.ensurePtrField()
-//}
+// }
 
 // sourceStructFieldsTable _
 type sourceStructFieldsTable interface {
@@ -513,11 +514,11 @@ func (s *structIterator) withSourceIteratorIndexIncrease(srcIndexDelta int) (sou
 		s.srcIndex = 0
 	}
 
-	//if i < params.srcType.NumField() {
+	// if i < params.srcType.NumField() {
 	//	t := params.srcType.Field(i)
 	//	params.fieldType = &t
 	//	params.fieldTags = parseFieldTags(t.Tag)
-	//}
+	// }
 
 	if s.srcIndex < len(s.srcFields.tablerecords) {
 		sourcefield, ok = s.srcFields.tablerecords[s.srcIndex], true
@@ -585,7 +586,7 @@ func (s *structIterator) Next() (acc accessor, ok bool) {
 		}
 	}
 	acc = accessorTmp
-	return
+	return //nolint:nakedret
 }
 
 func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (accessor *fieldaccessor, ok bool) {
@@ -596,9 +597,7 @@ func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (ac
 		vind := rindirect(s.dstStruct)
 		tind := vind.Type()
 		lastone = s.iipush(&vind, tind, 0)
-
 	} else {
-
 	uplevel:
 		lastone = s.iitop().incr()
 		if lastone.index >= lastone.NumField() {
@@ -608,7 +607,6 @@ func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (ac
 			s.iipop()
 			goto uplevel
 		}
-
 	}
 
 retryExpand:
@@ -625,18 +623,15 @@ retryExpand:
 			if k1 == reflect.Struct &&
 				!srcFieldIsFuncAndTargetShouldNotExpand &&
 				!s.shouldIgnore(field, tind, k1) {
-
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
 				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
 				inretry = true
 				goto retryExpand
-
 			}
 		} else if s.autoNew {
 			lastone.ensurePtrField()
 		}
-
 	} else {
 		if inretry && lastone.NumField() == 0 {
 			// for an empty struct, go back and up to parent level and
@@ -653,7 +648,7 @@ retryExpand:
 	}
 
 	ok, accessor = true, lastone
-	return
+	return //nolint:nakedret
 }
 
 func (s *structIterator) shouldIgnore(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
@@ -746,5 +741,5 @@ func packageisreserved(packagename string) (shouldIgnored bool) {
 
 	shouldIgnored = packagename != "" && (_ignoredpackages.contains(packagename) ||
 		_ignoredpackageprefixes.contains(packagename))
-	return
+	return //nolint:nakedret
 }

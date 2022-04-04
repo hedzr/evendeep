@@ -220,14 +220,14 @@ func TestSimple(t *testing.T) {
 			nil,
 		),
 		// NEED REVIEW: what is copyenh strategy
-		//deepcopy.NewTestCase(
+		// deepcopy.NewTestCase(
 		//	"primitive types - int slice - copyenh(overwrite and extend)",
 		//	[]int{13, 7, 99}, []int{125, 99}, []int{7, 99, 7},
 		//	[]deepcopy.Opt{
 		//		deepcopy.WithStrategies(deepcopy.SliceCopyOverwrite),
 		//	},
 		//	nil,
-		//),
+		// ),
 	} {
 		t.Run(deepcopy.RunTestCasesWith(&tc))
 	}
@@ -304,9 +304,9 @@ func TestTypeConvert2Slice(t *testing.T) {
 
 	var i9 = 9
 	var i5 = 5
-	//var ui6 = uint(6)
-	//var i64 int64 = 10
-	//var f64 float64 = 9.1
+	// var ui6 = uint(6)
+	// var i64 int64 = 10
+	// var f64 float64 = 9.1
 
 	// slice
 
@@ -416,10 +416,10 @@ func TestTypeConvert2Slice(t *testing.T) {
 }
 
 func TestTypeConvert3Func(t *testing.T) {
-	//type B struct {
+	// type B struct {
 	//	F func(int) (int, error)
-	//}
-	//b1 := B{F: func(i int) (int, error) { i1 = i * 2; return i1, nil }}
+	// }
+	// b1 := B{F: func(i int) (int, error) { i1 = i * 2; return i1, nil }}
 
 	opts := []deepcopy.Opt{
 		deepcopy.WithPassSourceToTargetFunctionOpt,
@@ -427,7 +427,7 @@ func TestTypeConvert3Func(t *testing.T) {
 
 	i1 := 0
 	b1 := func(i []int) (int, error) { i1 = i[0] * 2; return i1, nil }
-	//var e1 error
+	// var e1 error
 	b2 := func(i int) (int, error) {
 		if i > 0 {
 			return 0, errors.BadRequest
@@ -463,7 +463,7 @@ func TestTypeConvert3Func(t *testing.T) {
 
 func TestStructStdlib(t *testing.T) {
 
-	//timeZone, _ := time.LoadLocation("America/Phoenix")
+	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm1 := time.Date(1979, 1, 29, 13, 3, 49, 19730313, timeZone2)
 	var tgt time.Time
@@ -545,8 +545,8 @@ func TestStructSimple(t *testing.T) {
 
 	expect1 := &deepcopy.X2{
 		A: uintptr(unsafe.Pointer(&x0)),
-		//D: []string{},
-		//E: []*deepcopy.X0{},
+		// D: []string{},
+		// E: []*deepcopy.X0{},
 		H: x1.H,
 		K: &x0,
 		M: unsafe.Pointer(&x0),
@@ -577,17 +577,17 @@ func TestStructSimple(t *testing.T) {
 			x1, &deepcopy.X2{N: nn[1:3]}, expect1,
 			[]deepcopy.Opt{
 				deepcopy.WithStrategiesReset(),
-				//deepcopy.WithStrategies(cms.OmitIfEmpty),
+				// deepcopy.WithStrategies(cms.OmitIfEmpty),
 				deepcopy.WithAutoNewForStructFieldOpt,
 			},
 			nil,
-			//func(src, dst, expect interface{}) (err error) {
+			// func(src, dst, expect interface{}) (err error) {
 			//	diff, equal := messagediff.PrettyDiff(expect, dst)
 			//	if !equal {
 			//		fmt.Println(diff)
 			//	}
 			//	return
-			//},
+			// },
 		),
 		deepcopy.NewTestCase(
 			"struct - 2 - merge",
@@ -652,13 +652,13 @@ func TestStructEmbedded(t *testing.T) {
 				deepcopy.WithAutoExpandStructOpt,
 			},
 			nil,
-			//func(src, dst, expect interface{}) (err error) {
+			// func(src, dst, expect interface{}) (err error) {
 			//	diff, equal := messagediff.PrettyDiff(expect, dst)
 			//	if !equal {
 			//		fmt.Println(diff)
 			//	}
 			//	return
-			//},
+			// },
 		),
 	)
 
@@ -668,10 +668,10 @@ func TestStructToSliceOrMap(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	src := deepcopy.Employee2{
 		Base: deepcopy.Base{
@@ -793,14 +793,14 @@ func TestSliceSimple(t *testing.T) {
 
 func TestSliceTypeConvert(t *testing.T) {
 
-	//tgt := []float32{3.1, 4.5, 9.67}
-	//itgt := []int{13, 5}
+	// tgt := []float32{3.1, 4.5, 9.67}
+	// itgt := []int{13, 5}
 	stgt := []string{"-", "2.718280076980591"}
 	stgt2 := []string{"-", "2.718280076980591", "9", "5", "3.1415927410125732"}
 	itgt := []int{17}
 
-	//itgt2 := []int{17}
-	//ftgt2 := []float64{17}
+	// itgt2 := []int{17}
+	// ftgt2 := []float64{17}
 
 	deepcopy.RunTestCases(t,
 		deepcopy.NewTestCase(
@@ -828,7 +828,7 @@ func TestSliceTypeConvert(t *testing.T) {
 
 		// needs complexToAnythingConverter
 
-		//deepcopy.NewTestCase(
+		// deepcopy.NewTestCase(
 		//	"slice (complex -> float64)",
 		//	[]complex64{math.Pi + 3i, 2.71828 + 4.19i},
 		//	&ftgt2,
@@ -836,8 +836,8 @@ func TestSliceTypeConvert(t *testing.T) {
 		//	&[]float64{2.718280076980591, 17, 3.1415927410125732},
 		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
 		//	nil,
-		//),
-		//deepcopy.NewTestCase(
+		// ),
+		// deepcopy.NewTestCase(
 		//	"slice (complex -> int)",
 		//	[]complex64{math.Pi + 3i, 2.71828 + 4.19i},
 		//	&itgt2,
@@ -845,7 +845,7 @@ func TestSliceTypeConvert(t *testing.T) {
 		//	&[]float64{3, 17},
 		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
 		//	nil,
-		//),
+		// ),
 	)
 
 }
@@ -863,12 +863,12 @@ func TestMapSimple(t *testing.T) {
 			[]deepcopy.Opt{deepcopy.WithMergeStrategyOpt, deepcopy.WithAutoExpandStructOpt},
 			nil,
 		),
-		//deepcopy.NewTestCase(
+		// deepcopy.NewTestCase(
 		//	"slice (uint64 -> int)",
 		//	[]uint64{9, 5}, &itgt, &[]int{13, 5, 9},
 		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
 		//	nil,
-		//),
+		// ),
 	)
 
 }
@@ -983,12 +983,12 @@ func TestMapAndStruct(t *testing.T) {
 			},
 			nil,
 		),
-		//deepcopy.NewTestCase(
+		// deepcopy.NewTestCase(
 		//	"slice (uint64 -> int)",
 		//	[]uint64{9, 5}, &itgt, &[]int{13, 5, 9},
 		//	[]deepcopy.Opt{deepcopy.WithMergeStrategy},
 		//	nil,
-		//),
+		// ),
 	)
 
 }
@@ -997,10 +997,10 @@ func TestMapToString(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	expect2 := deepcopy.User{
 		Name:      "Bob",
@@ -1087,22 +1087,22 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 
 	t.Logf("checking result ...")
 
-	//if diff := deep.Equal(src, tgt); diff == nil {
+	// if diff := deep.Equal(src, tgt); diff == nil {
 	//	return
-	//} else {
+	// } else {
 	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n  SRC: %+v\n  TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
-	//}
+	// }
 
-	//dd := deepdiff.New()
-	//diff, err := dd.Diff(context.Background(), src, tgt)
-	//if err != nil {
+	// dd := deepdiff.New()
+	// diff, err := dd.Diff(context.Background(), src, tgt)
+	// if err != nil {
 	//	return
-	//}
-	//if diff.Len() > 0 {
+	// }
+	// if diff.Len() > 0 {
 	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n\n DIFF: \n%v", title, src, tgt, diff)
-	//} else {
+	// } else {
 	//	return
-	//}
+	// }
 
 	diff, equal := messagediff.PrettyDiff(src, tgt)
 	if equal {
@@ -1120,7 +1120,7 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 
 	t.Fatal(err)
 
-	//if !reflect.DeepEqual(src, tgt) {
+	// if !reflect.DeepEqual(src, tgt) {
 	//
 	//	var b1, b2 []byte
 	//	var err error
@@ -1170,7 +1170,7 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 	//	}
 	//
 	//	t.Fatalf("testIfBadCopy - BAD COPY (%v):\n SRC: %+v\n TGT: %+v\n RES: %v", title, src, tgt, result)
-	//}
+	// }
 }
 
 func TestExample1(t *testing.T) {
@@ -1324,6 +1324,9 @@ func TestExample4(t *testing.T) {
 	deepcopy.DeepCopy(originRec, &dstRecord)
 	t.Logf("dstRecord: %v", dstRecord)
 	dbglog.Log("---- dstRecord: %v", dstRecord)
+	if !reflect.DeepEqual(dstRecord, originRec) {
+		t.Fatalf("bad, \n   got %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, originRec, dstRecord.Attr, originRec.Attr)
+	}
 
 	// now update dstRecord with the non-empty fields.
 	deepcopy.DeepCopy(emptyRecord, &dstRecord, deepcopy.WithOmitEmptyOpt)

@@ -52,8 +52,8 @@ func Test1(t *testing.T) {
 	t.Logf("vi (%v (%v)) : %v, &b = %v", vi.Kind(), vi.Type(), vi.Interface(), &b)
 	vi = vi.Elem()
 	t.Logf("vi (%v (%v)) : %v, &b = %v", vi.Kind(), vi.Type(), vi.Interface(), &b)
-	//var up = vi.Addr()
-	//t.Logf("up = %v", up)
+	// var up = vi.Addr()
+	// t.Logf("up = %v", up)
 }
 
 func TestRskipRdecodeAndSoOn(t *testing.T) {
@@ -88,8 +88,8 @@ func TestRskipRdecodeAndSoOn(t *testing.T) {
 	v2, prev = rdecode(v2)
 	t.Logf("v2 (%v (%v)) : %v, prev (%v %v)", v2.Kind(), v2.Type(), v2.Interface(), prev.Kind(), prev.Type())
 
-	//var up = vi.Addr()
-	//t.Logf("up = %v", up)
+	// var up = vi.Addr()
+	// t.Logf("up = %v", up)
 }
 
 func assertYes(t *testing.T, b bool, expect, got interface{}) {

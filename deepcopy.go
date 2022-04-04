@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/deepcopy/internal/dbglog"
+
 	"reflect"
 )
 
@@ -35,7 +36,7 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	}
 
 	from := reflect.ValueOf(fromObj)
-	//find := rindirect(from)
+	// find := rindirect(from)
 	fromtyp := from.Type()
 	findtyp := rdecodetypesimple(fromtyp)
 	toPtr := reflect.New(findtyp)
@@ -102,7 +103,7 @@ var (
 //     deepcopy.DefaultCopyController.CopyTo(src, &tgt)
 //
 func New(opts ...Opt) DeepCopier {
-	//lazyInitRoutines()
+	// lazyInitRoutines()
 	var c = newDeepCopier()
 	for _, opt := range opts {
 		opt(c)
@@ -114,7 +115,7 @@ func New(opts ...Opt) DeepCopier {
 // is *cpController) like NewDeepCopier but no merge strategies
 // (SliceMerge and MapMerge).
 func NewFlatDeepCopier(opts ...Opt) DeepCopier {
-	//lazyInitRoutines()
+	// lazyInitRoutines()
 	var c = newCopier()
 	c.flags = flags.New()
 	for _, opt := range opts {
@@ -123,11 +124,11 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	return c
 }
 
-//// NewCloner gets a new instance of DeepCopier (the underlying
-//// is *cpController) different with DefaultCopyController and
-//// DefaultCloneController.
-//// It returns a cloner like MakeClone()
-//func NewCloner(opts ...Opt) DeepCopier {
+// // NewCloner gets a new instance of DeepCopier (the underlying
+// // is *cpController) different with DefaultCopyController and
+// // DefaultCloneController.
+// // It returns a cloner like MakeClone()
+// func NewCloner(opts ...Opt) DeepCopier {
 //	lazyInitRoutines()
 //	var c = newCloner()
 //	c.flags = newFlags()
@@ -135,7 +136,7 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 //		opt(c)
 //	}
 //	return c
-//}
+// }
 
 func newDeepCopier() *cpController {
 	return &cpController{
@@ -180,11 +181,11 @@ func newCloner() *cpController {
 	}
 }
 
-//func newPlainCloner() *cpController {
+// func newPlainCloner() *cpController {
 //	return &cpController{
 //		valueConverters:            defaultValueConverters(),
 //		valueCopiers:               defaultValueCopiers(),
 //		copyFunctionResultToTarget: true,
 //		makeNewClone:               true,
 //	}
-//}
+// }

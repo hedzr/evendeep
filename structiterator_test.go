@@ -21,8 +21,8 @@ func TestFieldaccessorOperations(t *testing.T) {
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := rdecode(v1)
 
-	//x2 := new(X1)
-	//t2 := rdecodesimple(reflect.ValueOf(&x2))
+	// x2 := new(X1)
+	// t2 := rdecodesimple(reflect.ValueOf(&x2))
 
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
@@ -316,12 +316,12 @@ func teststructiteratorNextUser(t *testing.T) {
 
 func teststructiteratorNextUserNew(t *testing.T) {
 
-	//timeZone, _ := time.LoadLocation("America/Phoenix")
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	////tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	////tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// timeZone, _ := time.LoadLocation("America/Phoenix")
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// //tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// //tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	var sb strings.Builder
 	defer func() {
@@ -349,12 +349,12 @@ func teststructiteratorNextUserNew(t *testing.T) {
 
 func teststructiteratorNextUserZero(t *testing.T) {
 
-	//timeZone, _ := time.LoadLocation("America/Phoenix")
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// timeZone, _ := time.LoadLocation("America/Phoenix")
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	var sb strings.Builder
 	defer func() {
@@ -384,9 +384,9 @@ func teststructiteratorNextUserMore(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	var sb strings.Builder
@@ -682,32 +682,32 @@ func testfieldstableGetallfields(t *testing.T) {
 	}
 
 	// Output:
-	//0. [Name2 A2], [0 0] | &{Name2  string  0 [0] false}
-	//1. [Int2 A2], [1 0] | &{Int2  int  16 [1] false}
-	//2. [Bool2 A2], [2 0] | &{Bool2  bool  24 [2] false}
-	//3. [Name1 A1], [0 3] | &{Name1  string  0 [0] false}
-	//4. [Int1 A1], [1 3] | &{Int1  int  16 [1] false}
-	//5. [Bool1 A1], [2 3] | &{Bool1  bool  24 [2] false}
-	//6. [Name3 A3], [1 0] | &{Name3  string  8 [1] false}
-	//7. [Int3 A3], [2 0] | &{Int3  int  24 [2] false}
-	//8. [Name1 A1], [0 3] | &{Name1  string  0 [0] false}
-	//9. [Int1 A1], [1 3] | &{Int1  int  16 [1] false}
-	//10. [Bool1 A1], [2 3] | &{Bool1  bool  24 [2] false}
-	//11. [Bool3 A3], [4 0] | &{Bool3  bool  64 [4] false}
-	//12. [Int4], [1] | &{Int4  int  8 [1] false}
-	//13. [Name1 A1], [0 2] | &{Name1  string  0 [0] false}
-	//14. [Int1 A1], [1 2] | &{Int1  int  16 [1] false}
-	//15. [Bool1 A1], [2 2] | &{Bool1  bool  24 [2] false}
+	// 0. [Name2 A2], [0 0] | &{Name2  string  0 [0] false}
+	// 1. [Int2 A2], [1 0] | &{Int2  int  16 [1] false}
+	// 2. [Bool2 A2], [2 0] | &{Bool2  bool  24 [2] false}
+	// 3. [Name1 A1], [0 3] | &{Name1  string  0 [0] false}
+	// 4. [Int1 A1], [1 3] | &{Int1  int  16 [1] false}
+	// 5. [Bool1 A1], [2 3] | &{Bool1  bool  24 [2] false}
+	// 6. [Name3 A3], [1 0] | &{Name3  string  8 [1] false}
+	// 7. [Int3 A3], [2 0] | &{Int3  int  24 [2] false}
+	// 8. [Name1 A1], [0 3] | &{Name1  string  0 [0] false}
+	// 9. [Int1 A1], [1 3] | &{Int1  int  16 [1] false}
+	// 10. [Bool1 A1], [2 3] | &{Bool1  bool  24 [2] false}
+	// 11. [Bool3 A3], [4 0] | &{Bool3  bool  64 [4] false}
+	// 12. [Int4], [1] | &{Int4  int  8 [1] false}
+	// 13. [Name1 A1], [0 2] | &{Name1  string  0 [0] false}
+	// 14. [Int1 A1], [1 2] | &{Int1  int  16 [1] false}
+	// 15. [Bool1 A1], [2 2] | &{Bool1  bool  24 [2] false}
 }
 
 func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 
-	//timeZone, _ := time.LoadLocation("America/Phoenix")
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// timeZone, _ := time.LoadLocation("America/Phoenix")
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	var sb strings.Builder
 	defer func() {
@@ -716,7 +716,7 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 
 	for _, a4 := range []*Employee2{
 		new(Employee2),
-		//{
+		// {
 		//	Base: Base{
 		//		Name:      "Bob",
 		//		Birthday:  &tm,
@@ -727,7 +727,7 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 		//	Image:  []byte{95, 27, 43, 66, 0, 21, 210},
 		//	Attr:   &Attr{Attrs: []string{"hello", "world"}},
 		//	Valid:  true,
-		//},
+		// },
 	} {
 		sb.WriteString("\n")
 
@@ -767,17 +767,17 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 func testfieldstableGetallfieldsEmployee22(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
-	//timeZone2, _ := time.LoadLocation("Asia/Chongqing")
+	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
-	//tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
+	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
 	var sb strings.Builder
 	defer func() { t.Logf("\n%v\n", sb.String()) }()
 
 	for _, a4 := range []*Employee2{
-		//new(Employee2),
+		// new(Employee2),
 		{
 			Base: Base{
 				Name:      "Bob",
@@ -827,8 +827,8 @@ func testfieldstableGetallfieldsUser(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
-	//tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	//tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
+	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
 	tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
@@ -855,7 +855,7 @@ func testfieldstableGetallfieldsUser(t *testing.T) {
 			Deleted:   false,
 		},
 	} {
-		//sb.WriteString("\n")
+		// sb.WriteString("\n")
 
 		v4 := reflect.ValueOf(&a4)
 

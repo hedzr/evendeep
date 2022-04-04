@@ -6,6 +6,7 @@ import (
 	"github.com/hedzr/deepcopy/internal/cl"
 	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/log"
+
 	"reflect"
 	"unsafe"
 )
@@ -20,14 +21,14 @@ type Params struct {
 	dstType    reflect.Type   // = field(i+parent.dstOffset).type, or dstOwner.type for non-struct
 
 	// index     int // struct field or slice index,
-	//srcOffset int // -1, or an offset of the embedded struct fields
-	//dstOffset int // -1, or an offset of the embedded struct fields
+	// srcOffset int // -1, or an offset of the embedded struct fields
+	// dstOffset int // -1, or an offset of the embedded struct fields
 
-	//srcFieldType *reflect.StructField //
-	//dstFieldType *reflect.StructField //
-	//srcAnonymous bool                 //
-	//dstAnonymous bool                 //
-	//mergingMode    bool                 // base state
+	// srcFieldType *reflect.StructField //
+	// dstFieldType *reflect.StructField //
+	// srcAnonymous bool                 //
+	// dstAnonymous bool                 //
+	// mergingMode    bool                 // base state
 
 	visited  map[visit]visiteddestination
 	visiting visit
@@ -65,13 +66,13 @@ func newParams(opts ...paramsOpt) *Params {
 	return p
 }
 
-func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt {
+func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:deadcode
 	return func(p *Params) {
 		p.flags = flags.New(flagsList...)
 	}
 }
 
-func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt {
+func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:deadcode
 	return func(p *Params) {
 		p.controller = c
 		ownerParams.addChildParams(p)
@@ -80,7 +81,6 @@ func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt {
 
 func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt {
 	return func(p *Params) {
-
 		p.srcOwner = ownerSource
 		p.dstOwner = ownerTarget
 		p.srcDecoded = osDecoded
@@ -138,11 +138,10 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 
 		p.controller = c
 		ownerParams.addChildParams(p)
-
 	}
 }
 
-//func (params *Params) withIteratorIndex(srcIndex int) (sourcefield tablerec) {
+// func (params *Params) withIteratorIndex(srcIndex int) (sourcefield tablerec) {
 //	params.srcIndex = srcIndex
 //
 //	//if i < params.srcType.NumField() {
@@ -157,7 +156,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 //		params.fieldTags = parseFieldTags(params.field.Tag)
 //	}
 //	return
-//}
+// }
 
 func (params *Params) sourceFieldShouldBeIgnored() (yes bool) {
 	if params.targetIterator != nil {
@@ -199,52 +198,52 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	return
 }
 
-//func (params *Params) parseSourceFieldTag(i int) {
+// func (params *Params) parseSourceFieldTag(i int) {
 //	params.index = i
-//}
+// }
 
 func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type) {
 	params.srcType = st
 	if kind := st.Kind(); kind == reflect.Struct {
-		//idx := index
-		//if ownerParams != nil {
+		// idx := index
+		// if ownerParams != nil {
 		//	idx += ownerParams.srcOffset
-		//}
-		//params.withIteratorIndex(idx)
-		////if idx < st.NumField() {
-		////	t := st.Field(idx)
-		////	p.srcFieldType = &t
-		////	p.fieldTags = parseFieldTags(t.Tag)
-		////	p.srcType = t.Type
-		////}
-		////if ownerParams != nil {
-		////	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		////		p.srcAnonymous = true
-		////		p.srcOffset = p.index
-		////	}
-		////}
+		// }
+		// params.withIteratorIndex(idx)
+		// //if idx < st.NumField() {
+		// //	t := st.Field(idx)
+		// //	p.srcFieldType = &t
+		// //	p.fieldTags = parseFieldTags(t.Tag)
+		// //	p.srcType = t.Type
+		// //}
+		// //if ownerParams != nil {
+		// //	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+		// //		p.srcAnonymous = true
+		// //		p.srcOffset = p.index
+		// //	}
+		// //}
 	}
 }
 
 func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 	params.dstType = tt
 	if kind := tt.Kind(); kind == reflect.Struct {
-		//idx := index
-		//if ownerParams != nil {
+		// idx := index
+		// if ownerParams != nil {
 		//	idx += ownerParams.dstOffset
-		//}
-		////if idx < tt.NumField() {
-		////	t := tt.Field(idx)
-		////	p.dstFieldType = &t
-		////	p.dstType = t.Type
-		////}
-		////if ownerParams != nil {
-		////	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		////		p.dstAnonymous = true
-		////		p.dstOffset = p.index
-		////	}
-		////}
-		////} else if ownerParams != nil && ownerParams.dstFieldType != nil {
+		// }
+		// //if idx < tt.NumField() {
+		// //	t := tt.Field(idx)
+		// //	p.dstFieldType = &t
+		// //	p.dstType = t.Type
+		// //}
+		// //if ownerParams != nil {
+		// //	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+		// //		p.dstAnonymous = true
+		// //		p.dstOffset = p.index
+		// //	}
+		// //}
+		// //} else if ownerParams != nil && ownerParams.dstFieldType != nil {
 	}
 }
 
@@ -267,9 +266,9 @@ func (params *Params) addChildParams(ppChild *Params) {
 		if _, ok := ppChild.children[fieldName]; ok {
 			log.Panicf("field %q exists, cannot iterate another field on the same name", fieldName)
 		}
-		//if ppChild == nil {
+		// if ppChild == nil {
 		//	log.Panicf("setting nil Params for field %q, r u kidding me?", fieldName)
-		//}
+		// }
 
 		params.children[fieldName] = ppChild
 	} else {
@@ -296,21 +295,21 @@ func (params *Params) revoke() {
 	}
 }
 
-//// ValueOfSource _
-//func (params *Params) ValueOfSource() reflect.Value {
+// // ValueOfSource _
+// func (params *Params) ValueOfSource() reflect.Value {
 //	if params.srcFieldType != nil {
 //		return params.srcDecoded.Field(params.index + params.srcOffset)
 //	}
 //	return *params.srcOwner
-//}
+// }
 //
-//// ValueOfDestination _
-//func (params *Params) ValueOfDestination() reflect.Value {
+// // ValueOfDestination _
+// func (params *Params) ValueOfDestination() reflect.Value {
 //	if params.dstFieldType != nil {
 //		return params.dstDecoded.Field(params.index + params.dstOffset)
 //	}
 //	return *params.dstOwner
-//}
+// }
 
 func (params *Params) isStruct() bool {
 	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil

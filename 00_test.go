@@ -52,8 +52,8 @@ func TestErrorsIs(t *testing.T) {
 	_, err := strconv.ParseFloat("hello", 64)
 	t.Logf("err = %+v", err)
 
-	//e1:=errors2.Unwrap(err)
-	//t.Logf("e1 = %+v", e1)
+	// e1:=errors2.Unwrap(err)
+	// t.Logf("e1 = %+v", e1)
 
 	t.Logf("errors.Is(err, strconv.ErrSyntax): %v", errors.Is(err, strconv.ErrSyntax))
 	t.Logf("errors.Is(err, &strconv.NumError{}): %v", errors.Is(err, &strconv.NumError{}))
@@ -110,13 +110,13 @@ func TestCpChan(t *testing.T) {
 
 }
 
-//func TestVisibleFields(t *testing.T) {
+// func TestVisibleFields(t *testing.T) {
 //	var obj = new(Employee2)
 //	typ := reflect.TypeOf(obj)
 //	for _, sf := range reflect.VisibleFields(typ.Elem()) {
 //		fmt.Println(sf)
 //	}
-//}
+// }
 
 func TestUnexported(t *testing.T) {
 	var s = struct{ foo int }{42}
@@ -253,13 +253,13 @@ func TestParamsBasics3(t *testing.T) {
 		v := reflect.ValueOf(&a)
 		v = rindirect(v)
 		sf, _ := v.Type().FieldByName("wouldbe")
-		//sf0, _ := v.Type().FieldByName("flags")
-		//sf1, _ := v.Type().FieldByName("converter")
+		// sf0, _ := v.Type().FieldByName("flags")
+		// sf1, _ := v.Type().FieldByName("converter")
 
 		fldTags := parseFieldTags(sf.Tag, "")
-		//ft.Parse(sf.Tag)
-		//ft.Parse(sf0.Tag) // entering 'continue' branch
-		//ft.Parse(sf1.Tag) // entering 'delete' branch
+		// ft.Parse(sf.Tag)
+		// ft.Parse(sf0.Tag) // entering 'continue' branch
+		// ft.Parse(sf1.Tag) // entering 'delete' branch
 
 		var z *fieldTags
 		z = fldTags
@@ -352,16 +352,16 @@ func TestDeferCatchers(t *testing.T) {
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
 		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
-		//sf1, df1 := svv.Field(1), dvv.Field(1)
+		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
 		c.rethrow = false
 
-		//p1 := newParams()
-		//p1 = newParams(withOwnersSimple(c, nil))
+		// p1 := newParams()
+		// p1 = newParams(withOwnersSimple(c, nil))
 		//
-		//p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
-		//defer p2.revoke()
+		// p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
+		// defer p2.revoke()
 		//
 		// ec := errors.New("error container")
 
@@ -385,7 +385,7 @@ func TestDeferCatchers(t *testing.T) {
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
 		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
-		//sf1, df1 := svv.Field(1), dvv.Field(1)
+		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 
@@ -579,7 +579,7 @@ func RunTestCasesWith(tc *TestCase) (desc string, subtest func(t *testing.T)) {
 			verifier = runtestcasesverifier(t)
 		}
 
-		//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+		// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 		if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
 			return
 		}
@@ -603,7 +603,7 @@ func RunTestCases(t *testing.T, cases ...TestCase) {
 				verifier = runtestcasesverifier(t)
 			}
 
-			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+			// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
 				log.Printf("%3d. test passed", ix)
 				return
@@ -632,7 +632,7 @@ func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 				verifier = runtestcasesverifier(t)
 			}
 
-			//t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+			// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
 				log.Printf("%3d. test passed", ix)
 				return
@@ -663,9 +663,9 @@ func runtestcasesverifier(t *testing.T) Verifier {
 			return
 		}
 
-		//if !reflect.DeepEqual(av, bv) {
+		// if !reflect.DeepEqual(av, bv) {
 		//	err = errors.New("reflect.DeepEqual identified its not equal")
-		//}
+		// }
 		err = e
 		return
 	}

@@ -25,8 +25,8 @@ func TestWithXXX(t *testing.T) {
 
 		var dur time.Duration
 		var src = "9h71ms"
-		//var svv = reflect.ValueOf(src)
-		//var tvv = reflect.ValueOf(&dur) // .Elem()
+		// var svv = reflect.ValueOf(src)
+		// var tvv = reflect.ValueOf(&dur) // .Elem()
 
 		err := copier.CopyTo(src, &dur)
 		if err != nil {
@@ -144,7 +144,7 @@ func TestWithXXX(t *testing.T) {
 
 func TestDeepCopyGenerally(t *testing.T) {
 
-	//defer dbglog.NewCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
@@ -165,7 +165,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 	t.Run("MakeClone()", func(t *testing.T) {
 
 		var ret interface{}
-		//x2 := &X2{N: nn[1:3]}
+		// x2 := &X2{N: nn[1:3]}
 
 		ret = deepcopy.MakeClone(&x1)
 		x1.K = &x0

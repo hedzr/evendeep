@@ -2,6 +2,7 @@ package deepcopy
 
 import (
 	"encoding/json"
+
 	"github.com/hedzr/deepcopy/flags"
 	"github.com/hedzr/deepcopy/flags/cms"
 	"github.com/hedzr/log/dir"

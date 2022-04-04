@@ -1,4 +1,4 @@
-//go: generate stringer -type=CopyMergeStrategy -linecomment
+// go: generate stringer -type=CopyMergeStrategy -linecomment
 
 package cms
 
@@ -39,7 +39,7 @@ const (
 	ClearIfInvalid // clearinvalid
 
 	// NoOmit never omit any source fields
-	NoOmit CopyMergeStrategy = iota + 20 - 5 //noomit
+	NoOmit CopyMergeStrategy = iota + 20 - 5 // noomit
 	// OmitIfEmpty is both OmitIfSourceNil + OmitIfSourceZero
 	OmitIfEmpty // omitempty
 	// OmitIfNil the target field will be kept if source is nil
@@ -48,7 +48,7 @@ const (
 	OmitIfZero // omitzero
 
 	// NoOmitTarget never omit any target fields
-	NoOmitTarget CopyMergeStrategy = iota + 30 - 9 //noomittgt
+	NoOmitTarget CopyMergeStrategy = iota + 30 - 9 // noomittgt
 	// OmitIfTargetEmpty is both OmitIfTargetNil + OmitIfTargetZero
 	OmitIfTargetEmpty // omitemptytgt
 	// OmitIfTargetNil keeps the target field if it is nil
@@ -115,9 +115,9 @@ const (
 
 	// https://stackoverflow.com/questions/6878590/the-maximum-value-for-an-int-type-in-go
 	// https://github.com/golang/go/blob/master/src/math/const.go#L39
-	//intSize = 32 << (^uint(0) >> 63) // 32 or 64
-	//MaxInt  = 1<<(intSize-1) - 1
-	//MinInt  = -1 << (intSize - 1)
+	// intSize = 32 << (^uint(0) >> 63) // 32 or 64
+	// MaxInt  = 1<<(intSize-1) - 1
+	// MinInt  = -1 << (intSize - 1)
 
 	// MaxInt = int.max (2^63-1 or 2^31-1 for CPU Bit Size = 32bits)
 	MaxInt = int(^uint(0) >> 1)

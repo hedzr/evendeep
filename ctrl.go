@@ -6,7 +6,9 @@ import (
 	"github.com/hedzr/deepcopy/internal/dbglog"
 	"github.com/hedzr/deepcopy/typ"
 	"github.com/hedzr/log"
+
 	"gopkg.in/hedzr/errors.v3"
+
 	"reflect"
 	"unsafe"
 )
@@ -33,7 +35,6 @@ type cpController struct {
 
 // CopyTo _
 func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
-
 	lazyInitRoutines()
 
 	for _, opt := range opts {
@@ -59,7 +60,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
-			kind := from.Kind() //Log(" - from.type: %v", kind)
+			kind := from.Kind() // Log(" - from.type: %v", kind)
 			if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
 				if fn, ok := copyToRoutines[kind]; ok && fn != nil {
 					err = fn(c, params, from, to)
@@ -88,7 +89,6 @@ func (c *cpController) copyToInternal(
 	params *Params, from, to reflect.Value,
 	cb func(c *cpController, params *Params, from, to reflect.Value) (err error),
 ) (err error) {
-
 	// Return is from value is invalid
 	if !from.IsValid() {
 		if params.isGroupedFlagOKDeeply(cms.OmitIfEmpty, cms.OmitIfNil, cms.OmitIfZero) {
@@ -124,8 +124,8 @@ func (c *cpController) copyToInternal(
 		}
 	}
 
-	//fromType := c.indirectType(from.Type())
-	//toType := c.indirectType(to.Type())
+	// fromType := c.indirectType(from.Type())
+	// toType := c.indirectType(to.Type())
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -149,7 +149,7 @@ func (c *cpController) copyToInternal(
 	}()
 
 	err = cb(c, params, from, to)
-	return
+	return //nolint:nakedret
 }
 
 func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (processed bool) {
@@ -212,11 +212,11 @@ func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController 
 	return c
 }
 
-//func (c *cpController) isIgnoreName(name string) (yes bool) {
+// func (c *cpController) isIgnoreName(name string) (yes bool) {
 //	for _, x := range c.ignoreNames {
 //		if yes = isWildMatch(name, x); yes {
 //			break
 //		}
 //	}
 //	return
-//}
+// }

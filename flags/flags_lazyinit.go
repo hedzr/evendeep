@@ -2,13 +2,14 @@ package flags
 
 import (
 	"github.com/hedzr/deepcopy/flags/cms"
+
 	"sync"
 )
 
 // lazyInitFieldTagsFlags _
 func lazyInitFieldTagsFlags() {
 	onceFieldTagsEquip.Do(func() {
-		//add := func(s string) { mKnownFieldTagFlags[fieldTagFlag.Parse(s)] = struct{}{} }
+		// add := func(s string) { mKnownFieldTagFlags[fieldTagFlag.Parse(s)] = struct{}{} }
 		conflictsAdd := func(ss ...string) {
 			// ss := strings.Split(s, ",")
 			if mKnownFieldTagFlagsConflict == nil {
@@ -41,9 +42,9 @@ func lazyInitFieldTagsFlags() {
 		conflictsAdd("slicecopy", "slicecopyappend", "slicemerge")
 		conflictsAdd("mapcopy", "mapmerge")
 
-		//conflictsAdd("clearinvalid")
-		//conflictsAdd("cleareq")
-		//conflictsAdd("keepneq")
+		// conflictsAdd("clearinvalid")
+		// conflictsAdd("cleareq")
+		// conflictsAdd("keepneq")
 
 		conflictsAdd("std", "-", "must")
 
@@ -53,9 +54,9 @@ func lazyInitFieldTagsFlags() {
 			{cms.NoOmitTarget, cms.OmitIfTargetEmpty, cms.OmitIfTargetNil, cms.OmitIfTargetZero},
 			{cms.SliceCopy, cms.SliceCopyAppend, cms.SliceMerge},
 			{cms.MapCopy, cms.MapMerge},
-			//{cms.ClearIfInvalid},
-			//{cms.ClearIfEq},
-			//{cms.KeepIfNotEq},
+			// {cms.ClearIfInvalid},
+			// {cms.ClearIfEq},
+			// {cms.KeepIfNotEq},
 			{cms.Default, cms.Ignore, cms.Must},
 		}
 	})
@@ -63,7 +64,7 @@ func lazyInitFieldTagsFlags() {
 
 var onceFieldTagsEquip sync.Once
 
-//var mKnownFieldTagFlags map[fieldTagFlag]struct{}
+// var mKnownFieldTagFlags map[fieldTagFlag]struct{}
 var mKnownFieldTagFlagsConflict map[cms.CopyMergeStrategy]map[cms.CopyMergeStrategy]struct{}
 var mKnownFieldTagFlagsConflictLeaders map[cms.CopyMergeStrategy]struct{}
 var mKnownStrategyGroup []cms.CopyMergeStrategies // the toggleable radio groups

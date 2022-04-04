@@ -2,6 +2,7 @@ package flags
 
 import (
 	"github.com/hedzr/deepcopy/flags/cms"
+
 	"reflect"
 	"strings"
 )
@@ -44,7 +45,7 @@ func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
 	for _, f := range flg {
 		flags[f] = true
 		toggleTheRadio(f, flags)
-		//if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
+		// if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
 		//	for fx := range m {
 		//		if fx != f {
 		//			if _, has := flags[fx]; has {
@@ -52,7 +53,7 @@ func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
 		//			}
 		//		}
 		//	}
-		//}
+		// }
 	}
 	return flags
 }
@@ -102,7 +103,7 @@ func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMe
 			result = leader
 		}
 	}
-	return
+	return //nolint:nakedret
 }
 
 func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
@@ -158,7 +159,7 @@ func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) {
 			}
 		}
 	}
-	return
+	return //nolint:nakedret
 }
 
 func (flags Flags) IsAnyFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
@@ -244,5 +245,5 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule str
 			flags[k] = true
 		}
 	}
-	return
+	return //nolint:nakedret
 }

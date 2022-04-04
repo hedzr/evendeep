@@ -7,11 +7,11 @@ import (
 )
 
 func testDeepEqual(print func(msg string, args ...interface{}), got, expect interface{}) {
-	//a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
-	//switch kind:=a.Kind();kind {
-	//case reflect.Map:
-	//case reflect.Slice:
-	//}
+	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
+	// switch kind:=a.Kind();kind {
+	// case reflect.Map:
+	// case reflect.Slice:
+	// }
 
 	if !reflect.DeepEqual(got, expect) {
 		print("expecting %v but got %v", expect, got)
@@ -37,7 +37,7 @@ func TestTestDeepEqual(t *testing.T) {
 func TestCopyChan(t *testing.T) {
 
 	c := newCopier()
-	//params := newParams(withOwnersSimple(c, nil))
+	// params := newParams(withOwnersSimple(c, nil))
 
 	var err error
 	var so = make(chan struct{})
@@ -48,20 +48,20 @@ func TestCopyChan(t *testing.T) {
 		t.Errorf("bad: %v", err)
 	} else {
 		t.Logf("tgt = %v", to)
-		//testDeepEqual(t, to2, [2]int{9, 77})
+		// testDeepEqual(t, to2, [2]int{9, 77})
 	}
 }
 
 func TestCopyUnsafePointer(t *testing.T) {
 	// defer newCaptureLog(t).Release()
 
-	//c := newDeepCopier()
-	//params := newParams(withOwnersSimple(c, nil))
+	// c := newDeepCopier()
+	// params := newParams(withOwnersSimple(c, nil))
 	//
-	//var so = struct{ foo int }{42}
-	//var to int
-	//reflect.NewAt()
-	//copyUnsafePointer(c, from, to)
+	// var so = struct{ foo int }{42}
+	// var to int
+	// reflect.NewAt()
+	// copyUnsafePointer(c, from, to)
 }
 
 func TestCopySlice_differModes(t *testing.T) {

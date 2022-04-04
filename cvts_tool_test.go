@@ -23,10 +23,10 @@ type sample struct {
 func TestUintptrAndUnsafePointer(t *testing.T) {
 	s := &sample{a: 1, b: "test"}
 
-	//Getting the address of field b in struct s
+	// Getting the address of field b in struct s
 	p := unsafe.Pointer(uintptr(unsafe.Pointer(s)) + unsafe.Offsetof(s.b))
 
-	//Typecasting it to a string pointer and printing the value of it
+	// Typecasting it to a string pointer and printing the value of it
 	fmt.Println(*(*string)(p))
 
 	u := uintptr(unsafe.Pointer(s))
@@ -36,7 +36,7 @@ func TestUintptrAndUnsafePointer(t *testing.T) {
 	ret := rToUIntegerHex(v, reflect.TypeOf(uintptr(unsafe.Pointer(s))))
 	t.Logf("ret.type: %v, %v / 0x%x", ret.Type(), ret.Interface(), ret.Interface())
 
-	//t.Logf("ret.type: %v, %v", ret.Type(), ret.Pointer())
+	// t.Logf("ret.type: %v, %v", ret.Type(), ret.Pointer())
 }
 
 func TestGetPointerAsUintptr(t *testing.T) {
@@ -221,8 +221,8 @@ func TestForUIntegerHex(t *testing.T) {
 		0x3e67,
 		uint64(0x3e67),
 	} {
-		//v1 := reflect.ValueOf(src)
-		//v1 = rdecodesimple(v1)
+		// v1 := reflect.ValueOf(src)
+		// v1 = rdecodesimple(v1)
 		if x := rForUIntegerHex(uintptr(src)).Interface(); x != "0x3e67" {
 			t.Fatalf("expect %v but got %v", "0x3e67", x)
 		}
@@ -344,7 +344,7 @@ func TestForComplex(t *testing.T) {
 
 func TestToComplex(t *testing.T) {
 	for _, dt := range []reflect.Type{
-		//reflect.TypeOf((*complex64)(nil)).Elem(),
+		// reflect.TypeOf((*complex64)(nil)).Elem(),
 		reflect.TypeOf((*complex128)(nil)).Elem(),
 	} {
 		for vv, ii := range map[string]complex128{
@@ -477,7 +477,7 @@ func TestFromStringConverter_Transform(t *testing.T) {
 		"8.79":   {reflect.Float64: 8.79},
 		"(3+4i)": {reflect.Complex128: 3 + 4i},
 		"0x3e4a": {reflect.Uintptr: uintptr(0x3e4a)},
-		//"":      {reflect.Ptr: uintptr(0)},
+		// "":      {reflect.Ptr: uintptr(0)},
 	} {
 		for kind, exp := range tgtm {
 			svv := reflect.ValueOf(src)
@@ -532,10 +532,10 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			{int64(13 * time.Hour), &dur, 13 * time.Hour},
 		} {
 			var c = newDeepCopier()
-			//var ctx = newValueConverterContextForTest(c)
+			// var ctx = newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
 			err = c.CopyTo(cas.src, cas.tgt)
-			//tgt, err = bbc.Transform(ctx, svv, tgtType)
+			// tgt, err = bbc.Transform(ctx, svv, tgtType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
@@ -571,7 +571,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			var c = newDeepCopier()
 			var ctx = newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
-			//err = c.CopyTo(cas.src, cas.tgt)
+			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err = fdc.Transform(ctx, svv, cas.desiredType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
@@ -602,7 +602,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			var c = newDeepCopier()
 			var ctx = newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
-			//err = c.CopyTo(cas.src, cas.tgt)
+			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err = tdc.Transform(ctx, svv, tgtType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
@@ -615,45 +615,45 @@ func TestToDurationConverter_Transform(t *testing.T) {
 
 	})
 
-	//var c = newDeepCopier()
-	//c.withConverters(&toDurationConverter{})
-	//var ctx = newValueConverterContextForTest(c)
-	//src = "71ms"
-	//svv = reflect.ValueOf(src)
-	//tgt, err = bbc.Transform(ctx, svv, tgtType)
-	//if err != nil {
+	// var c = newDeepCopier()
+	// c.withConverters(&toDurationConverter{})
+	// var ctx = newValueConverterContextForTest(c)
+	// src = "71ms"
+	// svv = reflect.ValueOf(src)
+	// tgt, err = bbc.Transform(ctx, svv, tgtType)
+	// if err != nil {
 	//	t.Fatalf("err: %v", err)
-	//}
-	//t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+	// }
+	// t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
 	//
-	//src = "9h71ms"
-	//svv = reflect.ValueOf(src)
-	//err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
-	//if err != nil {
+	// src = "9h71ms"
+	// svv = reflect.ValueOf(src)
+	// err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
+	// if err != nil {
 	//	t.Fatalf("err: %v", err)
-	//}
-	//t.Logf("res: %v", dur)
+	// }
+	// t.Logf("res: %v", dur)
 	//
-	////
+	// //
 	//
-	//c = newDeepCopier()
-	//c.withCopiers(&toDurationConverter{})
-	//ctx = newValueConverterContextForTest(c)
-	//src = "71ms"
-	//svv = reflect.ValueOf(src)
-	//tgt, err = bbc.Transform(ctx, svv, tgtType)
-	//if err != nil {
+	// c = newDeepCopier()
+	// c.withCopiers(&toDurationConverter{})
+	// ctx = newValueConverterContextForTest(c)
+	// src = "71ms"
+	// svv = reflect.ValueOf(src)
+	// tgt, err = bbc.Transform(ctx, svv, tgtType)
+	// if err != nil {
 	//	t.Fatalf("err: %v", err)
-	//}
-	//t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
+	// }
+	// t.Logf("res: %v (%v)", tgt.Interface(), typfmtv(&tgt))
 	//
-	//src = "9h71ms"
-	//svv = reflect.ValueOf(src)
-	//err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
-	//if err != nil {
+	// src = "9h71ms"
+	// svv = reflect.ValueOf(src)
+	// err = bbc.CopyTo(ctx, svv, reflect.ValueOf(&dur).Elem())
+	// if err != nil {
 	//	t.Fatalf("err: %v", err)
-	//}
-	//t.Logf("res: %v", dur)
+	// }
+	// t.Logf("res: %v", dur)
 
 	//
 
@@ -677,7 +677,7 @@ func TestToTimeConverter_Transform(t *testing.T) {
 		inttyp := reflect.TypeOf((*int)(nil)).Elem()
 		int64typ := reflect.TypeOf((*int64)(nil)).Elem()
 		stringtyp := reflect.TypeOf((*string)(nil)).Elem()
-		//booltyp := reflect.TypeOf((*bool)(nil)).Elem()
+		// booltyp := reflect.TypeOf((*bool)(nil)).Elem()
 		floattyp := reflect.TypeOf((*float64)(nil)).Elem()
 
 		var ftc fromTimeConverter
@@ -698,7 +698,7 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			var tm, err = time.Parse("2006-01-02 15:04:05.000000", cas.src)
 			t.Logf("%q parsed: %v (%v)", cas.src, tm, err)
 			var svv = reflect.ValueOf(tm)
-			//err = c.CopyTo(cas.src, cas.tgt)
+			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err := ftc.Transform(ctx, svv, cas.desiredType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
@@ -730,7 +730,7 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			var c = newDeepCopier()
 			var ctx = newValueConverterContextForTest(c)
 			var svv = reflect.ValueOf(cas.src)
-			//err = c.CopyTo(cas.src, cas.tgt)
+			// err = c.CopyTo(cas.src, cas.tgt)
 			var tgt, err = tdc.Transform(ctx, svv, tgtType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
@@ -789,14 +789,14 @@ func TestToStringConverter_postCopyTo(t *testing.T) {
 	var dvv = reflect.ValueOf(&dst)
 	var sf1 = rindirect(svv).Field(0)
 	var df1 = rindirect(dvv).Field(0)
-	//var sft = reflect.TypeOf(src).Field(0)
+	// var sft = reflect.TypeOf(src).Field(0)
 
 	ctx := &ValueConverterContext{
 		Params: &Params{
 			srcOwner: &svv,
 			dstOwner: &dvv,
-			//field:      &sft,
-			//fieldTags:  parseFieldTags(sft.Tag),
+			// field:      &sft,
+			// fieldTags:  parseFieldTags(sft.Tag),
 			targetIterator: newStructIterator(dvv,
 				withStructPtrAutoExpand(true),
 				withStructFieldPtrAutoNew(true),
@@ -839,7 +839,7 @@ func TestHasStringer(t *testing.T) {
 
 func TestNameToMapKey(t *testing.T) {
 	name := "9527"
-	//value := 789
+	// value := 789
 	mapslice := []interface{}{
 		map[int]interface{}{
 			111: 333,
@@ -927,6 +927,8 @@ func TestFromFuncConverter(t *testing.T) {
 		target interface{}
 		expect interface{}
 	}{
+		// {func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
+
 		{func() A { return a0 },
 			&b0,
 			b1,
