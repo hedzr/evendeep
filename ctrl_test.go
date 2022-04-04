@@ -1320,6 +1320,8 @@ func TestExample4(t *testing.T) {
 		// Valid: true,
 	}
 
+	deepcopy.ResetDefaultCopyController()
+
 	// prepare a hard copy at first
 	deepcopy.DeepCopy(originRec, &dstRecord)
 	t.Logf("dstRecord: %v", dstRecord)

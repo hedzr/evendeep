@@ -16,3 +16,8 @@ func initGlobalOperators() {
 	DefaultCopyController = newDeepCopier()
 	defaultCloneController = newCloner()
 }
+
+// ResetDefaultCopyController discards the changes for DefaultCopyController and more.
+func ResetDefaultCopyController() {
+	initGlobalOperators()
+}
