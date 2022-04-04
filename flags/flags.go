@@ -22,6 +22,14 @@ func newFlags(ftf ...cms.CopyMergeStrategy) Flags {
 	return flags
 }
 
+func (flags Flags) Clone() (n Flags) {
+	n = make(Flags)
+	for k, v := range flags {
+		n[k] = v
+	}
+	return
+}
+
 func (flags Flags) String() string {
 	var sb, sbfinal strings.Builder
 

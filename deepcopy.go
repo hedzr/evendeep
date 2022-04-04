@@ -19,7 +19,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 		return toObj
 	}
 
-	var saved = DefaultCopyController.flags
+	var saved = DefaultCopyController.flags.Clone()
 	defer func() { DefaultCopyController.flags = saved }()
 
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
@@ -43,7 +43,7 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	toPtrObj := toPtr.Interface()
 	dbglog.Log("toPtrObj: %v", toPtrObj)
 
-	var saved = defaultCloneController.flags
+	var saved = defaultCloneController.flags.Clone()
 	defer func() { defaultCloneController.flags = saved }()
 
 	if err := defaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
