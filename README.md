@@ -32,14 +32,16 @@ A library that provides deeply per-field copying, comparing abilities.
 
 ## Usages
 
-`deepcopy.New`, `deepcopy.MakeClone` and `deepcopy.DeepCopy` are main entries.
+### deepcopy
+
+`eventdeep.New`, `eventdeep.MakeClone` and `eventdeep.eventdeep` are main entries.
 
 ```go
 func TestExample1(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	src := deepcopy.Employee2{
-		Base: deepcopy.Base{
+	src := eventdeep.Employee2{
+		Base: eventdeep.Base{
 			Name:      "Bob",
 			Birthday:  &tm,
 			Age:       24,
@@ -47,24 +49,24 @@ func TestExample1(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &eventdeep.Attr{Attrs: []string{"hello", "world"}},
 		Valid:  true,
 	}
-	var dst deepcopy.User
+	var dst eventdeep.User
 
-  // direct way but no error report: deepcopy.DeepCopy(src, &dst)
-  c := deepcopy.New()
+  // direct way but no error report: eventdeep.DeepCopy(src, &dst)
+  c := eventdeep.New()
 	if err := c.CopyTo(src, &dst); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(dst, deepcopy.User{
+	if !reflect.DeepEqual(dst, eventdeep.User{
 		Name:      "Bob",
 		Birthday:  &tm,
 		Age:       24,
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
 		Valid:     true,
 	}) {
 		t.Fatalf("bad, got %v", dst)
@@ -72,7 +74,7 @@ func TestExample1(t *testing.T) {
 }
 ```
 
-### Your Converter for A Type
+#### Your Converter for A Type
 
 The customized Converter can be applied on transforming the data. For more information take a look [`ValueConverter`]
 and [`ValueCopier`].
@@ -85,24 +87,24 @@ type MyType struct {
 type MyTypeToStringConverter struct{}
 
 // Uncomment this line if you wanna take a ValueCopier implementation too: 
-// func (c *MyTypeToStringConverter) CopyTo(ctx *deepcopy.ValueConverterContext, source, target reflect.Value) (err error) { return }
+// func (c *MyTypeToStringConverter) CopyTo(ctx *eventdeep.ValueConverterContext, source, target reflect.Value) (err error) { return }
 
-func (c *MyTypeToStringConverter) Transform(ctx *deepcopy.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *MyTypeToStringConverter) Transform(ctx *eventdeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	if source.IsValid() && targetType.Kind() == reflect.String {
 		var str string
-		if str, err = deepcopy.FallbackToBuiltinStringMarshalling(source); err == nil {
+		if str, err = eventdeep.FallbackToBuiltinStringMarshalling(source); err == nil {
 			target = reflect.ValueOf(str)
 		}
 	}
 	return
 }
 
-func (c *MyTypeToStringConverter) Match(params *deepcopy.Params, source, target reflect.Type) (ctx *deepcopy.ValueConverterContext, yes bool) {
+func (c *MyTypeToStringConverter) Match(params *eventdeep.Params, source, target reflect.Type) (ctx *eventdeep.ValueConverterContext, yes bool) {
 	sn, sp := source.Name(), source.PkgPath()
 	sk, tk := source.Kind(), target.Kind()
 	if yes = sk == reflect.Struct && tk == reflect.String &&
-		sn == "MyType" && sp == "github.com/hedzr/deepcopy_test"; yes {
-		ctx = &deepcopy.ValueConverterContext{Params: params}
+		sn == "MyType" && sp == "github.com/hedzr/eventdeep_test"; yes {
+		ctx = &eventdeep.ValueConverterContext{Params: params}
 	}
 	return
 }
@@ -110,7 +112,7 @@ func (c *MyTypeToStringConverter) Match(params *deepcopy.Params, source, target 
 func TestExample2(t *testing.T) {
 	var myData = MyType{I: 9}
 	var dst string
-	deepcopy.DeepCopy(myData, &dst, deepcopy.WithValueConverters(&MyTypeToStringConverter{}))
+	eventdeep.DeepCopy(myData, &dst, eventdeep.WithValueConverters(&MyTypeToStringConverter{}))
 	if dst != `{
   "I": 9
 }` {
@@ -124,11 +126,11 @@ calling `RegisterDefaultConverters` / `RegisterDefaultCopiers`.
 
 ```go
   // a stub call for coverage
-	deepcopy.RegisterDefaultCopiers()
+	eventdeep.RegisterDefaultCopiers()
 
 	var dst1 string
-	deepcopy.RegisterDefaultConverters(&MyTypeToStringConverter{})
-	deepcopy.DeepCopy(myData, &dst1)
+	eventdeep.RegisterDefaultConverters(&MyTypeToStringConverter{})
+	eventdeep.DeepCopy(myData, &dst1)
 	if dst1 != `{
   "I": 9
 }` {
@@ -136,11 +138,11 @@ calling `RegisterDefaultConverters` / `RegisterDefaultCopiers`.
 	}
 ```
 
-### Zero Target Fields If Equals To Source
+#### Zero Target Fields If Equals To Source
 
 When we compare two Struct, the target one can be clear except a field value is not equal to source field. This feature
 can be used for your ORM codes: someone loads a record as a golang struct variable, and make some changes,
-and `deepcopy.DeepCopy(originRec, &newRecord, deepcopy.WithORMDiffOpt)`.
+and `eventdeep.DeepCopy(originRec, &newRecord, eventdeep.WithORMDiffOpt)`.
 
 The codes like:
 
@@ -148,16 +150,16 @@ The codes like:
 func TestExample3(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = deepcopy.User{ ... }
-	var newRecord deepcopy.User
+	var originRec = eventdeep.User{ ... }
+	var newRecord eventdeep.User
 	var t0 = time.Unix(0, 0)
-	var expectRec = deepcopy.User{Name: "Barbara", Birthday: &t0, Attr: &deepcopy.Attr{}}
+	var expectRec = eventdeep.User{Name: "Barbara", Birthday: &t0, Attr: &eventdeep.Attr{}}
 
-	deepcopy.DeepCopy(originRec, &newRecord)
+	eventdeep.DeepCopy(originRec, &newRecord)
 	t.Logf("newRecord: %v", newRecord)
 
 	newRecord.Name = "Barbara"
-	deepcopy.DeepCopy(originRec, &newRecord, deepcopy.WithORMDiffOpt)
+	eventdeep.DeepCopy(originRec, &newRecord, eventdeep.WithORMDiffOpt)
 	...
 	if !reflect.DeepEqual(newRecord, expectRec) {
 		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
@@ -165,40 +167,40 @@ func TestExample3(t *testing.T) {
 }
 ```
 
-### Keep the target value if source empty
+#### Keep the target value if source empty
 
 Sometimes we would look for a do-not-modify copier, it'll keep the target field value while the corresponding source
-field is empty (zero or nil). Use `deepcopy.WithOmitEmptyOpt` in the case.
+field is empty (zero or nil). Use `eventdeep.WithOmitEmptyOpt` in the case.
 
 ```go
 func TestExample4(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = deepcopy.User{
+	var originRec = eventdeep.User{
 		Name:      "Bob",
 		Birthday:  &tm,
 		Age:       24,
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
 		Valid:     true,
 	}
-	var dstRecord deepcopy.User
+	var dstRecord eventdeep.User
 	var t0 = time.Unix(0, 0)
-	var emptyRecord = deepcopy.User{Name: "Barbara", Birthday: &t0}
-	var expectRecord = deepcopy.User{Name: "Barbara", Birthday: &t0,
+	var emptyRecord = eventdeep.User{Name: "Barbara", Birthday: &t0}
+	var expectRecord = eventdeep.User{Name: "Barbara", Birthday: &t0,
 		Image: []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:  &deepcopy.Attr{Attrs: []string{"hello", "world"}},
+		Attr:  &eventdeep.Attr{Attrs: []string{"hello", "world"}},
 		Valid: true,
 	}
 
 	// prepare a hard copy at first
-	deepcopy.DeepCopy(originRec, &dstRecord)
+	eventdeep.DeepCopy(originRec, &dstRecord)
 	t.Logf("dstRecord: %v", dstRecord)
 
 	// now update dstRecord with the non-empty fields.
-	deepcopy.DeepCopy(emptyRecord, &dstRecord, deepcopy.WithOmitEmptyOpt)
+	eventdeep.DeepCopy(emptyRecord, &dstRecord, eventdeep.WithOmitEmptyOpt)
 	t.Logf("dstRecord: %v", dstRecord)
 	if !reflect.DeepEqual(dstRecord, expectRecord) {
 		t.Fatalf("bad, got %v\nexpect: %v", dstRecord, expectRecord)
@@ -206,7 +208,7 @@ func TestExample4(t *testing.T) {
 }
 ```
 
-### String Marshalling
+#### String Marshalling
 
 While copying struct, map, slice, or other source to target string, the builtin toStringConverter will be launched. And
 the default logic includes marshaling the structual source to string, typically `json.Marshal`.
@@ -214,13 +216,13 @@ the default logic includes marshaling the structual source to string, typically 
 The default marshaller is customizable. `RegisterStringMarshaller` and `WithStringMarshaller` do it:
 
 ```go
-deepcopy.RegisterStringMarshaller(yaml.Marshal)
-deepcopy.RegisterStringMarshaller(json.Marshal)
+eventdeep.RegisterStringMarshaller(yaml.Marshal)
+eventdeep.RegisterStringMarshaller(json.Marshal)
 ```
 
 The preset is a wraper to `json.MarshalIndent`.
 
-### Specify CopyMergeStrategy by struct Tag
+#### Specify CopyMergeStrategy by struct Tag
 
 Sample struct is:
 
@@ -261,15 +263,31 @@ The available tag names are:
 
 > `*`: the flag is on by default.
 
+
+
+
+
+### deepdiff
+
+WIP
+
+
+
+### deepequal
+
+WIP
+
+
+
 ## Roadmap
 
 These features are planning but still on ice.
 
 - [ ] Name converting and mapping
 - [ ] More builtin converters
-- [ ] Handle circular pointer
+- [x] Handle circular pointer
 
-Issue me if you would like it or them are put on the table.
+Issue me if you wanna put it or them on the table.
 
 ## LICENSE
 
