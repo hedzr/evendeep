@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/evendeep/diff"
 	"reflect"
 	"unsafe"
 
 	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/log"
 )
 

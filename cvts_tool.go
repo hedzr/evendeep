@@ -2,7 +2,6 @@ package evendeep
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/internal/tool"
 	"math"
 	"reflect"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/syscalls"
+	"github.com/hedzr/evendeep/internal/tool"
 
 	"gopkg.in/hedzr/errors.v3"
 )

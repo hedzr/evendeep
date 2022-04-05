@@ -24,9 +24,9 @@ var (
 	// after commit 82f48826c6c7 which changed the format again to mirror
 	// the original format.  Code in the init function updates these offsets
 	// as necessary.
-	offsetPtr    = uintptr(ptrSize)
+	offsetPtr    = ptrSize
 	offsetScalar = uintptr(0)
-	offsetFlag   = uintptr(ptrSize * 2)
+	offsetFlag   = ptrSize * 2
 
 	// flagKindWidth and flagKindShift indicate various bits that the
 	// reflect package uses internally to track kind information.
@@ -40,13 +40,13 @@ var (
 	// These values are valid before golang commit 90a7c3c86944 which
 	// changed their positions.  Code in the init function updates these
 	// flags as necessary.
-	flagKindWidth = uintptr(5)
-	flagKindShift = uintptr(flagKindWidth - 1)
+	flagKindWidth = uintptr(5)                 //nolint:gomnd
+	flagKindShift = uintptr(flagKindWidth - 1) //nolint:unconvert
 	flagRO        = uintptr(1 << 0)
 	flagIndir     = uintptr(1 << 1)
 )
 
-func init() {
+func init() { //nolint:gochecknoinits
 	// Older versions of reflect.Value stored small integers directly in the
 	// ptr field (which is named val in the older versions).  Versions
 	// between commits ecccf07e7f9d and 82f48826c6c7 added a new field named
@@ -57,10 +57,10 @@ func init() {
 	// This code constructs a new reflect.Value from a known small integer
 	// and checks if the size of the reflect.Value struct indicates it has
 	// the scalar field. When it does, the offsets are updated accordingly.
-	vv := reflect.ValueOf(0xf00)
-	if unsafe.Sizeof(vv) == (ptrSize * 4) {
-		offsetScalar = ptrSize * 2
-		offsetFlag = ptrSize * 3
+	vv := reflect.ValueOf(0xf00)            //nolint:gomnd
+	if unsafe.Sizeof(vv) == (ptrSize * 4) { //nolint:gomnd
+		offsetScalar = ptrSize * 2 //nolint:gomnd
+		offsetFlag = ptrSize * 3   //nolint:gomnd
 	}
 
 	// Commit 90a7c3c86944 changed the flag positions such that the low
@@ -73,8 +73,8 @@ func init() {
 	flagKindMask := uintptr((1<<flagKindWidth - 1) << flagKindShift)
 	if (upfv&flagKindMask)>>flagKindShift != uintptr(reflect.Int) {
 		flagKindShift = 0
-		flagRO = 1 << 5
-		flagIndir = 1 << 6
+		flagRO = 1 << 5    //nolint:gomnd
+		flagIndir = 1 << 6 //nolint:gomnd
 
 		// Commit adf9b30e5594 modified the flags to separate the
 		// flagRO flag into two bits which specifies whether or not the
@@ -87,8 +87,8 @@ func init() {
 		// order has been changed to the newer format, so the flags are
 		// updated accordingly.
 		if upfv&flagIndir == 0 {
-			flagRO = 3 << 5
-			flagIndir = 1 << 7
+			flagRO = 3 << 5    //nolint:gomnd
+			flagIndir = 1 << 7 //nolint:gomnd
 		}
 	}
 }
@@ -113,7 +113,7 @@ func UnsafeReflectValue(v reflect.Value) (rv reflect.Value) {
 	} else if offsetScalar != 0 {
 		// The value is in the scalar field when it's not one of the
 		// reference types.
-		switch vt.Kind() {
+		switch vt.Kind() { //nolint:exhaustive
 		case reflect.Uintptr:
 		case reflect.Chan:
 		case reflect.Func:

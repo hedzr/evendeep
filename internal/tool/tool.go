@@ -11,7 +11,6 @@ import (
 	"github.com/hedzr/evendeep/internal/dbglog"
 )
 
-//nolint:deadcode
 func PtrOf(tgt reflect.Value) reflect.Value {
 	// for tgt.Kind() != reflect.Ptr {
 	//	Log("tgt: %v, get pointer", tgt.Kind())
@@ -111,7 +110,7 @@ func MinInt(a, b int) int {
 	return b
 }
 
-//nolint:deadcode
+// Contains _
 func Contains(names []string, name string) bool {
 	for _, n := range names {
 		if strings.EqualFold(n, name) {
@@ -121,7 +120,7 @@ func Contains(names []string, name string) bool {
 	return false
 }
 
-//nolint:deadcode
+// ContainsPartialsOnly _
 func ContainsPartialsOnly(partialNames []string, testedString string) (contains bool) {
 	for _, n := range partialNames {
 		if strings.Contains(testedString, n) {
@@ -131,7 +130,7 @@ func ContainsPartialsOnly(partialNames []string, testedString string) (contains 
 	return
 }
 
-//nolint:deadcode
+// PartialContainsShort _
 func PartialContainsShort(names []string, partialNeedle string) (contains bool) {
 	for _, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -141,7 +140,7 @@ func PartialContainsShort(names []string, partialNeedle string) (contains bool) 
 	return
 }
 
-//nolint:deadcode
+// PartialContains _
 func PartialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
 	for ix, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -152,7 +151,6 @@ func PartialContains(names []string, partialNeedle string) (index int, matched s
 }
 
 // ReverseAnySlice reverse any slice/array
-//nolint:deadcode
 func ReverseAnySlice(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
@@ -162,7 +160,6 @@ func ReverseAnySlice(s interface{}) {
 }
 
 // ReverseStringSlice reverse a string slice
-//nolint:deadcode
 func ReverseStringSlice(s []string) []string {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]

@@ -48,32 +48,8 @@ func Less(str1, str2 string) bool {
 		dig1, dig2 := isdigit(c1), isdigit(c2)
 		switch {
 		case dig1 && dig2: // Digits
-			// Eat zeros.
-			for ; idx1 < len(str1) && str1[idx1] == '0'; idx1++ {
-			}
-			for ; idx2 < len(str2) && str2[idx2] == '0'; idx2++ {
-			}
-			// Eat all digits.
-			nonZero1, nonZero2 := idx1, idx2
-			for ; idx1 < len(str1) && isdigit(str1[idx1]); idx1++ {
-			}
-			for ; idx2 < len(str2) && isdigit(str2[idx2]); idx2++ {
-			}
-			// If lengths of numbers with non-zero prefix differ, the shorter
-			// one is less.
-			if len1, len2 := idx1-nonZero1, idx2-nonZero2; len1 != len2 {
-				return len1 < len2
-			}
-			// If they're equal, string comparison is correct.
-			if nr1, nr2 := str1[nonZero1:idx1], str2[nonZero2:idx2]; nr1 != nr2 {
-				return nr1 < nr2
-			}
-			// Otherwise, the one with less zeros is less.
-			// Because everything up to the number is equal, comparing the index
-			// after the zeros is sufficient.
-			if nonZero1 != nonZero2 {
-				return nonZero1 < nonZero2
-			}
+			return digitsLess(str1, str2, idx1, idx2)
+
 		default: // non-digit characters
 			// UTF-8 compares bytewise-lexicographically, no need to decode
 			// codepoints.
@@ -87,5 +63,35 @@ func Less(str1, str2 string) bool {
 	}
 	// So far they are identical. At least one is ended. If the other continues,
 	// it sorts last.
+	return len(str1) < len(str2)
+}
+
+func digitsLess(str1, str2 string, idx1, idx2 int) bool {
+	// Eat zeros.
+	for ; idx1 < len(str1) && str1[idx1] == '0'; idx1++ {
+	}
+	for ; idx2 < len(str2) && str2[idx2] == '0'; idx2++ {
+	}
+	// Eat all digits.
+	nonZero1, nonZero2 := idx1, idx2
+	for ; idx1 < len(str1) && isdigit(str1[idx1]); idx1++ {
+	}
+	for ; idx2 < len(str2) && isdigit(str2[idx2]); idx2++ {
+	}
+	// If lengths of numbers with non-zero prefix differ, the shorter
+	// one is less.
+	if len1, len2 := idx1-nonZero1, idx2-nonZero2; len1 != len2 {
+		return len1 < len2
+	}
+	// If they're equal, string comparison is correct.
+	if nr1, nr2 := str1[nonZero1:idx1], str2[nonZero2:idx2]; nr1 != nr2 {
+		return nr1 < nr2
+	}
+	// Otherwise, the one with less zeros is less.
+	// Because everything up to the number is equal, comparing the index
+	// after the zeros is sufficient.
+	if nonZero1 != nonZero2 {
+		return nonZero1 < nonZero2
+	}
 	return len(str1) < len(str2)
 }

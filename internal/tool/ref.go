@@ -117,7 +117,7 @@ func RindirectType(reflectType reflect.Type) reflect.Type {
 	return reflectType
 }
 
-func Rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value { //nolint:deadcode
+func Rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value {
 	k := reflectValue.Kind()
 retry:
 	for _, kk := range kinds {
@@ -135,14 +135,14 @@ retry:
 	return reflectValue
 }
 
-func IsNumericType(t reflect.Type) bool     { return IsNumericKind(t.Kind()) }    //nolint:deadcode
-func IsNumIntegerType(t reflect.Type) bool  { return IsNumIntegerKind(t.Kind()) } //nolint:deadcode
+func IsNumericType(t reflect.Type) bool     { return IsNumericKind(t.Kind()) }
+func IsNumIntegerType(t reflect.Type) bool  { return IsNumIntegerKind(t.Kind()) }
 func IsNumericKind(k reflect.Kind) bool     { return k >= reflect.Int && k < reflect.Array }
-func IsNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }   //nolint:deadcode
-func IsNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 } //nolint:deadcode
+func IsNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }
+func IsNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 }
 func IsNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= reflect.Uint64 }
-func IsNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }      //nolint:deadcode
-func IsNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 } //nolint:deadcode
+func IsNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }
+func IsNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 }
 
 func Typfmtv(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
@@ -300,7 +300,7 @@ func IsExported(f *reflect.StructField) bool {
 	return f.PkgPath == ""
 }
 
-//nolint:deadcode
+// CanConvertHelper _
 func CanConvertHelper(v reflect.Value, t reflect.Type) bool {
 	return CanConvert(&v, t)
 }
