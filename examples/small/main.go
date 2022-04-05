@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/evendeep/diff"
 	"reflect"
 	"unsafe"
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/log"
-	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 )
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 	log.Printf("   tgt: %+v", tgt)
 	evendeep.Copy(x1, &tgt, evendeep.WithStrategiesReset())
 	if reflect.DeepEqual(tgt, *expect1) == false {
-		if delta, ok := messagediff.PrettyDiff(*expect1, x1); !ok {
+		if delta, ok := diff.New(*expect1, x1); !ok {
 			log.Errorf("want %v but got %v", expect1, tgt)
 			log.Panicf("The diffs:\n%v", delta)
 		}
@@ -68,7 +68,7 @@ func main() {
 	// log.Printf("   tgt: %+v", x2)
 	// evendeep.Copy(x1, &x2, evendeep.WithStrategies(evendeep.SliceMerge))
 	// if reflect.DeepEqual(*expect2, x2) == false {
-	//	if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
+	//	if delta, ok := diff.New(*expect2, x2); !ok {
 	//		log.Errorf("want: %v", *expect2)
 	//		log.Errorf(" got: %v", x2)
 	//		fmt.Println(delta)
@@ -82,7 +82,7 @@ func main() {
 	log.Printf("   tgt: %+v", x2)
 	evendeep.Copy(x1, &x2)
 	if reflect.DeepEqual(*expect2, x2) == false {
-		if delta, ok := messagediff.DeepDiff(*expect2, x2); !ok {
+		if delta, ok := diff.New(*expect2, x2); !ok {
 			log.Errorf("want: %v", *expect2)
 			log.Errorf(" got: %v", x2)
 			fmt.Println(delta)

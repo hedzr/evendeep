@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/log"
 
 	"reflect"
@@ -56,7 +57,7 @@ func (table *fieldstable) shouldIgnore(field reflect.StructField, typ reflect.Ty
 func (table *fieldstable) getallfields(structValue reflect.Value, autoexpandstruct bool) fieldstable {
 	table.autoExpandStruct = autoexpandstruct
 
-	structValue, _ = rdecode(structValue)
+	structValue, _ = tool.Rdecode(structValue)
 	if structValue.Kind() != reflect.Struct {
 		return *table
 	}
@@ -85,7 +86,7 @@ func (table *fieldstable) safegetstructfieldvalueind(structValue *reflect.Value,
 }
 
 func (table *fieldstable) getfields(structValue *reflect.Value, structType reflect.Type, fieldname string, fi int) (ret tablerecords) {
-	st := rdecodetypesimple(structType)
+	st := tool.Rdecodetypesimple(structType)
 	if st.Kind() != reflect.Struct {
 		return
 	}
@@ -96,10 +97,10 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 
 		sf := structType.Field(i)
 		sftyp := sf.Type
-		sftypind := rindirectType(sftyp)
+		sftypind := tool.RindirectType(sftyp)
 		svind := table.safegetstructfieldvalueind(structValue, i)
 
-		dbglog.Log(" field %d: %v (%v) (%v)", i, sf.Name, typfmt(sftyp), typfmt(sftypind))
+		dbglog.Log(" field %d: %v (%v) (%v)", i, sf.Name, tool.Typfmt(sftyp), tool.Typfmt(sftypind))
 
 		isStruct := sftypind.Kind() == reflect.Struct
 		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
@@ -129,7 +130,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 
 func (table *fieldstable) tablerec(svind *reflect.Value, sf *reflect.StructField, index, parentIndex int, parentFieldName string) (tr tablerec) {
 	tr.structField = sf
-	if isExported(sf) {
+	if tool.IsExported(sf) {
 		tr.structFieldValue = svind
 	} else if svind.CanAddr() {
 		val := cl.GetUnexportedField(*svind)
@@ -261,12 +262,12 @@ func (s *fieldaccessor) Set(v reflect.Value) {
 	if s.ValueValid() {
 		if s.isstruct {
 			dbglog.Log("    setting struct.%q", s.structtype.Field(s.index).Name)
-			sv := rindirect(*s.structvalue).Field(s.index)
-			dbglog.Log("      set %v (%v) -> struct.%q", valfmt(&v), typfmtv(&v), s.structtype.Field(s.index).Name)
+			sv := tool.Rindirect(*s.structvalue).Field(s.index)
+			dbglog.Log("      set %v (%v) -> struct.%q", tool.Valfmt(&v), tool.Typfmtv(&v), s.structtype.Field(s.index).Name)
 			sv.Set(v)
 		} else if s.structtype.Kind() == reflect.Map {
 			key := s.mapkey()
-			dbglog.Log("    set %v (%v) -> map[%v]", valfmt(&v), typfmtv(&v), valfmt(&key))
+			dbglog.Log("    set %v (%v) -> map[%v]", tool.Valfmt(&v), tool.Typfmtv(&v), tool.Valfmt(&key))
 			s.structvalue.SetMapIndex(key, v)
 		}
 	}
@@ -305,7 +306,7 @@ func (s *fieldaccessor) FieldValue() *reflect.Value {
 	if s != nil {
 		if s.isstruct {
 			if s.ValueValid() {
-				vind := rindirect(*s.structvalue)
+				vind := tool.Rindirect(*s.structvalue)
 				if vind.IsValid() && s.index < vind.NumField() {
 					r := vind.Field(s.index)
 					return &r
@@ -386,12 +387,12 @@ func (s *fieldaccessor) ensurePtrField() {
 		//	return
 		// }
 		sf := s.structtype.Field(s.index)
-		vind := rindirect(*s.structvalue)
+		vind := tool.Rindirect(*s.structvalue)
 		fv := vind.Field(s.index)
 
 		switch kind := sf.Type.Kind(); kind { //nolint:exhaustive
 		case reflect.Ptr:
-			if isNil(fv) {
+			if tool.IsNil(fv) {
 				dbglog.Log("   autoNew")
 				typ := sf.Type.Elem()
 				nv := reflect.New(typ)
@@ -570,8 +571,8 @@ func (s *structIterator) Next() (acc accessor, ok bool) {
 
 			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v) | autoexpd: (%v, %v)",
 				s.srcIndex, accessorTmp.sourceTableRec.FieldName(),
-				typfmt(accessorTmp.srcStructField.Type),
-				accessorTmp.StructFieldName(), typfmt(accessorTmp.Type()),
+				tool.Typfmt(accessorTmp.srcStructField.Type),
+				accessorTmp.StructFieldName(), tool.Typfmt(accessorTmp.Type()),
 				s.srcFields.autoExpandStruct, s.autoExpandStruct,
 			)
 			s.dstIndex++
@@ -581,7 +582,7 @@ func (s *structIterator) Next() (acc accessor, ok bool) {
 		if ok {
 			dbglog.Log("   | Next %d | -> %v (%v)",
 				s.dstIndex,
-				accessorTmp.StructFieldName(), typfmt(accessorTmp.Type()))
+				accessorTmp.StructFieldName(), tool.Typfmt(accessorTmp.Type()))
 			s.dstIndex++
 		}
 	}
@@ -594,7 +595,7 @@ func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (ac
 	var inretry bool
 
 	if s.iiempty() {
-		vind := rindirect(s.dstStruct)
+		vind := tool.Rindirect(s.dstStruct)
 		tind := vind.Type()
 		lastone = s.iipush(&vind, tind, 0)
 	} else {
@@ -614,9 +615,9 @@ retryExpand:
 	if field != nil {
 		tind := field.Type // rindirectType(field.Type)
 		if s.autoExpandStruct {
-			tind = rindirectType(field.Type)
+			tind = tool.RindirectType(field.Type)
 			k1 := tind.Kind()
-			dbglog.Log("typ: %v, name: %v | %v", typfmt(tind), field.Name, field)
+			dbglog.Log("typ: %v, name: %v | %v", tool.Typfmt(tind), field.Name, field)
 			if s.autoNew {
 				lastone.ensurePtrField()
 			}
@@ -625,7 +626,7 @@ retryExpand:
 				!s.shouldIgnore(field, tind, k1) {
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
-				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", typfmt(tind))
+				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", tool.Typfmt(tind))
 				inretry = true
 				goto retryExpand
 			}

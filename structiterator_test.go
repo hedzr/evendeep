@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"strings"
 	"testing"
@@ -19,7 +20,7 @@ func TestIgnoredpackageprefixesContains(t *testing.T) {
 func TestFieldaccessorOperations(t *testing.T) {
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 
 	// x2 := new(X1)
 	// t2 := rdecodesimple(reflect.ValueOf(&x2))
@@ -38,7 +39,7 @@ func TestFieldaccessorOperations(t *testing.T) {
 		if field.Name == "O" {
 			accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
 		}
-		t.Logf("%d. %q (%v) %v %q | %v", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath, accessor.FieldValue().Interface())
+		t.Logf("%d. %q (%v) %v %q | %v", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath, accessor.FieldValue().Interface())
 	}
 }
 
@@ -46,10 +47,10 @@ func TestStructIterator_Next_X1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 
 	x2 := new(X1)
-	t2 := rdecodesimple(reflect.ValueOf(&x2))
+	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
 
 	t.Run("getallfields at once", testgetallfieldsX1)
 
@@ -73,7 +74,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 				t.Logf("%d. field info missed", i)
 				continue
 			}
-			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), accessor.StructFieldName(), valfmt(dstval), typfmt(accessor.StructField().Type))
+			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), accessor.StructFieldName(), tool.Valfmt(dstval), tool.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
 
@@ -98,7 +99,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 				t.Logf("%d. field info missed", i)
 				continue
 			}
-			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), accessor.StructFieldName(), valfmt(dstval), typfmt(accessor.StructField().Type))
+			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), accessor.StructFieldName(), tool.Valfmt(dstval), tool.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
 
@@ -130,15 +131,15 @@ func testgetallfieldsX1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 
 	var sourcefields fieldstable
 	sourcefields = sourcefields.getallfields(t1, false)
 	for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
 		sourcefield := sourcefields.tablerecords[i]
 		srcval := sourcefield.FieldValue()
-		srctypstr := typfmtv(srcval)
-		dbglog.Log("%d. %s (%v) %v -> %s (%v)", i, strings.Join(reverseStringSlice(sourcefield.names), "."), valfmt(srcval), srctypstr, "", "")
+		srctypstr := tool.Typfmtv(srcval)
+		dbglog.Log("%d. %s (%v) %v -> %s (%v)", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), srctypstr, "", "")
 	}
 }
 
@@ -146,7 +147,7 @@ func teststructiteratorNextT1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
@@ -159,7 +160,7 @@ func teststructiteratorNextT1(t *testing.T) {
 			t.Logf("%d. field info missed", i)
 			continue
 		}
-		dbglog.Log("%d. %q (%v) %v %q", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath)
+		dbglog.Log("%d. %q (%v) %v %q", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath)
 	}
 }
 
@@ -190,7 +191,7 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 	defer func() { t.Log(sb.String()) }()
 
 	v1 := reflect.ValueOf(&src)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -202,8 +203,8 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 			t.Logf("%d. field info missed", i)
 			continue
 		}
-		t.Logf("%d. %q (%v) %v %q", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath)
-		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath))
+		t.Logf("%d. %q (%v) %v %q", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath)
+		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath))
 	}
 
 	if sb.String() != `0. "Base" (evendeep.Base (struct)) [0] ""
@@ -241,7 +242,7 @@ func teststructiteratorNextEmployee2Exp(t *testing.T) {
 	defer func() { t.Log(sb.String()) }()
 
 	v1 := reflect.ValueOf(&src)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -253,8 +254,8 @@ func teststructiteratorNextEmployee2Exp(t *testing.T) {
 			t.Logf("%d. field info missed", i)
 			continue
 		}
-		t.Logf("%d. %q (%v) %v %q", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath)
-		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, typfmt(field.Type), field.Index, field.PkgPath))
+		t.Logf("%d. %q (%v) %v %q", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath)
+		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath))
 	}
 
 	if sb.String() != `0. "Name" (string (string)) [0] ""
@@ -301,7 +302,7 @@ func teststructiteratorNextUser(t *testing.T) {
 	}()
 
 	v1 := reflect.ValueOf(&tgt)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -309,7 +310,7 @@ func teststructiteratorNextUser(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index, field)
 	}
 
 }
@@ -333,7 +334,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 	} {
 		sb.WriteString("\n")
 		v1 := reflect.ValueOf(&tgt)
-		t1, _ := rdecode(v1)
+		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
 		for i := 0; ; i++ {
 			accessor, ok := it.Next()
@@ -341,7 +342,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -366,7 +367,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 	} {
 		sb.WriteString("\n\n\n")
 		v1 := reflect.ValueOf(&tgt)
-		t1, _ := rdecode(v1)
+		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
 			accessor, ok := it.Next()
@@ -374,7 +375,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -413,7 +414,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 	} {
 		sb.WriteString("\n\n\n")
 		v1 := reflect.ValueOf(&tgt)
-		t1, _ := rdecode(v1)
+		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
 			accessor, ok := it.Next()
@@ -421,7 +422,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 				break
 			}
 			field := accessor.StructField()
-			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index, field)
+			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
 
@@ -441,7 +442,7 @@ func teststructiteratorNextA4New(t *testing.T) {
 	var sb strings.Builder
 
 	v1 := reflect.ValueOf(&a4)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -449,7 +450,7 @@ func teststructiteratorNextA4New(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
@@ -501,7 +502,7 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 	var sb strings.Builder
 
 	v1 := reflect.ValueOf(&a4)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -509,7 +510,7 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
@@ -561,7 +562,7 @@ func teststructiteratorNextA4(t *testing.T) {
 	var sb strings.Builder
 
 	v1 := reflect.ValueOf(&a4)
-	t1, _ := rdecode(v1)
+	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
 	for i := 0; ; i++ {
 		accessor, ok := it.Next()
@@ -569,7 +570,7 @@ func teststructiteratorNextA4(t *testing.T) {
 			break
 		}
 		field := accessor.StructField()
-		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, typfmt(field.Type), typfmt(accessor.Type()), field.Index)
+		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, tool.Typfmt(field.Type), tool.Typfmt(accessor.Type()), field.Index)
 	}
 
 	t.Logf(sb.String())
@@ -625,7 +626,7 @@ func TestFieldsTable_getallfields(t *testing.T) {
 func testfieldstableGetFieldsDeeply(t *testing.T) {
 
 	x2 := new(X1)
-	t2 := rdecodesimple(reflect.ValueOf(&x2))
+	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
 
 	var sourcefields fieldstable
 	sourcefields.getallfields(t2, true)
@@ -636,7 +637,7 @@ func testfieldstableGetFieldsDeeply(t *testing.T) {
 	for i, f := range sourcefields.tablerecords {
 		_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 			f.FieldName(), f.indexes,
-			typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
+			tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 		)
 	}
 
@@ -655,7 +656,7 @@ func testfieldstableGetallfields(t *testing.T) {
 	for i, f := range sourcefields.tablerecords {
 		_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 			f.FieldName(), f.indexes,
-			typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
+			tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 		)
 	}
 
@@ -742,7 +743,7 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 		for i, f := range sourcefields.tablerecords {
 			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
-				typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
+				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 			)
 		}
 
@@ -801,7 +802,7 @@ func testfieldstableGetallfieldsEmployee22(t *testing.T) {
 		for i, f := range sourcefields.tablerecords {
 			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
-				typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
+				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 			)
 		}
 
@@ -865,7 +866,7 @@ func testfieldstableGetallfieldsUser(t *testing.T) {
 		for i, f := range sourcefields.tablerecords {
 			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
-				typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
+				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 			)
 		}
 

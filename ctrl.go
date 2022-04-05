@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
 	"github.com/hedzr/log"
 
@@ -44,14 +45,14 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 	var (
 		from0 = reflect.ValueOf(fromObjOrPtr)
 		to0   = reflect.ValueOf(toObjPtr)
-		from  = rindirect(from0)
-		to    = rindirect(to0)
+		from  = tool.Rindirect(from0)
+		to    = tool.Rindirect(to0)
 		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
 	dbglog.Log("    flags: %v", c.flags)
-	dbglog.Log("from.type: %v | input: %v", typfmtv(&from), typfmtv(&from0))
-	dbglog.Log("  to.type: %v | input: %v", typfmtv(&to), typfmtv(&to0))
+	dbglog.Log("from.type: %v | input: %v", tool.Typfmtv(&from), tool.Typfmtv(&from0))
+	dbglog.Log("  to.type: %v | input: %v", tool.Typfmtv(&to), tool.Typfmtv(&to0))
 
 	err = c.copyTo(root, from, to)
 	return
@@ -69,7 +70,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 			}
 
 			// source is primitive type, or in a reserved package such as time, os, ...
-			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, typfmtv(&to))
+			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, tool.Typfmtv(&to))
 			err = copyDefaultHandler(c, params, from, to)
 			return
 		})
@@ -130,7 +131,7 @@ func (c *cpController) copyToInternal(
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v]), causes: %v",
-				rindirectType(from.Type()), rindirectType(to.Type()), e).
+				tool.RindirectType(from.Type()), tool.RindirectType(to.Type()), e).
 				WithData(e).
 				WithTaggedData(errors.TaggedData{
 					"source": from,

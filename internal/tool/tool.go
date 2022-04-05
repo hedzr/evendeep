@@ -1,4 +1,4 @@
-package evendeep
+package tool
 
 // tool.go - tools functions here
 
@@ -12,7 +12,7 @@ import (
 )
 
 //nolint:deadcode
-func ptrOf(tgt reflect.Value) reflect.Value {
+func PtrOf(tgt reflect.Value) reflect.Value {
 	// for tgt.Kind() != reflect.Ptr {
 	//	Log("tgt: %v, get pointer", tgt.Kind())
 	//	tgt = reflect.NewAt(tgt.Elem().Type(), unsafe.Pointer(tgt.UnsafeAddr()))
@@ -87,7 +87,7 @@ func inspectStructV(val reflect.Value, level int) {
 		valueField, address := testFieldValue(valField)
 
 		var v interface{}
-		if valueField.IsValid() && !isZero(valueField) && valueField.CanInterface() {
+		if valueField.IsValid() && !IsZero(valueField) && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
 		fmt.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",
@@ -104,7 +104,7 @@ func InspectStruct(v interface{}) {
 	inspectStructV(reflect.ValueOf(v), 0)
 }
 
-func minInt(a, b int) int {
+func MinInt(a, b int) int {
 	if a < b {
 		return a
 	}
@@ -112,7 +112,7 @@ func minInt(a, b int) int {
 }
 
 //nolint:deadcode
-func contains(names []string, name string) bool {
+func Contains(names []string, name string) bool {
 	for _, n := range names {
 		if strings.EqualFold(n, name) {
 			return true
@@ -122,7 +122,7 @@ func contains(names []string, name string) bool {
 }
 
 //nolint:deadcode
-func containsPartialsOnly(partialNames []string, testedString string) (contains bool) {
+func ContainsPartialsOnly(partialNames []string, testedString string) (contains bool) {
 	for _, n := range partialNames {
 		if strings.Contains(testedString, n) {
 			return true
@@ -132,7 +132,7 @@ func containsPartialsOnly(partialNames []string, testedString string) (contains 
 }
 
 //nolint:deadcode
-func partialContainsShort(names []string, partialNeedle string) (contains bool) {
+func PartialContainsShort(names []string, partialNeedle string) (contains bool) {
 	for _, n := range names {
 		if strings.Contains(n, partialNeedle) {
 			return true
@@ -142,7 +142,7 @@ func partialContainsShort(names []string, partialNeedle string) (contains bool) 
 }
 
 //nolint:deadcode
-func partialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
+func PartialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
 	for ix, n := range names {
 		if strings.Contains(n, partialNeedle) {
 			return ix, n, true
@@ -151,9 +151,9 @@ func partialContains(names []string, partialNeedle string) (index int, matched s
 	return -1, "", false
 }
 
-// reverseAnySlice reverse any slice/array
+// ReverseAnySlice reverse any slice/array
 //nolint:deadcode
-func reverseAnySlice(s interface{}) {
+func ReverseAnySlice(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
@@ -161,9 +161,9 @@ func reverseAnySlice(s interface{}) {
 	}
 }
 
-// reverseStringSlice reverse a string slice
+// ReverseStringSlice reverse a string slice
 //nolint:deadcode
-func reverseStringSlice(s []string) []string {
+func ReverseStringSlice(s []string) []string {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
@@ -179,7 +179,7 @@ func reverseStringSlice(s []string) []string {
 	// }
 }
 
-func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
+func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
 		dbglog.Log("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
@@ -192,7 +192,7 @@ func findInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	return
 }
 
-func equalClassical(lhs, rhs reflect.Value) bool {
+func EqualClassical(lhs, rhs reflect.Value) bool {
 	lv, rv := lhs.IsValid(), rhs.IsValid()
 	if !lv {
 		return !rv

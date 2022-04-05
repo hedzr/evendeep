@@ -1,4 +1,4 @@
-package evendeep
+package tool
 
 import (
 	"fmt"
@@ -11,11 +11,11 @@ import (
 // ref.go - the routines about reflect operations
 //
 
-// rdecode decodes an interface{} or a pointer to something to its
+// Rdecode decodes an interface{} or a pointer to something to its
 // underlying data type.
 //
 // Suppose we have an interface{} pointer Value which stored a
-// pointer to an integer, rdecode will extract or retrieve the Value
+// pointer to an integer, Rdecode will extract or retrieve the Value
 // of that integer.
 //
 // See our TestRdecode() in ref_test.go
@@ -23,7 +23,7 @@ import (
 //    var b = 11
 //    var i interface{} = &b
 //    var v = reflect.ValueOf(&i)
-//    var n = rdecode(v)
+//    var n = Rdecode(v)
 //    println(n.Type())    // = int
 //
 // `prev` returns the previous Value before we arrived at the
@@ -33,16 +33,16 @@ import (
 // wrapped about `ret`.
 //
 // A interface{} will be unboxed to its underlying datatype after
-// rdecode invoked.
-func rdecode(reflectValue reflect.Value) (ret, prev reflect.Value) {
-	return rskip(reflectValue, reflect.Ptr, reflect.Interface)
+// Rdecode invoked.
+func Rdecode(reflectValue reflect.Value) (ret, prev reflect.Value) {
+	return Rskip(reflectValue, reflect.Ptr, reflect.Interface)
 }
-func rdecodesimple(reflectValue reflect.Value) (ret reflect.Value) {
-	ret, _ = rdecode(reflectValue)
+func Rdecodesimple(reflectValue reflect.Value) (ret reflect.Value) {
+	ret, _ = Rdecode(reflectValue)
 	return
 }
 
-func rskip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
+func Rskip(reflectValue reflect.Value, kinds ...reflect.Kind) (ret, prev reflect.Value) {
 	ret, prev = reflectValue, reflectValue
 retry:
 	k := ret.Kind()
@@ -56,30 +56,30 @@ retry:
 	return
 }
 
-// rdecodetype try to strip off ptr and interface{} from a type.
+// Rdecodetype try to strip off ptr and interface{} from a type.
 //
 // It might not work properly on some cases because interface{} cannot
 // be stripped with calling typ.Elem().
 //
 // In this case, use rdecodesimple(value).Type() instead
-// of rdecodetypesimple(value.Type()).
-func rdecodetype(reflectType reflect.Type) (ret, prev reflect.Type) {
-	return rskiptype(reflectType, reflect.Ptr, reflect.Interface)
+// of Rdecodetypesimple(value.Type()).
+func Rdecodetype(reflectType reflect.Type) (ret, prev reflect.Type) {
+	return Rskiptype(reflectType, reflect.Ptr, reflect.Interface)
 }
 
-// rdecodetypesimple try to strip off ptr and interface{} from a type.
+// Rdecodetypesimple try to strip off ptr and interface{} from a type.
 //
 // It might not work properly on some cases because interface{} cannot
 // be stripped with calling typ.Elem().
 //
 // In this case, use rdecodesimple(value).Type() instead
-// of rdecodetypesimple(value.Type()).
-func rdecodetypesimple(reflectType reflect.Type) (ret reflect.Type) {
-	ret, _ = rdecodetype(reflectType)
+// of Rdecodetypesimple(value.Type()).
+func Rdecodetypesimple(reflectType reflect.Type) (ret reflect.Type) {
+	ret, _ = Rdecodetype(reflectType)
 	return
 }
 
-func rskiptype(reflectType reflect.Type, kinds ...reflect.Kind) (ret, prev reflect.Type) {
+func Rskiptype(reflectType reflect.Type, kinds ...reflect.Kind) (ret, prev reflect.Type) {
 	ret, prev = reflectType, reflectType
 retry:
 	k := ret.Kind()
@@ -103,21 +103,21 @@ func canElem(k reflect.Kind) bool {
 	return false
 }
 
-func rindirect(reflectValue reflect.Value) reflect.Value {
+func Rindirect(reflectValue reflect.Value) reflect.Value {
 	for reflectValue.Kind() == reflect.Ptr {
 		reflectValue = reflectValue.Elem()
 	}
 	return reflectValue
 }
 
-func rindirectType(reflectType reflect.Type) reflect.Type {
+func RindirectType(reflectType reflect.Type) reflect.Type {
 	for reflectType.Kind() == reflect.Ptr { // || reflectType.Kind() == reflect.Slice {
 		reflectType = reflectType.Elem()
 	}
 	return reflectType
 }
 
-func rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value { //nolint:deadcode
+func Rwant(reflectValue reflect.Value, kinds ...reflect.Kind) reflect.Value { //nolint:deadcode
 	k := reflectValue.Kind()
 retry:
 	for _, kk := range kinds {
@@ -135,16 +135,16 @@ retry:
 	return reflectValue
 }
 
-func isNumericType(t reflect.Type) bool     { return isNumericKind(t.Kind()) }    //nolint:deadcode
-func isNumIntegerType(t reflect.Type) bool  { return isNumIntegerKind(t.Kind()) } //nolint:deadcode
-func isNumericKind(k reflect.Kind) bool     { return k >= reflect.Int && k < reflect.Array }
-func isNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }   //nolint:deadcode
-func isNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 } //nolint:deadcode
-func isNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= reflect.Uint64 }
-func isNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }      //nolint:deadcode
-func isNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 } //nolint:deadcode
+func IsNumericType(t reflect.Type) bool     { return IsNumericKind(t.Kind()) }    //nolint:deadcode
+func IsNumIntegerType(t reflect.Type) bool  { return IsNumIntegerKind(t.Kind()) } //nolint:deadcode
+func IsNumericKind(k reflect.Kind) bool     { return k >= reflect.Int && k < reflect.Array }
+func IsNumSIntegerKind(k reflect.Kind) bool { return k >= reflect.Int && k <= reflect.Int64 }   //nolint:deadcode
+func IsNumUIntegerKind(k reflect.Kind) bool { return k >= reflect.Uint && k <= reflect.Uint64 } //nolint:deadcode
+func IsNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= reflect.Uint64 }
+func IsNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }      //nolint:deadcode
+func IsNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 } //nolint:deadcode
 
-func typfmtv(v *reflect.Value) string {
+func Typfmtv(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
@@ -152,18 +152,18 @@ func typfmtv(v *reflect.Value) string {
 	return fmt.Sprintf("%v (%v)", t, t.Kind())
 }
 
-func typfmt(t reflect.Type) string {
+func Typfmt(t reflect.Type) string {
 	return fmt.Sprintf("%v (%v)", t, t.Kind())
 }
 
-func typfmtptr(t *reflect.Type) string {
+func Typfmtptr(t *reflect.Type) string {
 	if t == nil {
 		return "???"
 	}
 	return fmt.Sprintf("%v (%v)", *t, (*t).Kind())
 }
 
-func valfmt(v *reflect.Value) string {
+func Valfmt(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
@@ -173,24 +173,24 @@ func valfmt(v *reflect.Value) string {
 		}
 		return "false"
 	}
-	if isNil(*v) {
+	if IsNil(*v) {
 		return "<nil>"
 	}
-	if isZero(*v) {
+	if IsZero(*v) {
 		return "<zero>"
 	}
 	if v.Kind() == reflect.String {
 		return v.String()
 	}
-	if hasStringer(v) {
+	if HasStringer(v) {
 		res := v.MethodByName("String").Call(nil)
 		return res[0].String()
 	}
-	if isNumericKind(v.Kind()) {
+	if IsNumericKind(v.Kind()) {
 		return fmt.Sprintf("%v", v.Interface())
 	}
-	if canConvert(v, stringType) {
-		return v.Convert(stringType).String()
+	if CanConvert(v, StringType) {
+		return v.Convert(StringType).String()
 	}
 	if v.CanInterface() {
 		return fmt.Sprintf("%v", v.Interface())
@@ -198,19 +198,19 @@ func valfmt(v *reflect.Value) string {
 	return fmt.Sprintf("<%v>", v.Kind())
 }
 
-func iserrortype(typ reflect.Type) bool {
+func Iserrortype(typ reflect.Type) bool {
 	return typ.Implements(errtyp)
 }
 
 var errtyp = reflect.TypeOf((*error)(nil)).Elem()
 
 var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem()
-var stringType = reflect.TypeOf((*string)(nil)).Elem()
-var niltyp = reflect.TypeOf((*string)(nil))
+var StringType = reflect.TypeOf((*string)(nil)).Elem()
+var Niltyp = reflect.TypeOf((*string)(nil))
 
-// isZero for go1.12+, the difference is it never panic on unavailable kinds.
+// IsZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
-func isZero(v reflect.Value) (ret bool) {
+func IsZero(v reflect.Value) (ret bool) {
 	switch k := v.Kind(); k { //nolint:exhaustive
 	case reflect.Bool:
 		ret = !v.Bool()
@@ -224,38 +224,38 @@ func isZero(v reflect.Value) (ret bool) {
 		c := v.Complex()
 		ret = math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
-		ret = arrayIsZero(v)
+		ret = ArrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		ret = isNil(v)
+		ret = IsNil(v)
 	case reflect.Struct:
-		ret = structIsZero(v)
+		ret = StructIsZero(v)
 	case reflect.String:
 		ret = v.Len() == 0
 	}
 	return
 }
 
-func structIsZero(v reflect.Value) bool {
+func StructIsZero(v reflect.Value) bool {
 	for i := 0; i < v.NumField(); i++ {
-		if !isZero(v.Field(i)) {
+		if !IsZero(v.Field(i)) {
 			return false
 		}
 	}
 	return true
 }
 
-func arrayIsZero(v reflect.Value) bool {
+func ArrayIsZero(v reflect.Value) bool {
 	for i := 0; i < v.Len(); i++ {
-		if !isZero(v.Index(i)) {
+		if !IsZero(v.Index(i)) {
 			return false
 		}
 	}
 	return true
 }
 
-// isNil for go1.12+, the difference is it never panic on unavailable kinds.
+// IsNil for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsNil
-func isNil(v reflect.Value) bool {
+func IsNil(v reflect.Value) bool {
 	switch k := v.Kind(); k { //nolint:exhaustive
 	case reflect.Uintptr:
 		if v.CanAddr() {
@@ -295,19 +295,19 @@ func isNil(v reflect.Value) bool {
 //	panic(&ValueError{"reflect.Value.IsNil", v.kind()})
 // }
 
-// isExported reports whether the field is exported.
-func isExported(f *reflect.StructField) bool {
+// IsExported reports whether the field is exported.
+func IsExported(f *reflect.StructField) bool {
 	return f.PkgPath == ""
 }
 
 //nolint:deadcode
-func canConvertHelper(v reflect.Value, t reflect.Type) bool {
-	return canConvert(&v, t)
+func CanConvertHelper(v reflect.Value, t reflect.Type) bool {
+	return CanConvert(&v, t)
 }
 
-// canConvert reports whether the value v can be converted to type t.
+// CanConvert reports whether the value v can be converted to type t.
 // If v.CanConvert(t) returns true then v.Convert(t) will not panic.
-func canConvert(v *reflect.Value, t reflect.Type) bool {
+func CanConvert(v *reflect.Value, t reflect.Type) bool {
 	if !v.IsValid() {
 		return false
 	}
@@ -338,6 +338,6 @@ func hasImplements(v *reflect.Value, interfaceType reflect.Type) bool {
 	return vt.Implements(interfaceType)
 }
 
-func hasStringer(v *reflect.Value) bool {
+func HasStringer(v *reflect.Value) bool {
 	return hasImplements(v, stringerType)
 }

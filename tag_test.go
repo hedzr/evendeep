@@ -3,6 +3,7 @@ package evendeep
 import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"testing"
 )
@@ -38,7 +39,7 @@ func subtestParse(t *testing.T) {
 	// c := newCopier()
 
 	v := reflect.ValueOf(&a)
-	v = rindirect(v)
+	v = tool.Rindirect(v)
 
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
@@ -60,7 +61,7 @@ func subtestFlagTests(t *testing.T) {
 	}
 	var a AFS1
 	v := reflect.ValueOf(&a)
-	v = rindirect(v)
+	v = tool.Rindirect(v)
 	sf, _ := v.Type().FieldByName("wouldbe")
 	sf0, _ := v.Type().FieldByName("flags")
 	sf1, _ := v.Type().FieldByName("converter")
@@ -74,13 +75,13 @@ func subtestFlagTests(t *testing.T) {
 	z.isFlagExists(cms.SliceCopy)
 
 	v = reflect.ValueOf(&z)
-	rwant(v, reflect.Struct)
+	tool.Rwant(v, reflect.Struct)
 	ve := v.Elem()
-	t.Logf("z: %v, nil: %v", valfmt(&ve), valfmt(nil))
+	t.Logf("z: %v, nil: %v", tool.Valfmt(&ve), tool.Valfmt(nil))
 
 	var nilArray = [1]*int{(*int)(nil)}
 	v = reflect.ValueOf(nilArray)
-	t.Logf("nilArray: %v, nil: %v", valfmt(&v), valfmt(nil))
+	t.Logf("nilArray: %v, nil: %v", tool.Valfmt(&v), tool.Valfmt(nil))
 
 	v = reflect.ValueOf(&fieldTags{
 		flags:          nil,
@@ -89,7 +90,7 @@ func subtestFlagTests(t *testing.T) {
 		nameConverter:  nil,
 		targetNameRule: "",
 	})
-	rwant(v, reflect.Struct)
+	tool.Rwant(v, reflect.Struct)
 
 	var ss1 = []int{8, 9}
 	var ss2 = []int64{}
@@ -98,9 +99,9 @@ func subtestFlagTests(t *testing.T) {
 	var vv1 = reflect.ValueOf(ss1)
 	var tt3 = reflect.TypeOf(ss3)
 	var tp4 = reflect.TypeOf(&ss4)
-	t.Logf("ss1.type: %v", typfmtv(&vv1))
-	t.Log(canConvertHelper(reflect.ValueOf(&ss1), reflect.TypeOf(&ss2)))
-	t.Log(canConvertHelper(vv1, reflect.TypeOf(ss2)))
-	t.Log(canConvertHelper(vv1, tt3))
-	t.Log(canConvertHelper(vv1, tp4))
+	t.Logf("ss1.type: %v", tool.Typfmtv(&vv1))
+	t.Log(tool.CanConvertHelper(reflect.ValueOf(&ss1), reflect.TypeOf(&ss2)))
+	t.Log(tool.CanConvertHelper(vv1, reflect.TypeOf(ss2)))
+	t.Log(tool.CanConvertHelper(vv1, tt3))
+	t.Log(tool.CanConvertHelper(vv1, tp4))
 }

@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"fmt"
+	"github.com/hedzr/evendeep/internal/tool"
 	"math"
 	"reflect"
 	"strconv"
@@ -25,7 +26,7 @@ func rForBool(v reflect.Value) (ret reflect.Value) {
 func rToBool(v reflect.Value) (ret reflect.Value) {
 	var b bool
 
-	if !v.IsValid() || isNil(v) || isZero(v) {
+	if !v.IsValid() || tool.IsNil(v) || tool.IsZero(v) {
 		return reflect.ValueOf(b)
 	}
 
@@ -43,11 +44,11 @@ func rToBool(v reflect.Value) (ret reflect.Value) {
 		c := v.Complex()
 		b = math.Float64bits(real(c)) != 0 || math.Float64bits(imag(c)) != 0
 	case reflect.Array:
-		b = !arrayIsZero(v)
+		b = !tool.ArrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		b = !isNil(v)
+		b = !tool.IsNil(v)
 	case reflect.Struct:
-		b = !structIsZero(v)
+		b = !tool.StructIsZero(v)
 	case reflect.String:
 		b = internalToBool(v.String())
 	}
@@ -70,7 +71,7 @@ func rForInteger(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(int64typ)
 	} else if k := v.Kind(); k < reflect.Int || k > reflect.Int64 {
-		if canConvert(&v, int64typ) {
+		if tool.CanConvert(&v, int64typ) {
 			v = v.Convert(int64typ)
 		} else {
 			v = reflect.Zero(int64typ)
@@ -128,7 +129,7 @@ func rForUInteger(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(uint64typ)
 	} else if k := v.Kind(); k < reflect.Uint || k > reflect.Uintptr {
-		if canConvert(&v, uint64typ) {
+		if tool.CanConvert(&v, uint64typ) {
 			v = v.Convert(uint64typ)
 		} else {
 			v = reflect.Zero(uint64typ)
@@ -213,7 +214,7 @@ func rForFloat(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(float64typ)
 	} else if k := v.Kind(); k < reflect.Float32 || k > reflect.Float64 {
-		if canConvert(&v, float64typ) {
+		if tool.CanConvert(&v, float64typ) {
 			v = v.Convert(float64typ)
 		} else {
 			v = reflect.Zero(float64typ)
@@ -325,11 +326,11 @@ func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 	converter func(str string, base int, bitSize int) (ret reflect.Value, err error),
 ) (ret reflect.Value, err error) {
-	if !v.IsValid() || isNil(v) || isZero(v) {
+	if !v.IsValid() || tool.IsNil(v) || tool.IsZero(v) {
 		ret = reflect.Zero(desiredType)
 	}
 
-	if canConvert(&v, desiredType) {
+	if tool.CanConvert(&v, desiredType) {
 		ret = v.Convert(desiredType)
 	} else {
 		val := v.String()
@@ -362,7 +363,7 @@ func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target refle
 		return
 	}
 
-	if canConvert(&source, desiredType) {
+	if tool.CanConvert(&source, desiredType) {
 		nv := source.Convert(desiredType)
 		// target.Set(nv)
 		target = nv
@@ -419,7 +420,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 			target, _, err = tryStringerIt(source, desiredType)
 		}
 	} else {
-		target = reflect.Zero(stringType)
+		target = reflect.Zero(tool.StringType)
 	}
 	return //nolint:nakedret
 }
@@ -427,7 +428,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 //nolint:deadcode
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	dbglog.Log("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {
@@ -455,7 +456,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 //nolint:deadcode
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	dbglog.Log("  desiredType: %v, el.type: %v", typfmt(desiredType), typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {
@@ -527,7 +528,7 @@ func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.
 		target.SetMapIndex(key, srcVal.Convert(dTyp))
 	} else {
 		dstval := target.MapIndex(key)
-		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v", valfmt(&key), valfmt(&srcVal), valfmt(&dstval))
+		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v", tool.Valfmt(&key), tool.Valfmt(&srcVal), tool.Valfmt(&dstval))
 	}
 	return
 }

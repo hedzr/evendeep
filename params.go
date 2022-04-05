@@ -5,6 +5,7 @@ import (
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/log"
 
 	"reflect"
@@ -89,7 +90,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 		var st, tt reflect.Type
 
 		if p.srcDecoded == nil && p.srcOwner != nil {
-			d, _ := rdecode(*p.srcOwner)
+			d, _ := tool.Rdecode(*p.srcOwner)
 			p.srcDecoded = &d
 			if p.srcOwner.IsValid() {
 				p.srcType = p.srcOwner.Type()
@@ -102,13 +103,13 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			p.dstType = p.dstOwner.Type()
 		} else if p.srcOwner != nil {
 			st = p.srcOwner.Type()
-			st = rindirectType(st)
+			st = tool.RindirectType(st)
 			p.parseSourceStruct(ownerParams, st)
 			p.dstType = st
 		}
 
 		if p.dstDecoded == nil && p.dstOwner != nil {
-			d, _ := rdecode(*p.dstOwner)
+			d, _ := tool.Rdecode(*p.dstOwner)
 			p.dstDecoded = &d
 		}
 
@@ -117,7 +118,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			p.parseTargetStruct(ownerParams, tt)
 		} else if p.dstOwner != nil {
 			tt = p.dstOwner.Type()
-			tt = rindirectType(tt)
+			tt = tool.RindirectType(tt)
 			p.parseTargetStruct(ownerParams, tt)
 		}
 
@@ -189,8 +190,8 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	}
 	if fld := params.accessor.StructField(); fld != nil && params.controller.copyUnexportedFields {
 		// in a struct
-		if !isExported(fld) {
-			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, typfmt(fld.Type), valfmt(&target), valfmt(&newval))
+		if !tool.IsExported(fld) {
+			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, tool.Typfmt(fld.Type), tool.Valfmt(&target), tool.Valfmt(&newval))
 			cl.SetUnexportedField(target, newval)
 			processed = true
 		}

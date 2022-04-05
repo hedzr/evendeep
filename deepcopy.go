@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 
 	"reflect"
 )
@@ -36,9 +37,9 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	}
 
 	from := reflect.ValueOf(fromObj)
-	// find := rindirect(from)
+	// find := tool.Rindirect(from)
 	fromtyp := from.Type()
-	findtyp := rdecodetypesimple(fromtyp)
+	findtyp := tool.Rdecodetypesimple(fromtyp)
 	toPtr := reflect.New(findtyp)
 	toPtrObj := toPtr.Interface()
 	dbglog.Log("toPtrObj: %v", toPtrObj)

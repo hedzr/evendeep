@@ -1,6 +1,7 @@
-package evendeep
+package tool_test
 
 import (
+	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"testing"
 )
@@ -22,7 +23,7 @@ func TestRdecode(t *testing.T) {
 	vi := reflect.ValueOf(&ii)
 	t.Logf("vi (%v (%v)) : %v, &b = %v", vi.Kind(), vi.Type(), vi.Interface(), &b)
 
-	vv, prev := rdecode(vi)
+	vv, prev := tool.Rdecode(vi)
 	t.Logf("          vv (%v (%v)) : %v, &b = %v [ rdecode(vi) ]", vc.Kind(), vv.Type(), vv.Interface(), &b)
 	value := prev.Interface()
 	valptr := value.(*int)
@@ -80,12 +81,12 @@ func TestRskipRdecodeAndSoOn(t *testing.T) {
 
 	// c := newCopier()
 
-	v2, prev = rskip(v2, reflect.Interface, reflect.Ptr)
+	v2, prev = tool.Rskip(v2, reflect.Interface, reflect.Ptr)
 	t.Logf("v2 (%v (%v)) : %v, prev (%v %v)", v2.Kind(), v2.Type(), v2.Interface(), prev.Kind(), prev.Type())
 
 	ii = &b
 	v2 = reflect.ValueOf(&ii)
-	v2, prev = rdecode(v2)
+	v2, prev = tool.Rdecode(v2)
 	t.Logf("v2 (%v (%v)) : %v, prev (%v %v)", v2.Kind(), v2.Type(), v2.Interface(), prev.Kind(), prev.Type())
 
 	// var up = vi.Addr()
@@ -102,66 +103,66 @@ func TestIsNumXXX(t *testing.T) {
 	var x1 interface{} = 9527 + 0i
 	var v1 = reflect.ValueOf(x1)
 
-	assertYes(t, isNumericType(v1.Type()) == true, true, false)
-	assertYes(t, isNumComplexKind(v1.Kind()) == true, true, false)
+	assertYes(t, tool.IsNumericType(v1.Type()) == true, true, false)
+	assertYes(t, tool.IsNumComplexKind(v1.Kind()) == true, true, false)
 
 	x1 = "ok"
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumericType(v1.Type()) != true, false, true)
+	assertYes(t, tool.IsNumericType(v1.Type()) != true, false, true)
 
 	//
 
 	x1 = 13
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumIntegerType(v1.Type()) == true, true, false)
+	assertYes(t, tool.IsNumIntegerType(v1.Type()) == true, true, false)
 
 	x1 = uint(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumIntegerType(v1.Type()) == true, true, false)
+	assertYes(t, tool.IsNumIntegerType(v1.Type()) == true, true, false)
 
 	x1 = float32(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumIntegerType(v1.Type()) != true, false, true)
+	assertYes(t, tool.IsNumIntegerType(v1.Type()) != true, false, true)
 
 	//
 
 	x1 = 13
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumSIntegerKind(v1.Kind()) == true, true, false)
+	assertYes(t, tool.IsNumSIntegerKind(v1.Kind()) == true, true, false)
 
 	x1 = uint(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumSIntegerKind(v1.Kind()) != true, false, true)
+	assertYes(t, tool.IsNumSIntegerKind(v1.Kind()) != true, false, true)
 
 	x1 = float32(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumSIntegerKind(v1.Kind()) != true, false, true)
+	assertYes(t, tool.IsNumSIntegerKind(v1.Kind()) != true, false, true)
 
 	//
 
 	x1 = uint(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumUIntegerKind(v1.Kind()) == true, true, false)
+	assertYes(t, tool.IsNumUIntegerKind(v1.Kind()) == true, true, false)
 
 	x1 = int(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumUIntegerKind(v1.Kind()) != true, false, true)
+	assertYes(t, tool.IsNumUIntegerKind(v1.Kind()) != true, false, true)
 
 	x1 = float32(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumUIntegerKind(v1.Kind()) != true, false, true)
+	assertYes(t, tool.IsNumUIntegerKind(v1.Kind()) != true, false, true)
 
 	//
 
 	x1 = 13
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumFloatKind(v1.Kind()) != true, false, true)
+	assertYes(t, tool.IsNumFloatKind(v1.Kind()) != true, false, true)
 
 	x1 = float32(13)
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumFloatKind(v1.Kind()) == true, true, false)
+	assertYes(t, tool.IsNumFloatKind(v1.Kind()) == true, true, false)
 
 	x1 = "ok"
 	v1 = reflect.ValueOf(x1)
-	assertYes(t, isNumericType(v1.Type()) != true, false, true)
+	assertYes(t, tool.IsNumericType(v1.Type()) != true, false, true)
 }

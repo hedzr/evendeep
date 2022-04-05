@@ -3,12 +3,13 @@ package evendeep
 import (
 	"bytes"
 	"fmt"
+	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/log"
-	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"math/big"
@@ -79,7 +80,7 @@ func TestSliceLen(t *testing.T) {
 	v = reflect.Append(v, reflect.ValueOf("ghi"), reflect.ValueOf("jkl"))
 
 	fmt.Println("Our value is a type of :", v.Kind())
-	fmt.Printf("len : %v, %v\n", v.Len(), typfmtv(&v))
+	fmt.Printf("len : %v, %v\n", v.Len(), tool.Typfmtv(&v))
 
 	vSlice := v.Slice(0, v.Len())
 	vSliceElems := vSlice.Interface()
@@ -149,50 +150,17 @@ func TestPtrOf(t *testing.T) {
 
 	var i = 100
 	v := reflect.ValueOf(&i)
-	vind := rindirect(v)
-	vp := ptrOf(vind)
+	vind := tool.Rindirect(v)
+	vp := tool.PtrOf(vind)
 	t.Logf("ptr of i: %v, &i: %v", vp.Interface(), &i)
 	vp.Elem().SetInt(99)
 	t.Logf("i: %v", i)
 
 }
 
-func TestMinInt(t *testing.T) {
-	t.Log(minInt(1, 9))
-	t.Log(minInt(9, 1))
-}
-
-func TestContainsStringSlice(t *testing.T) {
-	t.Log(contains([]string{"a", "b", "c"}, "c"))
-	t.Log(contains([]string{"a", "b", "c"}, "z"))
-
-	t.Log(containsPartialsOnly([]string{"ac", "could", "ldbe"}, "itcouldbe"))
-	t.Log(containsPartialsOnly([]string{"a", "b", "c"}, "z"))
-
-	t.Log(partialContainsShort([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "could"))
-	t.Log(partialContainsShort([]string{"a", "b", "c"}, "z"))
-
-	idx, matchedString, containsBool := partialContains([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "could")
-	t.Logf("%v,%v,%v", idx, matchedString, containsBool)
-
-	idx, matchedString, containsBool = partialContains([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "byebye")
-	t.Logf("%v,%v,%v", idx, matchedString, containsBool)
-
-}
-
-func TestReverseSlice(t *testing.T) {
-	var ss = []int{8, 9, 7, 9, 3, 5}
-	reverseAnySlice(ss)
-	t.Logf("ss: %v", ss)
-
-	ss = []int{8, 9, 7, 3, 5}
-	reverseAnySlice(ss)
-	t.Logf("ss: %v", ss)
-}
-
 func TestInspectStruct(t *testing.T) {
 	a4 := prepareDataA4()
-	InspectStruct(reflect.ValueOf(&a4))
+	tool.InspectStruct(reflect.ValueOf(&a4))
 }
 
 func TestParamsBasics(t *testing.T) {
@@ -219,7 +187,7 @@ func TestParamsBasics(t *testing.T) {
 		a, expects := prepareAFT()
 
 		v := reflect.ValueOf(&a)
-		v = rindirect(v)
+		v = tool.Rindirect(v)
 
 		for i := 0; i < v.NumField(); i++ {
 			fld := v.Type().Field(i)
@@ -251,7 +219,7 @@ func TestParamsBasics3(t *testing.T) {
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
-		v = rindirect(v)
+		v = tool.Rindirect(v)
 		sf, _ := v.Type().FieldByName("wouldbe")
 		// sf0, _ := v.Type().FieldByName("flags")
 		// sf1, _ := v.Type().FieldByName("converter")
@@ -325,7 +293,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
 		sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
@@ -351,7 +319,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
@@ -384,7 +352,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := rdecodesimple(src), rdecodesimple(dst)
+		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -424,27 +392,27 @@ func TestValueValid(t *testing.T) {
 
 	var v reflect.Value
 
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	v = reflect.ValueOf(ival)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	v = reflect.ValueOf(pival)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	v = reflect.ValueOf(aval)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	v = reflect.ValueOf(paval)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	var b bool
 	v = reflect.ValueOf(b)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 
 	b = true
 	v = reflect.ValueOf(b)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", valfmt(&v), typfmtv(&v), v.IsValid(), isNil(v), isZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
 }
 
 //
@@ -457,6 +425,12 @@ func TestFlagsRevert(t *testing.T) {
 	nf := newDeepCopier().flags
 	b := reflect.DeepEqual(DefaultCopyController.flags, nf)
 	assertYes(t, b, nf, DefaultCopyController.flags)
+}
+
+func assertYes(t *testing.T, b bool, expect, got interface{}) {
+	if !b {
+		t.Fatalf("expecting %v but got %v", expect, got)
+	}
 }
 
 //
@@ -660,16 +634,16 @@ func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 func runtestcasesverifier(t *testing.T) Verifier {
 	return func(src, dst, expect interface{}, e error) (err error) {
 		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
-		aa, _ := rdecode(a)
-		bb, _ := rdecode(b)
+		aa, _ := tool.Rdecode(a)
+		bb, _ := tool.Rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
 		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)\n   err: %v",
-			bv, typfmtv(&bb), aa.Type(), av, typfmtv(&aa), bb.Type(), e)
+			bv, tool.Typfmtv(&bb), aa.Type(), av, tool.Typfmtv(&aa), bb.Type(), e)
 
-		diff, equal := messagediff.PrettyDiff(expect, dst)
+		dif, equal := diff.New(expect, dst, diff.WithSliceOrderedComparison(false))
 		if !equal {
-			fmt.Println(diff)
-			err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff).WithErrors(e)
+			fmt.Println(dif)
+			err = errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif).WithErrors(e)
 			return
 		}
 

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
-	"gitlab.com/gopriv/localtest/deepdiff/d4l3k/messagediff"
 	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"reflect"
@@ -102,10 +102,10 @@ func TestCloneableSource(t *testing.T) {
 		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
 		if reflect.DeepEqual(src, tgt) == false {
 			var err error
-			diff, equal := messagediff.PrettyDiff(src, tgt)
+			dif, equal := diff.New(src, tgt)
 			if !equal {
-				fmt.Println(diff)
-				err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+				fmt.Println(dif)
+				err = errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif)
 			}
 			t.Fatalf("not equal. %v", err)
 		}
@@ -144,10 +144,10 @@ func TestDeepCopyableSource(t *testing.T) {
 		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
 		if reflect.DeepEqual(src, tgt) == false {
 			var err error
-			diff, equal := messagediff.PrettyDiff(src, tgt)
+			dif, equal := diff.New(src, tgt)
 			if !equal {
-				fmt.Println(diff)
-				err = errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+				fmt.Println(dif)
+				err = errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif)
 			}
 			t.Fatalf("not equal. %v", err)
 		}
@@ -582,9 +582,9 @@ func TestStructSimple(t *testing.T) {
 			},
 			nil,
 			// func(src, dst, expect interface{}) (err error) {
-			//	diff, equal := messagediff.PrettyDiff(expect, dst)
+			//	dif, equal := diff.New(expect, dst)
 			//	if !equal {
-			//		fmt.Println(diff)
+			//		fmt.Println(dif)
 			//	}
 			//	return
 			// },
@@ -653,9 +653,9 @@ func TestStructEmbedded(t *testing.T) {
 			},
 			nil,
 			// func(src, dst, expect interface{}) (err error) {
-			//	diff, equal := messagediff.PrettyDiff(expect, dst)
+			//	dif, equal := diff.New(expect, dst)
 			//	if !equal {
-			//		fmt.Println(diff)
+			//		fmt.Println(dif)
 			//	}
 			//	return
 			// },
@@ -737,6 +737,13 @@ func TestStructToSliceOrMap(t *testing.T) {
 }`
 
 	evendeep.RunTestCases(t,
+		evendeep.NewTestCase(
+			"struct -> slice []obj",
+			src, &slice1, &[]evendeep.User{expect1},
+			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt, evendeep.WithAutoNewForStructFieldOpt},
+			nil,
+		),
+
 		evendeep.NewTestCase(
 			"struct -> string",
 			src, &str, &expectJSON,
@@ -1104,13 +1111,13 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 	//	return
 	// }
 
-	diff, equal := messagediff.PrettyDiff(src, tgt)
+	dif, equal := diff.New(src, tgt)
 	if equal {
 		return
 	}
 
-	fmt.Println(diff)
-	err := errors.New("messagediff.PrettyDiff identified its not equal:\ndifferents:\n%v", diff)
+	fmt.Println(dif)
+	err := errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif)
 
 	for _, b := range notFailed {
 		if yes, ok := b.(bool); yes && ok {

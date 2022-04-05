@@ -3,6 +3,7 @@ package evendeep_test
 import (
 	"bytes"
 	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"testing"
 	"time"
@@ -97,7 +98,7 @@ func TestUintptr(t *testing.T) {
 
 func TestInspectStruct(t *testing.T) {
 	em := new(evendeep.Employee)
-	evendeep.InspectStruct(em)
+	tool.InspectStruct(em)
 }
 
 func TestDeepCopyExternal(t *testing.T) {
