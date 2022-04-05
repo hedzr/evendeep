@@ -2,10 +2,11 @@ package diff
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/typ"
 	"reflect"
 	"strings"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/typ"
 )
 
 func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {

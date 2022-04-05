@@ -63,6 +63,14 @@ func TestPrettyDiff(t *testing.T) {
 		},
 
 		{
+			[]interface{}{3, 0, 9},
+			[]interface{}{9, 3, 0},
+			"",
+			true,
+			nil,
+		},
+
+		{
 			true,
 			false,
 			// "modified:  = false\n",
