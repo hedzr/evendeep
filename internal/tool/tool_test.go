@@ -34,7 +34,7 @@ func TestContainsStringSlice(t *testing.T) {
 
 func TestReverseSlice(t *testing.T) {
 	var ss = []int{8, 9, 7, 9, 3, 5}
-	tool.ReverseAnySlice(ss)
+	tool.ReverseSlice(ss)
 	t.Logf("ss: %v", ss)
 
 	ss = []int{8, 9, 7, 3, 5}

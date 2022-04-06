@@ -144,6 +144,16 @@ func IsNumIntegerKind(k reflect.Kind) bool  { return k >= reflect.Int && k <= re
 func IsNumFloatKind(k reflect.Kind) bool    { return k >= reflect.Float32 && k <= reflect.Float64 }
 func IsNumComplexKind(k reflect.Kind) bool  { return k >= reflect.Complex64 && k <= reflect.Complex128 }
 
+func Typfmtvlite(v *reflect.Value) string {
+	// v := reflect.ValueOf(val)
+
+	if v == nil || !v.IsValid() {
+		return "<invalid>" //nolint:goconst
+	}
+	t := v.Type()
+	return fmt.Sprintf("%v", t)
+}
+
 func Typfmtv(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"

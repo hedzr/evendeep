@@ -103,6 +103,7 @@ func InspectStruct(v interface{}) {
 	inspectStructV(reflect.ValueOf(v), 0)
 }
 
+// MinInt _
 func MinInt(a, b int) int {
 	if a < b {
 		return a
@@ -159,23 +160,7 @@ func ReverseAnySlice(s interface{}) {
 	}
 }
 
-// ReverseStringSlice reverse a string slice
-func ReverseStringSlice(s []string) []string {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-	return s
-
-	// // reverse it
-	// i := 0
-	// j := len(a) - 1
-	// for i < j {
-	// 	a[i], a[j] = a[j], a[i]
-	// 	i++
-	// 	j--
-	// }
-}
-
+// FindInSlice _
 func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
@@ -189,6 +174,7 @@ func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	return
 }
 
+// EqualClassical _
 func EqualClassical(lhs, rhs reflect.Value) bool {
 	lv, rv := lhs.IsValid(), rhs.IsValid()
 	if !lv {
