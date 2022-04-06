@@ -41,7 +41,9 @@ type Opt func(*info)
 func WithIgnoredFields(names ...string) Opt {
 	return func(i *info) {
 		for _, name := range names {
-			i.ignoredFields[name] = true
+			if name != "" {
+				i.ignoredFields[name] = true
+			}
 		}
 	}
 }
@@ -56,6 +58,17 @@ func WithIgnoredFields(names ...string) Opt {
 func WithSliceOrderedComparison(b bool) Opt {
 	return func(i *info) {
 		i.sliceNoOrder = b
+	}
+}
+
+// WithComparer registers your customized Comparer into internal structure
+func WithComparer(comparer ...Comparer) Opt {
+	return func(i *info) {
+		for _, c := range comparer {
+			if c != nil {
+				i.compares = append(i.compares, c)
+			}
+		}
 	}
 }
 

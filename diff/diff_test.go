@@ -3,6 +3,7 @@ package diff_test
 import (
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/diff/testdata"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -52,6 +53,21 @@ func checkTestCases(t *testing.T, testData []testCase) {
 	}
 }
 
+type timeComparer struct{}
+
+func (c *timeComparer) Match(typ reflect.Type) bool {
+	return typ.String() == "time.Time"
+}
+
+func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff.Path) (equal bool) {
+	aTime := lhs.Interface().(time.Time)
+	bTime := rhs.Interface().(time.Time)
+	if equal = aTime.Equal(bTime); !equal {
+		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lhs)})
+	}
+	return
+}
+
 func TestPrettyDiff(t *testing.T) {
 	testData := []testCase{
 		{
@@ -76,14 +92,14 @@ func TestPrettyDiff(t *testing.T) {
 			// "modified:  = false\n",
 			"modified:  = false (bool) (Old: true)\n",
 			false,
-			nil,
+			diff.WithComparer(&timeComparer{}),
 		},
 		{
 			true,
 			0,
 			"modified:  = <zero> (int) (Old: true)\n",
 			false,
-			nil,
+			diff.WithIgnoredFields(),
 		},
 		{
 			[]int{0, 1, 2},
