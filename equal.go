@@ -8,7 +8,7 @@ import (
 // DeepEqual compares a and b deeply inside.
 //
 //    equal := evendeep.DeepEqual(a, b)
-//    fmt.Println(euqal)
+//    fmt.Println(equal)
 func DeepEqual(a, b typ.Any, opts ...diff.Opt) (equal bool) {
 	_, equal = diff.New(a, b, opts...)
 	return

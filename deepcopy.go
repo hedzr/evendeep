@@ -9,12 +9,14 @@ import (
 	"reflect"
 )
 
-// Copy _
+// Copy is a synonym of DeepCopy.
+//
+// DeepCopy makes a deep clone of a source object or merges it into the target.
 func Copy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	return DeepCopy(fromObj, toObj, opts...)
 }
 
-// DeepCopy _
+// DeepCopy makes a deep clone of a source object or merges it into the target.
 func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	if fromObj == nil {
 		return toObj
@@ -30,7 +32,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 	return
 }
 
-// MakeClone _
+// MakeClone makes a deep clone of a source object.
 func MakeClone(fromObj interface{}) (result interface{}) {
 	if fromObj == nil {
 		return fromObj
@@ -54,16 +56,18 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	return
 }
 
-// Cloneable _
-// The native Clone algor of a Cloneable object can be adapted into DeepCopier.
+// Cloneable interface represents a cloneable object that supports Clone() method.
+//
+// The native Clone algorithm of a Cloneable object can be adapted into DeepCopier.
 type Cloneable interface {
 	// Clone return a pointer to copy of source object.
 	// But you can return the copy itself with your will.
 	Clone() interface{}
 }
 
-// DeepCopyable _
-// The native DeepCopy algor of a DeepCopyable object can be adapted into DeepCopier.
+// DeepCopyable interface represents a cloneable object that supports DeepCopy() method.
+//
+// The native DeepCopy algorithm of a DeepCopyable object can be adapted into DeepCopier.
 type DeepCopyable interface {
 	DeepCopy() interface{}
 }
@@ -125,20 +129,6 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	return c
 }
 
-// // NewCloner gets a new instance of DeepCopier (the underlying
-// // is *cpController) different with DefaultCopyController and
-// // DefaultCloneController.
-// // It returns a cloner like MakeClone()
-// func NewCloner(opts ...Opt) DeepCopier {
-//	lazyInitRoutines()
-//	var c = newCloner()
-//	c.flags = newFlags()
-//	for _, opt := range opts {
-//		opt(c)
-//	}
-//	return c
-// }
-
 func newDeepCopier() *cpController {
 	return &cpController{
 		valueConverters: defaultValueConverters(),
@@ -158,19 +148,22 @@ func newDeepCopier() *cpController {
 
 func newCopier() *cpController {
 	return &cpController{
-		valueConverters:            defaultValueConverters(),
-		valueCopiers:               defaultValueCopiers(),
+		valueConverters: defaultValueConverters(),
+		valueCopiers:    defaultValueCopiers(),
+
 		copyFunctionResultToTarget: true,
 		passSourceAsFunctionInArgs: true,
-		rethrow:                    true,
-		makeNewClone:               false,
+
+		rethrow:      true,
+		makeNewClone: false,
 	}
 }
 
 func newCloner() *cpController {
 	return &cpController{
-		valueConverters:            defaultValueConverters(),
-		valueCopiers:               defaultValueCopiers(),
+		valueConverters: defaultValueConverters(),
+		valueCopiers:    defaultValueCopiers(),
+
 		copyFunctionResultToTarget: true,
 		passSourceAsFunctionInArgs: true,
 		autoExpandStruct:           true,
