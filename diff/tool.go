@@ -3,62 +3,12 @@ package diff
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"unsafe"
-
-	"github.com/hedzr/evendeep/typ"
 )
-
-func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
-	for _, kk := range kinds {
-		if yes = k == kk; yes {
-			break
-		}
-	}
-	return
-}
-
-type Path struct {
-	parts []PathPart
-}
-
-func (dp Path) appendAndNew(parts ...PathPart) Path {
-	return Path{parts: append(dp.parts, parts...)}
-}
-
-func (dp Path) String() string {
-	var sb strings.Builder
-	for _, p := range dp.parts {
-		if sb.Len() > 0 {
-			sb.WriteRune('.')
-		}
-		sb.WriteString(p.String())
-	}
-	return sb.String()
-}
-
-type PathPart interface {
-	String() string
-}
 
 type visit struct {
 	al, ar unsafe.Pointer
 	typ    reflect.Type
-}
-
-type Update struct {
-	Old, New typ.Any // string
-	Typ      string
-}
-
-func (n Update) String() string {
-	if n.Old == nil {
-		return fmt.Sprintf("%#v", n.New)
-	}
-	if n.New == nil {
-		return fmt.Sprintf("%#v -> nil", n.Old)
-	}
-	return fmt.Sprintf("%#v -> %#v", n.Old, n.New)
 }
 
 type sliceIndex int
@@ -79,6 +29,21 @@ type structField string
 
 func (n structField) String() string {
 	return fmt.Sprintf(".%s", string(n))
+}
+
+//
+
+//
+
+//
+
+func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
+	for _, kk := range kinds {
+		if yes = k == kk; yes {
+			break
+		}
+	}
+	return
 }
 
 func typfmtlite(v *reflect.Value) string {
