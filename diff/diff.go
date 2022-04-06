@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 	"unsafe"
 
 	"github.com/hedzr/evendeep/internal/natsort"
@@ -75,10 +74,14 @@ func newInfo() *info {
 		added:         make(map[string]typ.Any),
 		removed:       make(map[string]typ.Any),
 		modified:      make(map[string]Update),
-		pathTable:     make(map[string]dottedPath),
+		pathTable:     make(map[string]Path),
 		visited:       make(map[visit]bool),
 		ignoredFields: make(map[string]bool),
 		sliceNoOrder:  false,
+		compares: []Comparer{
+			&timeComparer{},
+			&bytesBufferComparer{},
+		},
 	}
 }
 
@@ -86,13 +89,25 @@ type info struct {
 	added         map[string]typ.Any
 	removed       map[string]typ.Any
 	modified      map[string]Update
-	pathTable     map[string]dottedPath
+	pathTable     map[string]Path
 	visited       map[visit]bool
 	ignoredFields map[string]bool
 	sliceNoOrder  bool
+	compares      []Comparer
 }
 
+// - Comparer
+
+func (d *info) PutAdded(k string, v typ.Any)                { d.added[k] = v }
+func (d *info) PutRemoved(k string, v typ.Any)              { d.removed[k] = v }
+func (d *info) PutModified(k string, v Update)              { d.modified[k] = v }
+func (d *info) PutPath(path Path, parts ...PathPart) string { return d.mkkey(path, parts...) }
+
+// - Stringer
+
 func (d *info) String() string { return d.PrettyPrint() }
+
+// - Diff
 
 func (d *info) PrettyPrint() string {
 	var lines []string
@@ -135,6 +150,8 @@ func (d *info) forMap(m map[string]typ.Any, fn func(key string, val typ.Any)) {
 	}
 }
 
+// - Cloneable
+
 func (d *info) Clone() *info {
 	copym1 := func(m1 map[string]typ.Any) map[string]typ.Any {
 		m2 := make(map[string]typ.Any)
@@ -150,8 +167,8 @@ func (d *info) Clone() *info {
 		}
 		return m2
 	}
-	copym3 := func(m1 map[string]dottedPath) map[string]dottedPath {
-		m2 := make(map[string]dottedPath)
+	copym3 := func(m1 map[string]Path) map[string]Path {
+		m2 := make(map[string]Path)
 		for k, v := range m1 {
 			m2[k] = v
 		}
@@ -182,7 +199,9 @@ func (d *info) Clone() *info {
 	}
 }
 
-func (d *info) mkkey(path dottedPath, parts ...pathPart) (key string) {
+//
+
+func (d *info) mkkey(path Path, parts ...PathPart) (key string) {
 	dp := path.appendAndNew(parts...)
 	key = dp.String()
 	d.pathTable[key] = dp
@@ -191,44 +210,56 @@ func (d *info) mkkey(path dottedPath, parts ...pathPart) (key string) {
 
 func (d *info) diff(lhs, rhs typ.Any) bool {
 	lv, rv := reflect.ValueOf(lhs), reflect.ValueOf(rhs)
-	var path dottedPath
+	var path Path
 	return d.diffv(lv, rv, path)
 }
 
-func (d *info) diffv(lv, rv reflect.Value, path dottedPath) (equal bool) {
-	lvv, rvv := lv.IsValid(), rv.IsValid()
-	if !lvv && !rvv {
-		return true
-	}
+func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
+	var processed bool
 
-	if !lvv {
-		d.modified[d.mkkey(path)] = Update{Old: nil, New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)}
-		return
-	}
-	if !rvv {
-		d.modified[d.mkkey(path)] = Update{Old: tool.Valfmt(&lv), New: nil, Typ: typfmtlite(&lv)}
+	lvv, rvv := lv.IsValid(), rv.IsValid()
+	if equal, processed = d.testinvalid(lv, rv, lvv, rvv, path); processed {
 		return
 	}
 
 	lvt, rvt := lv.Type(), rv.Type()
 	if lvt != rvt {
-		d.modified[d.mkkey(path)] = Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)}
+		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)})
 		return
 	}
 
 	var kind = lv.Kind()
-	var processed bool
-	if equal, processed = d.testvisited(lv, rv, lvt, rvt, path, kind); processed {
+	if equal, processed = d.testvisited(lv, rv, lvt, path, kind); processed {
 		return
 	}
-	if equal, processed = d.testnil(lv, rv, lvt, rvt, path, kind); processed {
+	if equal, processed = d.testnil(lv, rv, lvt, path, kind); processed {
 		return
 	}
 
-	return d.diffw(lv, rv, lvt, rvt, path, kind)
+	if equal, processed = d.testcomparer(lv, rv, lvt, path, kind); processed {
+		return
+	}
+
+	return d.diffw(lv, rv, lvt, path, kind)
 }
 
-func (d *info) testvisited(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPath, kind reflect.Kind) (equal, processed bool) {
+func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equal, processed bool) {
+	if !lvv && !rvv {
+		return true, true
+	}
+
+	if !lvv {
+		d.PutModified(d.mkkey(path), Update{Old: nil, New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)})
+		return false, true
+	}
+	if !rvv {
+		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: nil, Typ: typfmtlite(&lv)})
+		return false, true
+	}
+	return
+}
+
+func (d *info) testvisited(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
 	if lv.CanAddr() && rv.CanAddr() && kindis(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
 		addr2 := unsafe.Pointer(rv.UnsafeAddr())
@@ -239,7 +270,7 @@ func (d *info) testvisited(lv, rv reflect.Value, lvt, rvt reflect.Type, path dot
 		}
 
 		// Short circuit if references are already seen.
-		v := visit{addr1, addr2, lvt}
+		v := visit{addr1, addr2, typ}
 		if d.visited[v] {
 			return true, true
 		}
@@ -250,7 +281,7 @@ func (d *info) testvisited(lv, rv reflect.Value, lvt, rvt reflect.Type, path dot
 	return
 }
 
-func (d *info) testnil(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPath, kind reflect.Kind) (equal, processed bool) {
+func (d *info) testnil(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
 	switch kind { //nolint:exhaustive
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
 		ln, rn := tool.IsNil(lv), tool.IsNil(lv)
@@ -261,14 +292,31 @@ func (d *info) testnil(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedP
 			if (kind == reflect.Slice || kind == reflect.Map) && lv.Len() == rv.Len() {
 				return true, true
 			}
-			d.modified[d.mkkey(path)] = Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)}
+			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)})
 			return false, true
 		}
 	}
 	return
 }
 
-func (d *info) diffw(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPath, kind reflect.Kind) (equal bool) {
+func (d *info) testcomparer(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
+	var c Comparer
+	if c, processed = d.findComparer(typ); processed {
+		equal = c.Equal(d, lv, rv, path)
+	}
+	return
+}
+
+func (d *info) findComparer(typ reflect.Type) (c Comparer, ok bool) {
+	for _, c = range d.compares {
+		if ok = c.Match(typ); ok {
+			break
+		}
+	}
+	return
+}
+
+func (d *info) diffw(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal bool) {
 	switch kind { // nolint:exhaustive
 	case reflect.Array:
 		equal = d.diffArray(lv, rv, path)
@@ -284,7 +332,7 @@ func (d *info) diffw(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPat
 		equal = d.diffMap(lv, rv, path)
 
 	case reflect.Struct:
-		equal = d.diffStruct(lv, rv, lvt, rvt, path)
+		equal = d.diffStruct(lv, rv, typ, path)
 
 	case reflect.Ptr:
 		equal = d.diffv(lv.Elem(), rv.Elem(), path)
@@ -296,7 +344,7 @@ func (d *info) diffw(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPat
 		if reflect.DeepEqual(lv.Interface(), rv.Interface()) {
 			equal = true
 		} else {
-			d.modified[d.mkkey(path)] = Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)}
+			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)})
 			equal = false
 		}
 	}
@@ -304,7 +352,7 @@ func (d *info) diffw(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPat
 	return //nolint:nakedret
 }
 
-func (d *info) diffArray(lv, rv reflect.Value, path dottedPath) (equal bool) {
+func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 	ll, rl := lv.Len(), rv.Len()
 	equal = true
 	for i := 0; i < tool.MinInt(ll, rl); i++ {
@@ -317,21 +365,21 @@ func (d *info) diffArray(lv, rv reflect.Value, path dottedPath) (equal bool) {
 		for i := rl; i < ll; i++ {
 			localPath := path.appendAndNew(sliceIndex(i))
 			v := lv.Index(i)
-			d.removed[d.mkkey(localPath)] = tool.Valfmt(&v)
+			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&v))
 			equal = false
 		}
 	} else if ll < rl {
 		for i := ll; i < rl; i++ {
 			localPath := path.appendAndNew(sliceIndex(i))
 			v := rv.Index(i)
-			d.added[d.mkkey(localPath)] = tool.Valfmt(&v)
+			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&v))
 			equal = false
 		}
 	}
 	return
 }
 
-func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path dottedPath) (equal bool) {
+func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path Path) (equal bool) {
 	ll, rl := lv.Len(), rv.Len()
 	// if ll != rl {
 	// 	return d.diffArray(lv, rv, path)
@@ -350,7 +398,7 @@ func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path dottedPath) (equal bo
 			}
 		}
 		if !eq {
-			d.removed[d.mkkey(localPath)] = tool.Valfmt(&lvit)
+			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&lvit))
 			equal = false
 		}
 	}
@@ -360,19 +408,19 @@ func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path dottedPath) (equal bo
 			continue
 		}
 		rvit := rv.Index(i)
-		d.added[d.mkkey(localPath)] = tool.Valfmt(&rvit)
+		d.PutAdded(d.mkkey(localPath), tool.Valfmt(&rvit))
 		equal = false
 	}
 	return //nolint:nakedret
 }
 
-func (d *info) diffMap(lv, rv reflect.Value, path dottedPath) (equal bool) {
+func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 	equal = true
 	for _, key := range lv.MapKeys() {
 		aI, bI := lv.MapIndex(key), rv.MapIndex(key)
 		localPath := path.appendAndNew(mapKey{key.Interface()})
 		if !bI.IsValid() {
-			d.removed[d.mkkey(localPath)] = tool.Valfmt(&aI)
+			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&aI))
 			equal = false
 		} else if eq := d.diffv(aI, bI, localPath); !eq {
 			equal = false
@@ -383,40 +431,42 @@ func (d *info) diffMap(lv, rv reflect.Value, path dottedPath) (equal bool) {
 		if !aI.IsValid() {
 			bI := rv.MapIndex(key)
 			localPath := path.appendAndNew(mapKey{key.Interface()})
-			d.added[d.mkkey(localPath)] = tool.Valfmt(&bI)
+			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&bI))
 			equal = false
 		}
 	}
 	return
 }
 
-func (d *info) diffStruct(lv, rv reflect.Value, lvt, rvt reflect.Type, path dottedPath) (equal bool) {
+func (d *info) diffStruct(lv, rv reflect.Value, typ reflect.Type, path Path) (equal bool) {
 	equal = true
-	// If the field is time.Time, use Equal to compare
-	if lvt.String() == "time.Time" {
-		aTime := lv.Interface().(time.Time)
-		bTime := rv.Interface().(time.Time)
-		if !aTime.Equal(bTime) {
-			d.modified[d.mkkey(path)] = Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lv)}
+
+	// // If the field is time.Time, use Equal to compare
+	// if typ.String() == "time.Time" {
+	// 	aTime := lv.Interface().(time.Time)
+	// 	bTime := rv.Interface().(time.Time)
+	// 	if !aTime.Equal(bTime) {
+	// 		d.PutModified(d.mkkey(path), Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lv)})
+	// 		equal = false
+	// 	}
+	// 	return
+	// }
+
+	for i := 0; i < typ.NumField(); i++ {
+		index := []int{i}
+		field := typ.FieldByIndex(index)
+		if vk := field.Tag.Get("diff"); vk == "ignore" || vk == "-" { // skip fields marked to be ignored
+			continue
+		}
+		if _, skip := d.ignoredFields[field.Name]; skip {
+			continue
+		}
+		localPath := path.appendAndNew(structField(field.Name))
+		aI := tool.UnsafeReflectValue(lv.FieldByIndex(index))
+		bI := tool.UnsafeReflectValue(rv.FieldByIndex(index))
+		if eq := d.diffv(aI, bI, localPath); !eq {
 			equal = false
 		}
-	} else {
-		for i := 0; i < lvt.NumField(); i++ {
-			index := []int{i}
-			field := lvt.FieldByIndex(index)
-			if vk := field.Tag.Get("diff"); vk == "ignore" || vk == "-" { // skip fields marked to be ignored
-				continue
-			}
-			if _, skip := d.ignoredFields[field.Name]; skip {
-				continue
-			}
-			localPath := path.appendAndNew(structField(field.Name))
-			aI := tool.UnsafeReflectValue(lv.FieldByIndex(index))
-			bI := tool.UnsafeReflectValue(rv.FieldByIndex(index))
-			if eq := d.diffv(aI, bI, localPath); !eq {
-				equal = false
-			}
-		}
 	}
-	return
+	return //nolint:nakedret
 }

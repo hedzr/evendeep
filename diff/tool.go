@@ -18,15 +18,15 @@ func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
 	return
 }
 
-type dottedPath struct {
-	parts []pathPart
+type Path struct {
+	parts []PathPart
 }
 
-func (dp dottedPath) appendAndNew(parts ...pathPart) dottedPath {
-	return dottedPath{parts: append(dp.parts, parts...)}
+func (dp Path) appendAndNew(parts ...PathPart) Path {
+	return Path{parts: append(dp.parts, parts...)}
 }
 
-func (dp dottedPath) String() string {
+func (dp Path) String() string {
 	var sb strings.Builder
 	for _, p := range dp.parts {
 		if sb.Len() > 0 {
@@ -37,7 +37,7 @@ func (dp dottedPath) String() string {
 	return sb.String()
 }
 
-type pathPart interface {
+type PathPart interface {
 	String() string
 }
 

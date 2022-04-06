@@ -59,7 +59,7 @@ func TestPrettyDiff(t *testing.T) {
 			[]int{9, 3, 0},
 			"",
 			true,
-			nil,
+			diff.WithSliceOrderedComparison(true),
 		},
 
 		{
@@ -67,7 +67,7 @@ func TestPrettyDiff(t *testing.T) {
 			[]interface{}{9, 3, 0},
 			"",
 			true,
-			nil,
+			diff.WithSliceOrderedComparison(true),
 		},
 
 		{
@@ -102,16 +102,16 @@ func TestPrettyDiff(t *testing.T) {
 		{
 			[]int{0},
 			[]int{1},
-			"added: [0] = 1\nremoved: [0] = <zero>\n",
-			// "modified: [0] = 1 (int) (Old: <zero>)\n",
+			// "added: [0] = 1\nremoved: [0] = <zero>\n",
+			"modified: [0] = 1 (int) (Old: <zero>)\n",
 			false,
 			nil,
 		},
 		{
 			&[]int{0},
 			&[]int{1},
-			"added: [0] = 1\nremoved: [0] = <zero>\n",
-			// "modified: [0] = 1 (int) (Old: <zero>)\n",
+			// "added: [0] = 1\nremoved: [0] = <zero>\n",
+			"modified: [0] = 1 (int) (Old: <zero>)\n",
 			false,
 			nil,
 		},
@@ -216,7 +216,7 @@ func TestPrettyDiffRecursive(t *testing.T) {
 
 // func TestPathString(t *testing.T) {
 // 	testData := []struct {
-// 		in   dottedPath
+// 		in   Path
 // 		want string
 // 	}{{
 // 		Path{StructField("test"), SliceIndex(1), MapKey{"blue"}, MapKey{12.3}},
