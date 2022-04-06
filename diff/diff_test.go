@@ -3,6 +3,7 @@ package diff_test
 import (
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/diff/testdata"
+	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"testing"
 	"time"
@@ -63,7 +64,7 @@ func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff
 	aTime := lhs.Interface().(time.Time)
 	bTime := rhs.Interface().(time.Time)
 	if equal = aTime.Equal(bTime); !equal {
-		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lhs)})
+		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: tool.Typfmtvlite(&lhs)})
 	}
 	return
 }

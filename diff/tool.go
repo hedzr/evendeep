@@ -46,16 +46,16 @@ func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
 	return
 }
 
-func typfmtlite(v *reflect.Value) string {
-	// v := reflect.ValueOf(val)
-
-	if v == nil || !v.IsValid() {
-		return "<invalid>"
-	}
-	t := v.Type()
-	return fmt.Sprintf("%v", t)
-}
-
+// func typfmtlite(v *reflect.Value) string {
+// 	// v := reflect.ValueOf(val)
+//
+// 	if v == nil || !v.IsValid() {
+// 		return "<invalid>"
+// 	}
+// 	t := v.Type()
+// 	return fmt.Sprintf("%v", t)
+// }
+//
 // func valfmtlite(val typ.Any) string {
 // 	v := reflect.ValueOf(val)
 // 	if !v.IsValid() {

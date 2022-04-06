@@ -237,7 +237,7 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 
 	lvt, rvt := lv.Type(), rv.Type()
 	if lvt != rvt {
-		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)})
+		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&rv)})
 		return
 	}
 
@@ -262,11 +262,11 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 	}
 
 	if !lvv {
-		d.PutModified(d.mkkey(path), Update{Old: nil, New: tool.Valfmt(&rv), Typ: typfmtlite(&rv)})
+		d.PutModified(d.mkkey(path), Update{Old: nil, New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&rv)})
 		return false, true
 	}
 	if !rvv {
-		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: nil, Typ: typfmtlite(&lv)})
+		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: nil, Typ: tool.Typfmtvlite(&lv)})
 		return false, true
 	}
 	return
@@ -305,7 +305,7 @@ func (d *info) testnil(lv, rv reflect.Value, typ reflect.Type, path Path, kind r
 			if (kind == reflect.Slice || kind == reflect.Map) && lv.Len() == rv.Len() {
 				return true, true
 			}
-			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)})
+			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
 			return false, true
 		}
 	}
@@ -357,7 +357,7 @@ func (d *info) diffw(lv, rv reflect.Value, typ reflect.Type, path Path, kind ref
 		if reflect.DeepEqual(lv.Interface(), rv.Interface()) {
 			equal = true
 		} else {
-			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: typfmtlite(&lv)})
+			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
 			equal = false
 		}
 	}

@@ -3,6 +3,8 @@ package diff
 import (
 	"bytes"
 	"reflect"
+
+	"github.com/hedzr/evendeep/internal/tool"
 )
 
 type bytesBufferComparer struct{}
@@ -15,7 +17,7 @@ func (c *bytesBufferComparer) Equal(ctx Context, lhs, rhs reflect.Value, path Pa
 	a := lhs.Interface().(bytes.Buffer)
 	b := rhs.Interface().(bytes.Buffer)
 	if equal = c.equal(a.Bytes(), b.Bytes()); !equal {
-		ctx.PutModified(ctx.PutPath(path), Update{Old: a.String(), New: b.String(), Typ: typfmtlite(&lhs)})
+		ctx.PutModified(ctx.PutPath(path), Update{Old: a.String(), New: b.String(), Typ: tool.Typfmtvlite(&lhs)})
 	}
 	return
 }

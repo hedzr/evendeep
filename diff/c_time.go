@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"github.com/hedzr/evendeep/internal/tool"
+
 	"reflect"
 	"time"
 )
@@ -15,7 +17,7 @@ func (c *timeComparer) Equal(ctx Context, lhs, rhs reflect.Value, path Path) (eq
 	aTime := lhs.Interface().(time.Time)
 	bTime := rhs.Interface().(time.Time)
 	if equal = aTime.Equal(bTime); !equal {
-		ctx.PutModified(ctx.PutPath(path), Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lhs)})
+		ctx.PutModified(ctx.PutPath(path), Update{Old: aTime.String(), New: bTime.String(), Typ: tool.Typfmtvlite(&lhs)})
 	}
 	return
 }
