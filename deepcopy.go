@@ -22,8 +22,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 		return toObj
 	}
 
-	var saved = DefaultCopyController.flags.Clone()
-	defer func() { DefaultCopyController.flags = saved }()
+	defer DefaultCopyController.SaveFlagsAndRestore()()
 
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
 		result = toObj
@@ -38,16 +37,16 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 		return fromObj
 	}
 
-	from := reflect.ValueOf(fromObj)
-	// find := tool.Rindirect(from)
-	fromtyp := from.Type()
-	findtyp := tool.Rdecodetypesimple(fromtyp)
-	toPtr := reflect.New(findtyp)
-	toPtrObj := toPtr.Interface()
+	var (
+		from     = reflect.ValueOf(fromObj)
+		fromTyp  = from.Type()
+		findTyp  = tool.Rdecodetypesimple(fromTyp)
+		toPtr    = reflect.New(findTyp)
+		toPtrObj = toPtr.Interface()
+	)
 	dbglog.Log("toPtrObj: %v", toPtrObj)
 
-	var saved = defaultCloneController.flags.Clone()
-	defer func() { defaultCloneController.flags = saved }()
+	defer defaultCloneController.SaveFlagsAndRestore()()
 
 	if err := defaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
 		result = toPtr.Elem().Interface()
@@ -174,12 +173,3 @@ func newCloner() *cpController {
 		makeNewClone: true,
 	}
 }
-
-// func newPlainCloner() *cpController {
-//	return &cpController{
-//		valueConverters:            defaultValueConverters(),
-//		valueCopiers:               defaultValueCopiers(),
-//		copyFunctionResultToTarget: true,
-//		makeNewClone:               true,
-//	}
-// }

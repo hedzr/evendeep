@@ -3,11 +3,25 @@ package evendeep_test
 import (
 	"fmt"
 	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
 	"reflect"
 	"testing"
 	"time"
 	"unsafe"
 )
+
+func TestFlagsRevert(t *testing.T) {
+	var saved = evendeep.DefaultCopyController.Flags().Clone()
+	evendeep.DefaultCopyController.Flags().WithFlags(cms.SliceCopyAppend)
+	evendeep.DefaultCopyController.SetFlags(saved)
+
+	if c, ok := evendeep.New().(interface{ Flags() flags.Flags }); ok {
+		nf := c.Flags()
+		b := reflect.DeepEqual(evendeep.DefaultCopyController.Flags(), nf)
+		evendeep.AssertYes(t, b, nf, evendeep.DefaultCopyController.Flags())
+	}
+}
 
 func TestWithXXX(t *testing.T) {
 
