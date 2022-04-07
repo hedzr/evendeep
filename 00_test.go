@@ -417,27 +417,17 @@ func TestValueValid(t *testing.T) {
 
 //
 
-func TestFlagsRevert(t *testing.T) {
-	var saved = DefaultCopyController.flags.Clone()
-	DefaultCopyController.flags.WithFlags(cms.SliceCopyAppend)
-	DefaultCopyController.flags = saved
+//
 
-	nf := newDeepCopier().flags
-	b := reflect.DeepEqual(DefaultCopyController.flags, nf)
-	assertYes(t, b, nf, DefaultCopyController.flags)
-}
+//
 
-func assertYes(t *testing.T, b bool, expect, got interface{}) {
+//
+
+func AssertYes(t *testing.T, b bool, expect, got interface{}) {
 	if !b {
 		t.Fatalf("expecting %v but got %v", expect, got)
 	}
 }
-
-//
-
-//
-
-//
 
 // NewForTest creates a new copier with most common options.
 func NewForTest() DeepCopier {
