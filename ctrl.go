@@ -204,11 +204,16 @@ func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController 
 	return c
 }
 
-// func (c *cpController) isIgnoreName(name string) (yes bool) {
-//	for _, x := range c.ignoreNames {
-//		if yes = isWildMatch(name, x); yes {
-//			break
-//		}
-//	}
-//	return
-// }
+func (c *cpController) Flags() flags.Flags     { return c.flags }
+func (c *cpController) SetFlags(f flags.Flags) { c.flags = f }
+
+// SaveFlagsAndRestore is a defer-function so the best usage is:
+//
+//    defer c.SaveFlagsAndRestore()()
+//
+func (c *cpController) SaveFlagsAndRestore() func() {
+	var saved = c.flags.Clone()
+	return func() {
+		c.flags = saved
+	}
+}
