@@ -273,7 +273,7 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 }
 
 func (d *info) testvisited(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
-	if lv.CanAddr() && rv.CanAddr() && kindis(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+	if lv.CanAddr() && rv.CanAddr() && tool.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
 		addr2 := unsafe.Pointer(rv.UnsafeAddr())
 		if uintptr(addr1) > uintptr(addr2) {

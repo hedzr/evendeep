@@ -37,14 +37,14 @@ func (n structField) String() string {
 
 //
 
-func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
-	for _, kk := range kinds {
-		if yes = k == kk; yes {
-			break
-		}
-	}
-	return
-}
+// func kindis(k reflect.Kind, kinds ...reflect.Kind) (yes bool) {
+// 	for _, kk := range kinds {
+// 		if yes = k == kk; yes {
+// 			break
+// 		}
+// 	}
+// 	return
+// }
 
 // func typfmtlite(v *reflect.Value) string {
 // 	// v := reflect.ValueOf(val)

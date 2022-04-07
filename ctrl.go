@@ -77,15 +77,6 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	return
 }
 
-func kindis(k reflect.Kind, list ...reflect.Kind) bool {
-	for _, l := range list {
-		if k == l {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *cpController) copyToInternal(
 	params *Params, from, to reflect.Value,
 	cb func(c *cpController, params *Params, from, to reflect.Value) (err error),
@@ -103,7 +94,7 @@ func (c *cpController) copyToInternal(
 		return
 	}
 
-	if from.CanAddr() && to.CanAddr() && kindis(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+	if from.CanAddr() && to.CanAddr() && tool.KindIs(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(from.UnsafeAddr())
 		addr2 := unsafe.Pointer(to.UnsafeAddr())
 		if uintptr(addr1) > uintptr(addr2) {
