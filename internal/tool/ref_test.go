@@ -2,6 +2,7 @@ package tool_test
 
 import (
 	"github.com/hedzr/evendeep/internal/tool"
+
 	"reflect"
 	"testing"
 )
@@ -16,7 +17,7 @@ func TestRdecode(t *testing.T) {
 	vc := reflect.ValueOf(c)
 	t.Logf("         vc (%v (%v)) : %v, &b = %v, c = %v, *c -> %v", vc.Kind(), vc.Type(), vc.Interface(), &b, c, *c)
 
-	var ii interface{}
+	var ii interface{} // nolint:gosimple
 
 	ii = c
 
@@ -26,7 +27,7 @@ func TestRdecode(t *testing.T) {
 	vv, prev := tool.Rdecode(vi)
 	t.Logf("          vv (%v (%v)) : %v, &b = %v [ rdecode(vi) ]", vc.Kind(), vv.Type(), vv.Interface(), &b)
 	value := prev.Interface()
-	valptr := value.(*int)
+	valptr := value.(*int) //nolint:errcheck
 	t.Logf("       prev (%v (%v)) : %v -> %v", prev.Kind(), prev.Type(), value, *valptr)
 
 	// A result likes:
@@ -44,7 +45,7 @@ func Test1(t *testing.T) {
 	vb := reflect.ValueOf(b)
 	t.Logf("vb (%v (%v)) : %v, &b = %v", vb.Kind(), vb.Type(), vb.Interface(), &b)
 
-	var ii interface{}
+	var ii interface{} // nolint:gosimple
 
 	ii = b
 	vi := reflect.ValueOf(&ii)
@@ -53,6 +54,8 @@ func Test1(t *testing.T) {
 	t.Logf("vi (%v (%v)) : %v, &b = %v", vi.Kind(), vi.Type(), vi.Interface(), &b)
 	vi = vi.Elem()
 	t.Logf("vi (%v (%v)) : %v, &b = %v", vi.Kind(), vi.Type(), vi.Interface(), &b)
+
+	// nolint:gocritic //no
 	// var up = vi.Addr()
 	// t.Logf("up = %v", up)
 }
@@ -79,6 +82,7 @@ func TestRskipRdecodeAndSoOn(t *testing.T) {
 	var prev reflect.Value
 	v2 := reflect.ValueOf(&ii)
 
+	// nolint:gocritic //no
 	// c := newCopier()
 
 	v2, prev = tool.Rskip(v2, reflect.Interface, reflect.Ptr)
@@ -89,6 +93,7 @@ func TestRskipRdecodeAndSoOn(t *testing.T) {
 	v2, prev = tool.Rdecode(v2)
 	t.Logf("v2 (%v (%v)) : %v, prev (%v %v)", v2.Kind(), v2.Type(), v2.Interface(), prev.Kind(), prev.Type())
 
+	// nolint:gocritic //no
 	// var up = vi.Addr()
 	// t.Logf("up = %v", up)
 }

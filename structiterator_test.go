@@ -2,14 +2,15 @@ package evendeep
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/dbglog"
-	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 )
 
 func TestIgnoredpackageprefixesContains(t *testing.T) {
@@ -333,7 +334,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 		new(User),
 	} {
 		sb.WriteString("\n")
-		v1 := reflect.ValueOf(&tgt)
+		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
 		for i := 0; ; i++ {
@@ -366,7 +367,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 		new(User),
 	} {
 		sb.WriteString("\n\n\n")
-		v1 := reflect.ValueOf(&tgt)
+		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
@@ -413,7 +414,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 		},
 	} {
 		sb.WriteString("\n\n\n")
-		v1 := reflect.ValueOf(&tgt)
+		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
@@ -454,6 +455,7 @@ func teststructiteratorNextA4New(t *testing.T) {
 	}
 
 	t.Logf(sb.String())
+	//nolint:goconst
 	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
 1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
@@ -710,10 +712,10 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
-	var sb strings.Builder
-	defer func() {
-		t.Logf("\n%v\n", sb.String())
-	}()
+	// var sb strings.Builder
+	// defer func() {
+	// 	t.Logf("\n%v\n", sb.String())
+	// }()
 
 	for _, a4 := range []*Employee2{
 		new(Employee2),
@@ -730,24 +732,24 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 		//	Valid:  true,
 		// },
 	} {
-		sb.WriteString("\n")
+		// sb.WriteString("\n")
 
-		v4 := reflect.ValueOf(&a4)
+		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
 		var sourcefields fieldstable
 		sourcefields.getallfields(v4, true)
 
-		var sb strings.Builder
-		defer func() { t.Log(sb.String()) }()
+		var sb1 strings.Builder
+		// defer func() { t.Log(sb.String()) }()
 
 		for i, f := range sourcefields.tablerecords {
-			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
+			_, _ = fmt.Fprintf(&sb1, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
 				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 			)
 		}
 
-		if sb.String() != `0. Base.Name, [0 0] | string (string), "", ""
+		if sb1.String() != `0. Base.Name, [0 0] | string (string), "", ""
 1. Base.Birthday, [1 0] | *time.Time (ptr), "", ""
 2. Base.Age, [2 0] | int (int), "", ""
 3. Base.EmployeID, [3 0] | int64 (int64), "", ""
@@ -794,7 +796,7 @@ func testfieldstableGetallfieldsEmployee22(t *testing.T) {
 	} {
 		sb.WriteString("\n")
 
-		v4 := reflect.ValueOf(&a4)
+		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
 		var sourcefields fieldstable
 		sourcefields.getallfields(v4, true)
@@ -858,7 +860,7 @@ func testfieldstableGetallfieldsUser(t *testing.T) {
 	} {
 		// sb.WriteString("\n")
 
-		v4 := reflect.ValueOf(&a4)
+		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
 		var sourcefields fieldstable
 		sourcefields.getallfields(v4, true)

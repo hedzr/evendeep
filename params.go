@@ -205,47 +205,47 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 
 func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type) {
 	params.srcType = st
-	if kind := st.Kind(); kind == reflect.Struct {
-		// idx := index
-		// if ownerParams != nil {
-		//	idx += ownerParams.srcOffset
-		// }
-		// params.withIteratorIndex(idx)
-		// //if idx < st.NumField() {
-		// //	t := st.Field(idx)
-		// //	p.srcFieldType = &t
-		// //	p.fieldTags = parseFieldTags(t.Tag)
-		// //	p.srcType = t.Type
-		// //}
-		// //if ownerParams != nil {
-		// //	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		// //		p.srcAnonymous = true
-		// //		p.srcOffset = p.index
-		// //	}
-		// //}
-	}
+	// if kind := st.Kind(); kind == reflect.Struct {
+	// 	// idx := index
+	// 	// if ownerParams != nil {
+	// 	//	idx += ownerParams.srcOffset
+	// 	// }
+	// 	// params.withIteratorIndex(idx)
+	// 	// //if idx < st.NumField() {
+	// 	// //	t := st.Field(idx)
+	// 	// //	p.srcFieldType = &t
+	// 	// //	p.fieldTags = parseFieldTags(t.Tag)
+	// 	// //	p.srcType = t.Type
+	// 	// //}
+	// 	// //if ownerParams != nil {
+	// 	// //	if oft := ownerParams.srcFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+	// 	// //		p.srcAnonymous = true
+	// 	// //		p.srcOffset = p.index
+	// 	// //	}
+	// 	// //}
+	// }
 }
 
 func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 	params.dstType = tt
-	if kind := tt.Kind(); kind == reflect.Struct {
-		// idx := index
-		// if ownerParams != nil {
-		//	idx += ownerParams.dstOffset
-		// }
-		// //if idx < tt.NumField() {
-		// //	t := tt.Field(idx)
-		// //	p.dstFieldType = &t
-		// //	p.dstType = t.Type
-		// //}
-		// //if ownerParams != nil {
-		// //	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
-		// //		p.dstAnonymous = true
-		// //		p.dstOffset = p.index
-		// //	}
-		// //}
-		// //} else if ownerParams != nil && ownerParams.dstFieldType != nil {
-	}
+	// if kind := tt.Kind(); kind == reflect.Struct {
+	// 	// idx := index
+	// 	// if ownerParams != nil {
+	// 	//	idx += ownerParams.dstOffset
+	// 	// }
+	// 	// //if idx < tt.NumField() {
+	// 	// //	t := tt.Field(idx)
+	// 	// //	p.dstFieldType = &t
+	// 	// //	p.dstType = t.Type
+	// 	// //}
+	// 	// //if ownerParams != nil {
+	// 	// //	if oft := ownerParams.dstFieldType; oft != nil && oft.Anonymous && oft.Type.Kind() == reflect.Struct {
+	// 	// //		p.dstAnonymous = true
+	// 	// //		p.dstOffset = p.index
+	// 	// //	}
+	// 	// //}
+	// 	// //} else if ownerParams != nil && ownerParams.dstFieldType != nil {
+	// }
 }
 
 // addChildParams does link this params into parent params
@@ -312,7 +312,7 @@ func (params *Params) revoke() {
 //	return *params.dstOwner
 // }
 
-func (params *Params) isStruct() bool {
+func (params *Params) isStruct() bool { //nolint:unused
 	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil
 }
 

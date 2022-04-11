@@ -3,14 +3,6 @@ package evendeep
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/evendeep/diff"
-	"github.com/hedzr/evendeep/flags"
-	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/dbglog"
-	"github.com/hedzr/evendeep/internal/tool"
-	"github.com/hedzr/log"
-	"gopkg.in/hedzr/errors.v3"
 	"math"
 	"math/big"
 	mrand "math/rand"
@@ -21,6 +13,15 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/diff"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/log"
+	"gopkg.in/hedzr/errors.v3"
 )
 
 // TestLogNormal _
@@ -166,8 +167,8 @@ func TestInspectStruct(t *testing.T) {
 func TestParamsBasics(t *testing.T) {
 
 	t.Run("basics 1", func(t *testing.T) {
-		p1 := newParams()
-		p1 = newParams(withOwnersSimple(nil, nil))
+		// p1 := newParams() // nolint:ineffassign
+		p1 := newParams(withOwnersSimple(nil, nil))
 
 		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
 		t.Logf("p2: %v", p2)
@@ -178,8 +179,8 @@ func TestParamsBasics(t *testing.T) {
 	})
 
 	t.Run("basics 2", func(t *testing.T) {
-		p1 := newParams()
-		p1 = newParams(withOwnersSimple(nil, nil))
+		// p1 := newParams() // nolint:ineffassign
+		p1 := newParams(withOwnersSimple(nil, nil))
 
 		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
 		defer p2.revoke()
@@ -193,9 +194,9 @@ func TestParamsBasics(t *testing.T) {
 			fld := v.Type().Field(i)
 			fldTags := parseFieldTags(fld.Tag, "")
 			if !p2.isFlagExists(cms.Ignore) {
-				t.Logf("%q flags: %v", fld.Tag, fldTags)
+				t.Logf("%q flags: %v [without ignore]", fld.Tag, fldTags)
 			} else {
-				t.Logf("%q flags: %v", fld.Tag, fldTags)
+				t.Logf("%q flags: %v [ignore]", fld.Tag, fldTags)
 			}
 			testDeepEqual(t.Errorf, fldTags.flags, expects[i])
 		}
@@ -206,16 +207,16 @@ func TestParamsBasics(t *testing.T) {
 func TestParamsBasics3(t *testing.T) {
 
 	t.Run("basics 3", func(t *testing.T) {
-		p1 := newParams()
-		p1 = newParams(withOwnersSimple(nil, nil))
+		// p1 := newParams() // nolint:ineffassign
+		p1 := newParams(withOwnersSimple(nil, nil))
 
 		p2 := newParams(withOwners(p1.controller, p1, nil, nil, nil, nil))
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     flags.Flags     `copy:",cleareq,must"`
-			converter *ValueConverter `copy:",ignore"`
-			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"`
+			flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck
+			converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck
+			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
@@ -229,7 +230,7 @@ func TestParamsBasics3(t *testing.T) {
 		// ft.Parse(sf0.Tag) // entering 'continue' branch
 		// ft.Parse(sf1.Tag) // entering 'delete' branch
 
-		var z *fieldTags
+		var z *fieldTags // nolint:gosimple
 		z = fldTags
 
 		z.isFlagExists(cms.SliceCopy)
@@ -298,8 +299,8 @@ func TestDeferCatchers(t *testing.T) {
 
 		c := newCopier()
 
-		p1 := newParams()
-		p1 = newParams(withOwnersSimple(c, nil))
+		// p1 := newParams()
+		p1 := newParams(withOwnersSimple(c, nil))
 
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
@@ -334,7 +335,7 @@ func TestDeferCatchers(t *testing.T) {
 		// ec := errors.New("error container")
 
 		err := copyStructInternal(c, nil, svv, dvv,
-			func(paramsChild *Params, ec errors.Error, i, amount int, padding string) (err error) {
+			func(paramsChild *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 				paramsChild.nextTargetField()
 				slicePanic()
 				return
@@ -385,7 +386,7 @@ func TestValueValid(t *testing.T) {
 	var ival int
 	var pival *int
 	type A struct {
-		ival int
+		ival int //nolint:unused,structcheck
 	}
 	var aval A
 	var paval *A
@@ -423,7 +424,7 @@ func TestValueValid(t *testing.T) {
 
 //
 
-func AssertYes(t *testing.T, b bool, expect, got interface{}) {
+func HelperAssertYes(t *testing.T, b bool, expect, got interface{}) { //nolint:thelper
 	if !b {
 		t.Fatalf("expecting %v but got %v", expect, got)
 	}
@@ -431,7 +432,8 @@ func AssertYes(t *testing.T, b bool, expect, got interface{}) {
 
 // NewForTest creates a new copier with most common options.
 func NewForTest() DeepCopier {
-	copier := New(
+	// nolint:staticcheck
+	copier := New( // nolint:ineffassign
 		WithValueConverters(&toDurationConverter{}),
 		WithValueCopiers(&toDurationConverter{}),
 
@@ -541,9 +543,9 @@ func NewTestCase(
 type ExtrasOpt func(tc *TestCase)
 
 // RunTestCasesWith _
-func RunTestCasesWith(tc *TestCase) (desc string, subtest func(t *testing.T)) {
+func RunTestCasesWith(tc *TestCase) (desc string, helperSubtest func(t *testing.T)) {
 	desc = tc.description
-	subtest = func(t *testing.T) {
+	helperSubtest = func(t *testing.T) { //nolint:thelper
 		c := NewFlatDeepCopier(tc.opts...)
 
 		err := c.CopyTo(&tc.src, &tc.dst)
@@ -652,7 +654,7 @@ func runtestcasesverifier(t *testing.T) Verifier {
 //
 
 type randomizer struct {
-	lastErr error
+	lastErr error //nolint:unused,structcheck
 }
 
 // var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -669,8 +671,8 @@ const (
 	ASCII = AlphabetNumerics + Symbols
 )
 
-var hundred = big.NewInt(100)
-var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano()))
+var hundred = big.NewInt(100)                                            //nolint:unused,deadcode,varcheck
+var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
 var mu sync.Mutex
 var Randtool = &randomizer{}
 
@@ -750,7 +752,7 @@ type Employee struct {
 	Times     int16
 	Born      *int
 	BornU     *uint
-	flags     []byte
+	flags     []byte //nolint:unused,structcheck
 	Bool1     bool
 	Bool2     bool
 	Ro        []int

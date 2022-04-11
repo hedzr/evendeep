@@ -12,12 +12,12 @@ type Field struct {
 }
 
 // GetUnexportedField returns the value of the unexported field
-func (field Field) GetUnexportedField() interface{} {
+func (field *Field) GetUnexportedField() interface{} {
 	return GetUnexportedField(field.Value).Interface()
 }
 
 // SetUnexportedField puts a new value into the unexported field
-func (field Field) SetUnexportedField(value interface{}) {
+func (field *Field) SetUnexportedField(value interface{}) {
 	SetUnexportedField(field.Value, reflect.ValueOf(value))
 }
 

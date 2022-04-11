@@ -9,6 +9,11 @@ func init() { //nolint:gochecknoinits
 	onceInitRoutines.Do(func() {
 		initConverters()
 		initGlobalOperators()
+		for _, fn := range otherRoutines {
+			if fn != nil {
+				fn()
+			}
+		}
 	})
 }
 

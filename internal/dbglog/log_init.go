@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func init() { //nolint:gochecknoinits
+func init() { //nolint:gochecknoinits //no
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
 
 	// enable debug level for hedzr/log and log.

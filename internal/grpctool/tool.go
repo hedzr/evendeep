@@ -18,9 +18,6 @@ import (
 // utcTimeNanoSeconds is a value in nanoseconds.
 //
 func Int64ToTime(utcTimeNanoSeconds int64) (tm time.Time) {
-	// if utcTime == DefaultNilTimeNano {
-	// 	return time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
-	// }
 	return time.Unix(0, utcTimeNanoSeconds)
 }
 
@@ -72,7 +69,7 @@ func DecodeZigZagInt(b []byte) (r int64, ate int) {
 			r += int64(uint64(b1)) << sh
 			break
 		} else {
-			r += int64(b1&0x7f) << sh //nolint:gomnd
+			r += int64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
 			sh += 7
 			ate++
 		}
@@ -91,7 +88,7 @@ func DecodeZigZagUint(b []byte) (r uint64, ate int) {
 			r += uint64(b1) << sh
 			break
 		} else {
-			r += uint64(b1&0x7f) << sh //nolint:gomnd
+			r += uint64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
 			sh += 7
 			ate++
 		}

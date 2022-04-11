@@ -8,7 +8,7 @@ import (
 	"github.com/hedzr/evendeep/typ"
 	"github.com/hedzr/log"
 
-	"gopkg.in/hedzr/errors.v3"
+	"gopkg.in/hedzr/errors.v3" //nolint:typecheck
 
 	"reflect"
 	"unsafe"
@@ -61,7 +61,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
-			kind := from.Kind() // Log(" - from.type: %v", kind)
+			kind := from.Kind()
 			if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
 				if fn, ok := copyToRoutines[kind]; ok && fn != nil {
 					err = fn(c, params, from, to)
@@ -79,7 +79,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 
 func (c *cpController) copyToInternal(
 	params *Params, from, to reflect.Value,
-	cb func(c *cpController, params *Params, from, to reflect.Value) (err error),
+	cb copyfn,
 ) (err error) {
 	// Return is from value is invalid
 	if !from.IsValid() {
@@ -116,6 +116,7 @@ func (c *cpController) copyToInternal(
 		}
 	}
 
+	// nolint:gocritic //no
 	// fromType := c.indirectType(from.Type())
 	// toType := c.indirectType(to.Type())
 
@@ -167,7 +168,7 @@ func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (p
 }
 
 func (c *cpController) testCloneables1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) {
-	if dc, ok := fromObj.(Cloneable); ok {
+	if dc, ok := fromObj.(Cloneable); ok { //nolint:gocritic // no need to rewrite to 'switch'
 		to.Set(reflect.ValueOf(dc.Clone()))
 		processed = true
 	} else if dc, ok := fromObj.(DeepCopyable); ok {
@@ -177,7 +178,7 @@ func (c *cpController) testCloneables1(params *Params, fromObj interface{}, to r
 	return
 }
 
-func (c *cpController) withConverters(cvt ...ValueConverter) *cpController {
+func (c *cpController) withConverters(cvt ...ValueConverter) *cpController { //nolint:unused
 	for _, cc := range cvt {
 		if cc != nil {
 			c.valueConverters = append(c.valueConverters, cc)
@@ -186,7 +187,7 @@ func (c *cpController) withConverters(cvt ...ValueConverter) *cpController {
 	return c
 }
 
-func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController {
+func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController { //nolint:unused
 	for _, cc := range cvt {
 		if cc != nil {
 			c.valueCopiers = append(c.valueCopiers, cc)

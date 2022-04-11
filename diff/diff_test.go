@@ -2,8 +2,9 @@ package diff_test
 
 import (
 	"github.com/hedzr/evendeep/diff"
-	"github.com/hedzr/evendeep/diff/testdata"
+	"github.com/hedzr/evendeep/diff/testdata" //nolint:typecheck
 	"github.com/hedzr/evendeep/internal/tool"
+
 	"reflect"
 	"testing"
 	"time"
@@ -61,8 +62,8 @@ func (c *timeComparer) Match(typ reflect.Type) bool {
 }
 
 func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff.Path) (equal bool) {
-	aTime := lhs.Interface().(time.Time)
-	bTime := rhs.Interface().(time.Time)
+	aTime := lhs.Interface().(time.Time) //nolint:errcheck //no
+	bTime := rhs.Interface().(time.Time) //nolint:errcheck //no
 	if equal = aTime.Equal(bTime); !equal {
 		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: tool.Typfmtvlite(&lhs)})
 	}
@@ -194,15 +195,15 @@ func TestPrettyDiff(t *testing.T) {
 			nil,
 		},
 		{
-			time.Date(2018, 7, 24, 14, 06, 59, 0, &time.Location{}),
-			time.Date(2018, 7, 24, 14, 06, 59, 0, time.UTC),
+			time.Date(2018, 7, 24, 14, 6, 59, 0, &time.Location{}),
+			time.Date(2018, 7, 24, 14, 6, 59, 0, time.UTC),
 			"",
 			true,
 			nil,
 		},
 		{
 			time.Date(2017, 1, 1, 0, 0, 0, 0, &time.Location{}),
-			time.Date(2018, 7, 24, 14, 06, 59, 0, time.UTC),
+			time.Date(2018, 7, 24, 14, 6, 59, 0, time.UTC),
 			"modified:  = 2018-07-24 14:06:59 +0000 UTC (time.Time) (Old: 2017-01-01 00:00:00 +0000 UTC)\n",
 			false,
 			nil,

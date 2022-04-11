@@ -96,7 +96,7 @@ retry:
 }
 
 func canElem(k reflect.Kind) bool {
-	switch k { //nolint:exhaustive
+	switch k { //nolint:exhaustive //others unlisted cases can be ignored
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Ptr, reflect.Slice:
 		return true
 	}
@@ -154,13 +154,11 @@ func KindIs(k reflect.Kind, list ...reflect.Kind) bool {
 }
 
 func Typfmtvlite(v *reflect.Value) string {
-	// v := reflect.ValueOf(val)
-
 	if v == nil || !v.IsValid() {
-		return "<invalid>" //nolint:goconst
+		return "<invalid>" //nolint:goconst //why need const it?
 	}
 	t := v.Type()
-	return fmt.Sprintf("%v", t)
+	return fmt.Sprintf("%v", t) //nolint:gocritic //safe string with fmt lib
 }
 
 func Typfmtv(v *reflect.Value) string {
@@ -175,7 +173,7 @@ func Typfmt(t reflect.Type) string {
 	return fmt.Sprintf("%v (%v)", t, t.Kind())
 }
 
-func Typfmtptr(t *reflect.Type) string {
+func Typfmtptr(t *reflect.Type) string { //nolint:gocritic //ptrToRefParam: consider `t' to be of non-pointer type
 	if t == nil {
 		return "???"
 	}
@@ -230,7 +228,7 @@ var Niltyp = reflect.TypeOf((*string)(nil))
 // IsZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
 func IsZero(v reflect.Value) (ret bool) {
-	switch k := v.Kind(); k { //nolint:exhaustive
+	switch k := v.Kind(); k { //nolint:exhaustive //others unlisted cases can be ignored
 	case reflect.Bool:
 		ret = !v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -275,7 +273,7 @@ func ArrayIsZero(v reflect.Value) bool {
 // IsNil for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsNil
 func IsNil(v reflect.Value) bool {
-	switch k := v.Kind(); k { //nolint:exhaustive
+	switch k := v.Kind(); k { //nolint:exhaustive //no
 	case reflect.Uintptr:
 		if v.CanAddr() {
 			return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!

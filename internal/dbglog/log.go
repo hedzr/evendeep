@@ -5,6 +5,6 @@ package dbglog
 
 var LogValid bool
 
-func Log(format string, args ...interface{}) { //nolint:goprintffuncname
+func Log(format string, args ...interface{}) { //nolint:goprintffuncname ..no
 
 }

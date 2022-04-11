@@ -53,15 +53,6 @@ func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
 	for _, f := range flg {
 		flags[f] = true
 		toggleTheRadio(f, flags)
-		// if m, ok := mKnownFieldTagFlagsConflict[f]; ok {
-		//	for fx := range m {
-		//		if fx != f {
-		//			if _, has := flags[fx]; has {
-		//				flags[fx] = false
-		//			}
-		//		}
-		//	}
-		// }
 	}
 	return flags
 }
@@ -111,7 +102,7 @@ func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMe
 			result = leader
 		}
 	}
-	return //nolint:nakedret
+	return
 }
 
 func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
@@ -167,7 +158,7 @@ func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) {
 			}
 		}
 	}
-	return //nolint:nakedret
+	return //nolint:nakedret //no
 }
 
 func (flags Flags) IsAnyFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
@@ -198,7 +189,6 @@ func toggleTheRadio(f cms.CopyMergeStrategy, flags Flags) {
 			if fx != f {
 				if _, ok = flags[fx]; ok {
 					delete(flags, fx)
-					// flags[fx] = false
 				}
 			}
 		}
@@ -253,5 +243,5 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule str
 			flags[k] = true
 		}
 	}
-	return //nolint:nakedret
+	return //nolint:nakedret //no
 }

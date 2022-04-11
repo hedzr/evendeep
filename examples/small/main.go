@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"unsafe"
 
 	"github.com/hedzr/evendeep"
@@ -45,11 +44,9 @@ func main() {
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", tgt)
 	evendeep.Copy(x1, &tgt, evendeep.WithStrategiesReset())
-	if reflect.DeepEqual(tgt, *expect1) == false {
-		if delta, ok := diff.New(*expect1, x1); !ok {
-			log.Errorf("want %v but got %v", expect1, tgt)
-			log.Panicf("The diffs:\n%v", delta)
-		}
+	if delta, ok := evendeep.DeepDiff(*expect1, x1); !ok {
+		log.Errorf("want %v but got %v", expect1, tgt)
+		log.Panicf("The diffs:\n%v", delta)
 	}
 
 	x2 := X2{N: []int{23, 8}}
@@ -81,13 +78,11 @@ func main() {
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", x2)
 	evendeep.Copy(x1, &x2)
-	if reflect.DeepEqual(*expect2, x2) == false {
-		if delta, ok := diff.New(*expect2, x2); !ok {
-			log.Errorf("want: %v", *expect2)
-			log.Errorf(" got: %v", x2)
-			fmt.Println(delta)
-			panic("unmatched")
-		}
+	if delta, ok := diff.New(*expect2, x2); !ok {
+		log.Errorf("want: %v", *expect2)
+		log.Errorf(" got: %v", x2)
+		fmt.Println(delta)
+		panic("unmatched")
 	}
 }
 

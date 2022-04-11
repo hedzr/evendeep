@@ -2,24 +2,29 @@ package evendeep_test
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep"
-	"github.com/hedzr/evendeep/flags"
-	"github.com/hedzr/evendeep/flags/cms"
 	"reflect"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
 )
+
+type FF interface {
+	Flags() flags.Flags
+}
 
 func TestFlagsRevert(t *testing.T) {
 	var saved = evendeep.DefaultCopyController.Flags().Clone()
 	evendeep.DefaultCopyController.Flags().WithFlags(cms.SliceCopyAppend)
 	evendeep.DefaultCopyController.SetFlags(saved)
 
-	if c, ok := evendeep.New().(interface{ Flags() flags.Flags }); ok {
+	if c, ok := evendeep.New().(FF); ok {
 		nf := c.Flags()
 		b := reflect.DeepEqual(evendeep.DefaultCopyController.Flags(), nf)
-		evendeep.AssertYes(t, b, nf, evendeep.DefaultCopyController.Flags())
+		evendeep.HelperAssertYes(t, b, nf, evendeep.DefaultCopyController.Flags())
 	}
 }
 
@@ -178,7 +183,7 @@ func TestDeepCopyGenerally(t *testing.T) {
 
 	t.Run("MakeClone()", func(t *testing.T) {
 
-		var ret interface{}
+		var ret interface{} // nolint:gosimple
 		// x2 := &X2{N: nn[1:3]}
 
 		ret = evendeep.MakeClone(&x1)

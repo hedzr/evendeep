@@ -96,9 +96,9 @@ var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
 func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		c.flags = flags.New()
-		for _, f := range flagsList {
-			if _, ok := c.flags[f]; ok {
-				c.flags[f] = false
+		for _, fx := range flagsList {
+			if _, ok := c.flags[fx]; ok {
+				c.flags[fx] = false
 			}
 		}
 	}

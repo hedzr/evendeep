@@ -40,9 +40,9 @@ var (
 	// These values are valid before golang commit 90a7c3c86944 which
 	// changed their positions.  Code in the init function updates these
 	// flags as necessary.
-	flagKindWidth = uintptr(5)                 //nolint:gomnd
-	flagKindShift = uintptr(flagKindWidth - 1) //nolint:unconvert
-	flagRO        = uintptr(1 << 0)
+	flagKindWidth = uintptr(5)                 // nolint:gomnd
+	flagKindShift = uintptr(flagKindWidth - 1) // nolint:unconvert
+	flagRO        = uintptr(1 << 0)            // nolint:unused
 	flagIndir     = uintptr(1 << 1)
 )
 

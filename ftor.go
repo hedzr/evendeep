@@ -1,5 +1,8 @@
 package evendeep
 
+// ftor.go - functors
+//
+
 import (
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
@@ -62,7 +65,7 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 }
 
 func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	if tool.IsNil(from) { //nolint:gocritic
+	if tool.IsNil(from) { //nolint:gocritic // no need to switch to 'switch' clause
 		if params.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) {
 			return
 		}
@@ -91,8 +94,8 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 		dbglog.Log("  to.type: %v, decode to: %v (ptr: %v) | CanSet: %v, CanAddr: %v", to.Type().Kind(), toind.Kind(), toptr.Kind(), toind.CanSet(), toind.CanAddr())
 
 		// var merging = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
-		//nolint:gocritic
-		if paramsChild.inMergeMode() || c.makeNewClone == false {
+		//nolint:gocritic // no need to switch to 'switch' clause
+		if paramsChild.inMergeMode() || !c.makeNewClone {
 			err = c.copyTo(paramsChild, *paramsChild.srcDecoded, toptr)
 		} else if to.CanSet() {
 			copyValue := reflect.New(paramsChild.srcDecoded.Type()).Elem()
@@ -118,7 +121,7 @@ func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err er
 func copyStructInternal(
 	c *cpController, params *Params,
 	from, to reflect.Value,
-	fn func(paramsChild *Params, ec errors.Error, i, amount int, padding string) (err error),
+	fn func(paramsChild *Params, ec errors.Error, i, amount *int, padding string) (err error),
 ) (err error) {
 	var (
 		i, amount   int
@@ -132,7 +135,7 @@ func copyStructInternal(
 
 	defer func() {
 		if e := recover(); e != nil {
-			sst := paramsChild.targetIterator.(sourceStructFieldsTable)
+			sst := paramsChild.targetIterator.(sourceStructFieldsTable) //nolint:errcheck //yes
 
 			ff := sst.TableRecord(i).FieldValue()
 			var tf = paramsChild.dstOwner
@@ -174,8 +177,7 @@ func copyStructInternal(
 	switch k := paramsChild.dstDecoded.Kind(); k { //nolint:exhaustive
 	case reflect.Slice:
 		dbglog.Log("     * struct -> slice case, ...")
-		//nolint:gocritic
-		if paramsChild.dstDecoded.Len() > 0 {
+		if paramsChild.dstDecoded.Len() > 0 { //nolint:gocritic // no need to switch to 'switch' clause
 			err = c.copyTo(paramsChild, *paramsChild.srcOwner, paramsChild.dstDecoded.Index(0))
 		} else if paramsChild.isGroupedFlagOKDeeply(cms.SliceCopyAppend, cms.SliceMerge) {
 			err = cpStructToNewSliceElem0(paramsChild)
@@ -210,7 +212,7 @@ func copyStructInternal(
 		return
 	}
 
-	err = fn(paramsChild, ec, i, amount, padding)
+	err = fn(paramsChild, ec, &i, &amount, padding)
 	ec.Attach(err)
 	return //nolint:nakedret
 }
@@ -234,11 +236,11 @@ func cpStructToNewSliceElem0(params *Params) (err error) {
 	return
 }
 
-func forEachField(params *Params, ec errors.Error, i, amount int, padding string) (err error) {
-	sst := params.targetIterator.(sourceStructFieldsTable)
+func forEachField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
+	sst := params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
 	c := params.controller
 
-	for i, amount = 0, len(sst.TableRecords()); i < amount; i++ {
+	for *i, *amount = 0, len(sst.TableRecords()); *i < *amount; *i++ {
 		if params.sourceFieldShouldBeIgnored() {
 			sst.Step(1) // step the source field index(pointer) backward
 			continue
@@ -272,7 +274,7 @@ func forEachField(params *Params, ec errors.Error, i, amount int, padding string
 			toobjcopyptrv := reflect.New(*typ).Elem()
 			dbglog.Log("    toobjcopyptrv: %v", tool.Typfmtv(&toobjcopyptrv))
 
-			//nolint:gocritic
+			//nolint:gocritic // no need to switch to 'switch' clause
 			if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
 				ec.Attach(err)
 				log.Errorf("error: %v", err)
@@ -296,17 +298,19 @@ func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, ar
 	if logger == nil {
 		logger = dbglog.Log
 	}
-	d := params.depth()
-	if d > 1 {
-		d -= 2
+	if log.VerboseEnabled {
+		d := params.depth()
+		if d > 1 {
+			d -= 2
+		}
+		padding1 := strings.Repeat("  ", d*2) //nolint:gomnd
+		// fromT, toT := params.srcDecoded.Type(), params.dstDecoded.Type()
+		// Log(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
+		// fq := dbgMakeInfoString(fromT, params.owner, true, logger)
+		// dq := dbgMakeInfoString(toT, params.owner, false, logger)
+		logger(" %s- src (%v) -> dst (%v)", padding1, tool.Typfmtv(params.srcDecoded), tool.Typfmtv(params.dstDecoded))
+		// logger(" %s  %s -> %s", padding, fq, dq)
 	}
-	padding = strings.Repeat("  ", d*2) //nolint:gomnd
-	// fromT, toT := params.srcDecoded.Type(), params.dstDecoded.Type()
-	// Log(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
-	// fq := dbgMakeInfoString(fromT, params.owner, true, logger)
-	// dq := dbgMakeInfoString(toT, params.owner, false, logger)
-	logger(" %s- src (%v) -> dst (%v)", padding, tool.Typfmtv(params.srcDecoded), tool.Typfmtv(params.dstDecoded))
-	// logger(" %s  %s -> %s", padding, fq, dq)
 }
 
 // func dbgMakeInfoString(typ reflect.Type, params *Params, src bool, logger func(msg string, args ...interface{})) (qstr string) {
@@ -329,7 +333,11 @@ func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, ar
 //	return
 // }
 
-func invokeStructFieldTransformer(c *cpController, params *Params, ff, df *reflect.Value, dftyp *reflect.Type, padding string) (err error) {
+func invokeStructFieldTransformer(
+	c *cpController, params *Params, ff, df *reflect.Value,
+	dftyp *reflect.Type, //nolint:gocritic // ptrToRefParam: consider `dftyp' to be of non-pointer type
+	padding string,
+) (err error) {
 	fv, dv := ff != nil && ff.IsValid(), df != nil && df.IsValid()
 	fft, dft := dtypzz(ff, dftyp), dtypzz(df, dftyp)
 	fftk, dftk := fft.Kind(), dft.Kind()
@@ -390,7 +398,7 @@ func forInvalidValues(c *cpController, params *Params, ff *reflect.Value, fft, d
 	return
 }
 
-func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type {
+func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type { //nolint:gocritic // ptrToRefParam: consider `dftyp' to be of non-pointer type
 	if df != nil && df.IsValid() {
 		return df.Type()
 	}
@@ -412,7 +420,11 @@ func checkClearIfEqualOpt(params *Params, ff, df *reflect.Value, dft reflect.Typ
 	return
 }
 
-func tryConverters(c *cpController, params *Params, ff, df *reflect.Value, dftyp *reflect.Type, userDefinedOnly bool) (processed bool, err error) {
+func tryConverters(c *cpController, params *Params,
+	ff, df *reflect.Value,
+	dftyp *reflect.Type, //nolint:gocritic // ptrToRefParam: consider `dftyp' to be of non-pointer type
+	userDefinedOnly bool,
+) (processed bool, err error) {
 	fft, dft := dtypzz(ff, dftyp), dtypzz(df, dftyp)
 	if c.tryApplyConverterAtFirst {
 		if processed, err = findAndApplyConverters(c, params, ff, df, fft, dft, userDefinedOnly); processed {
@@ -510,7 +522,7 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 	defer ec.Defer(&err)
 
 	for _, flag := range []cms.CopyMergeStrategy{cms.SliceMerge, cms.SliceCopyAppend, cms.SliceCopy} {
-		if params.isGroupedFlagOKDeeply(flag) {
+		if params.isGroupedFlagOKDeeply(flag) { //nolint:gocritic // nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
 			// if !to.CanAddr() {
 			//	if params != nil && !params.isStruct() {
 			//		to = *params.dstOwner
@@ -987,7 +999,7 @@ func copyUnsafePointer(c *cpController, params *Params, from, to reflect.Value) 
 
 // copyFunc never used
 // Deprecated always
-func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) { //nolint:deadcode
+func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) { //nolint:unused,deadcode
 	tgt := tool.Rindirect(to)
 	if tgt.CanSet() {
 		tgt.Set(from)
@@ -1037,10 +1049,6 @@ func copyChan(c *cpController, params *Params, from, to reflect.Value) (err erro
 
 //
 
-func copy1(c *cpController, params *Params, from, to reflect.Value) (err error) { //nolint:deadcode
-	return
-}
-
 func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	sourceType, targetType := from.Type(), to.Type()
 
@@ -1084,7 +1092,7 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 		return
 	}
 	if sourceType.AssignableTo(targetType) {
-		if toind.CanSet() { //nolint:gocritic
+		if toind.CanSet() { //nolint:gocritic // no need to switch to 'switch' clause
 			toind.Set(fromind)
 		} else if to.CanSet() {
 			to.Set(fromind)

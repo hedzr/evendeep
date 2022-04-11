@@ -12,13 +12,4 @@ func ReverseStringSlice(s []string) []string {
 		s[i], s[j] = s[j], s[i]
 	}
 	return s
-
-	// // reverse it
-	// i := 0
-	// j := len(a) - 1
-	// for i < j {
-	// 	a[i], a[j] = a[j], a[i]
-	// 	i++
-	// 	j--
-	// }
 }

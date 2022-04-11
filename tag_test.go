@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/tool"
+
 	"reflect"
 	"testing"
 )
@@ -16,9 +17,9 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flags     flags.Flags `copy:",cleareq"`
-	converter *ValueConverter
-	wouldbe   int `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"`
+	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck
+	converter *ValueConverter //nolint:unused,structcheck
+	wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
 }
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
@@ -45,9 +46,9 @@ func subtestParse(t *testing.T) {
 		fld := v.Type().Field(i)
 		ft := parseFieldTags(fld.Tag, "")
 		if !ft.isFlagExists(cms.Ignore) {
-			t.Logf("%q flags: %v", fld.Tag, ft)
+			t.Logf("%q flags: %v [without ignore]", fld.Tag, ft)
 		} else {
-			t.Logf("%q flags: %v", fld.Tag, ft)
+			t.Logf("%q flags: %v [ignore]", fld.Tag, ft)
 		}
 		testDeepEqual(t.Errorf, ft.flags, expects[i])
 	}
@@ -55,9 +56,9 @@ func subtestParse(t *testing.T) {
 
 func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
-		flags     flags.Flags     `copy:",cleareq,must"`
-		converter *ValueConverter `copy:",ignore"`
-		wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"`
+		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck
+		converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck
+		wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
 	}
 	var a AFS1
 	v := reflect.ValueOf(&a)

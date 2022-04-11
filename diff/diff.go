@@ -129,7 +129,7 @@ func (d *info) PrettyPrint() string {
 			lines = append(lines, fmt.Sprintf("added: %s = %v\n", key, val))
 		})
 		for key, val := range d.modified {
-			if val.Old == nil { //nolint:gocritic
+			if val.Old == nil { //nolint:gocritic // no need to switch to 'switch' clausev
 				lines = append(lines, fmt.Sprintf("modified: %s = %v (%v) (Old: nil)\n",
 					key, val.New, val.Typ))
 			} else if val.New == nil {
@@ -249,7 +249,7 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 		return
 	}
 
-	if equal, processed = d.testcomparer(lv, rv, lvt, path, kind); processed {
+	if equal, processed = d.testcomparer(lv, rv, lvt, path); processed {
 		return
 	}
 
@@ -272,7 +272,7 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 	return
 }
 
-func (d *info) testvisited(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
+func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
 	if lv.CanAddr() && rv.CanAddr() && tool.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
 		addr2 := unsafe.Pointer(rv.UnsafeAddr())
@@ -283,7 +283,7 @@ func (d *info) testvisited(lv, rv reflect.Value, typ reflect.Type, path Path, ki
 		}
 
 		// Short circuit if references are already seen.
-		v := visit{addr1, addr2, typ}
+		v := visit{addr1, addr2, typ1}
 		if d.visited[v] {
 			return true, true
 		}
@@ -294,8 +294,8 @@ func (d *info) testvisited(lv, rv reflect.Value, typ reflect.Type, path Path, ki
 	return
 }
 
-func (d *info) testnil(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
-	switch kind { //nolint:exhaustive
+func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
+	switch kind { //nolint:exhaustive //no
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
 		ln, rn := tool.IsNil(lv), tool.IsNil(lv)
 		if ln && rn {
@@ -312,25 +312,25 @@ func (d *info) testnil(lv, rv reflect.Value, typ reflect.Type, path Path, kind r
 	return
 }
 
-func (d *info) testcomparer(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
+func (d *info) testcomparer(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal, processed bool) {
 	var c Comparer
-	if c, processed = d.findComparer(typ); processed {
+	if c, processed = d.findComparer(typ1); processed {
 		equal = c.Equal(d, lv, rv, path)
 	}
 	return
 }
 
-func (d *info) findComparer(typ reflect.Type) (c Comparer, ok bool) {
+func (d *info) findComparer(typ1 reflect.Type) (c Comparer, ok bool) {
 	for _, c = range d.compares {
-		if ok = c.Match(typ); ok {
+		if ok = c.Match(typ1); ok {
 			break
 		}
 	}
 	return
 }
 
-func (d *info) diffw(lv, rv reflect.Value, typ reflect.Type, path Path, kind reflect.Kind) (equal bool) {
-	switch kind { // nolint:exhaustive
+func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal bool) {
+	switch kind { // nolint:exhaustive //no
 	case reflect.Array:
 		equal = d.diffArray(lv, rv, path)
 
@@ -345,7 +345,7 @@ func (d *info) diffw(lv, rv reflect.Value, typ reflect.Type, path Path, kind ref
 		equal = d.diffMap(lv, rv, path)
 
 	case reflect.Struct:
-		equal = d.diffStruct(lv, rv, typ, path)
+		equal = d.diffStruct(lv, rv, typ1, path)
 
 	case reflect.Ptr:
 		equal = d.diffv(lv.Elem(), rv.Elem(), path)
@@ -362,7 +362,7 @@ func (d *info) diffw(lv, rv reflect.Value, typ reflect.Type, path Path, kind ref
 		}
 	}
 
-	return //nolint:nakedret
+	return
 }
 
 func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
@@ -394,10 +394,6 @@ func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 
 func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path Path) (equal bool) {
 	ll, rl := lv.Len(), rv.Len()
-	// if ll != rl {
-	// 	return d.diffArray(lv, rv, path)
-	// }
-
 	equal = true
 	m := make(map[int]bool)
 	for i := 0; i < tool.MinInt(ll, rl); i++ {
@@ -424,7 +420,7 @@ func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path Path) (equal bool) {
 		d.PutAdded(d.mkkey(localPath), tool.Valfmt(&rvit))
 		equal = false
 	}
-	return //nolint:nakedret
+	return
 }
 
 func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
@@ -451,23 +447,11 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 	return
 }
 
-func (d *info) diffStruct(lv, rv reflect.Value, typ reflect.Type, path Path) (equal bool) {
+func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal bool) {
 	equal = true
-
-	// // If the field is time.Time, use Equal to compare
-	// if typ.String() == "time.Time" {
-	// 	aTime := lv.Interface().(time.Time)
-	// 	bTime := rv.Interface().(time.Time)
-	// 	if !aTime.Equal(bTime) {
-	// 		d.PutModified(d.mkkey(path), Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lv)})
-	// 		equal = false
-	// 	}
-	// 	return
-	// }
-
-	for i := 0; i < typ.NumField(); i++ {
+	for i := 0; i < typ1.NumField(); i++ {
 		index := []int{i}
-		field := typ.FieldByIndex(index)
+		field := typ1.FieldByIndex(index)
 		if vk := field.Tag.Get("diff"); vk == "ignore" || vk == "-" { // skip fields marked to be ignored
 			continue
 		}
@@ -481,5 +465,5 @@ func (d *info) diffStruct(lv, rv reflect.Value, typ reflect.Type, path Path) (eq
 			equal = false
 		}
 	}
-	return //nolint:nakedret
+	return
 }

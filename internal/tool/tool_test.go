@@ -2,11 +2,12 @@ package tool_test
 
 import (
 	"bytes"
-	"github.com/hedzr/evendeep/internal/tool"
 	"reflect"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/internal/tool"
 )
 
 func TestMinInt(t *testing.T) {
@@ -132,10 +133,11 @@ type Employee struct {
 	Times     int16
 	Born      *int
 	BornU     *uint
-	flags     []byte
-	Bool1     bool
-	Bool2     bool
-	Ro        []int
+	// nolint:unused
+	flags []byte // nolint:structcheck
+	Bool1 bool
+	Bool2 bool
+	Ro    []int
 }
 
 // X0 type for testing

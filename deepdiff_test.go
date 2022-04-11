@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"github.com/hedzr/evendeep/diff"
+
 	"testing"
 )
 

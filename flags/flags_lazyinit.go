@@ -9,8 +9,10 @@ import (
 // lazyInitFieldTagsFlags _
 func lazyInitFieldTagsFlags() {
 	onceFieldTagsEquip.Do(func() {
+		// nolint:gocritic //no
 		// add := func(s string) { mKnownFieldTagFlags[fieldTagFlag.Parse(s)] = struct{}{} }
 		conflictsAdd := func(ss ...string) {
+			// nolint:gocritic //no
 			// ss := strings.Split(s, ",")
 			if mKnownFieldTagFlagsConflict == nil {
 				mKnownFieldTagFlagsConflict = make(map[cms.CopyMergeStrategy]map[cms.CopyMergeStrategy]struct{})
@@ -42,6 +44,7 @@ func lazyInitFieldTagsFlags() {
 		conflictsAdd("slicecopy", "slicecopyappend", "slicemerge")
 		conflictsAdd("mapcopy", "mapmerge")
 
+		// nolint:gocritic //no
 		// conflictsAdd("clearinvalid")
 		// conflictsAdd("cleareq")
 		// conflictsAdd("keepneq")

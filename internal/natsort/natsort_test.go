@@ -152,7 +152,7 @@ func BenchmarkLess(b *testing.B) {
 // Get 1000 arrays of 10000-string-arrays (less if -short is specified).
 func testSet(seed int) [][]string {
 	gen := &generator{
-		src: rand.New(rand.NewSource(
+		src: rand.New(rand.NewSource( // nolint:gosec //yes,just for test
 			int64(seed),
 		)),
 	}
@@ -198,7 +198,7 @@ func (g *generator) NextString() (str string) {
 		if i == numpos {
 			str += num
 		} else {
-			str += string('a' + g.src.Intn(16))
+			str += string('a' + g.src.Intn(16)) // nolint:govet //yes
 		}
 	}
 	return str

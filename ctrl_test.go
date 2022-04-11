@@ -3,16 +3,18 @@ package evendeep_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/evendeep"
-	"github.com/hedzr/evendeep/diff"
-	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/dbglog"
-	"gopkg.in/hedzr/errors.v3"
+	"io"
 	"math"
 	"reflect"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/diff"
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"gopkg.in/hedzr/errors.v3"
 )
 
 func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
@@ -80,7 +82,7 @@ func (s *ccs) Clone() interface{} {
 	return &ccs{
 		string:  s.string,
 		int:     s.int,
-		float64: &(*s.float64),
+		float64: &(*s.float64), // nolint:staticcheck
 	}
 }
 
@@ -122,7 +124,7 @@ func (s *dcs) DeepCopy() interface{} {
 	return &dcs{
 		string:  s.string,
 		int:     s.int,
-		float64: &(*s.float64),
+		float64: &(*s.float64), // nolint:staticcheck
 	}
 }
 
@@ -229,7 +231,7 @@ func TestSimple(t *testing.T) {
 		//	nil,
 		// ),
 	} {
-		t.Run(evendeep.RunTestCasesWith(&tc))
+		t.Run(evendeep.RunTestCasesWith(&tc)) // nolint:gosec // G601: Implicit memory aliasing in for loop
 	}
 
 }
@@ -452,13 +454,24 @@ func TestTypeConvert3Func(t *testing.T) {
 			8, &b2, nil,
 			opts,
 			func(src, dst, expect interface{}, e error) (err error) {
-				if e != errors.BadRequest {
+				if !errors.Is(e, errors.BadRequest) {
 					err = errors.BadRequest
 				}
 				return
 			},
 		),
 	)
+}
+
+func TestErrorCodeIs(t *testing.T) {
+	var err error = errors.BadRequest
+	if !errors.Is(err, errors.BadRequest) {
+		t.Fatalf("want is")
+	}
+	err = io.ErrClosedPipe
+	if errors.Is(err, errors.BadRequest) {
+		t.Fatalf("want not is")
+	}
 }
 
 func TestStructStdlib(t *testing.T) {
@@ -519,7 +532,7 @@ func TestStructStdlib(t *testing.T) {
 			},
 		),
 	} {
-		t.Run(evendeep.RunTestCasesWith(&tc))
+		t.Run(evendeep.RunTestCasesWith(&tc)) // nolint:gosec // G601: Implicit memory aliasing in for loop
 	}
 
 }
@@ -528,8 +541,8 @@ func TestStructSimple(t *testing.T) {
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
-	a[0] = "Hello"
-	a[1] = "World"
+	a[0] = "Hello" //nolint:goconst
+	a[1] = "World" //nolint:goconst
 	var a3 = [3]string{"Hello", "World"}
 
 	x0 := evendeep.X0{}
@@ -1037,8 +1050,8 @@ func TestMapToString(t *testing.T) {
 	var s3 evendeep.Employee2
 	var str1 string
 
-	var map1 = make(map[string]interface{})
-	map1 = map[string]interface{}{
+	// var map1 = make(map[string]interface{})
+	var map1 = map[string]interface{}{
 		"Name":      "Bob",
 		"Birthday":  tm,
 		"Age":       24,

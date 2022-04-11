@@ -4,6 +4,7 @@ package dbglog_test
 
 import (
 	"github.com/hedzr/log"
+
 	"io"
 	"testing"
 )
@@ -19,7 +20,7 @@ type logCapturer struct {
 }
 
 func (tl logCapturer) Write(p []byte) (n int, err error) {
-	tl.Logf((string)(p))
+	tl.TB.Logf(string(p))
 	return len(p), nil
 }
 

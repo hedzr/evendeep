@@ -49,7 +49,7 @@ func (rec tablerec) ShortFieldName() string {
 	return ""
 }
 
-func (table *fieldstable) shouldIgnore(field reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
+func (table *fieldstable) shouldIgnore(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
 	n := typ.PkgPath()
 	return packageisreserved(n) // ignore golang stdlib, such as "io", "runtime", ...
 }
@@ -103,7 +103,7 @@ func (table *fieldstable) getfields(structValue *reflect.Value, structType refle
 		dbglog.Log(" field %d: %v (%v) (%v)", i, sf.Name, tool.Typfmt(sftyp), tool.Typfmt(sftypind))
 
 		isStruct := sftypind.Kind() == reflect.Struct
-		shouldIgnored := table.shouldIgnore(sf, sftypind, sftypind.Kind())
+		shouldIgnored := table.shouldIgnore(&sf, sftypind, sftypind.Kind())
 
 		if isStruct && table.autoExpandStruct && !shouldIgnored {
 			n := table.getfields(svind, sftypind, sf.Name, i)
@@ -320,7 +320,7 @@ func (s *fieldaccessor) FieldValue() *reflect.Value {
 	}
 	return nil
 }
-func (s *fieldaccessor) FieldType() *reflect.Type {
+func (s *fieldaccessor) FieldType() *reflect.Type { //nolint:gocritic //ptrToRefParam: consider to make non-pointer type for `*reflect.Type`
 	if s != nil {
 		if s.isstruct {
 			sf := s.StructField()
@@ -613,9 +613,9 @@ func (s *structIterator) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (ac
 retryExpand:
 	field := lastone.getStructField()
 	if field != nil {
-		tind := field.Type // rindirectType(field.Type)
+		// tind := field.Type // rindirectType(field.Type)
 		if s.autoExpandStruct {
-			tind = tool.RindirectType(field.Type)
+			tind := tool.RindirectType(field.Type)
 			k1 := tind.Kind()
 			dbglog.Log("typ: %v, name: %v | %v", tool.Typfmt(tind), field.Name, field)
 			if s.autoNew {

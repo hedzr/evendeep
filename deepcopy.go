@@ -9,6 +9,32 @@ import (
 	"reflect"
 )
 
+// New gets a new instance of DeepCopier (the underlying
+// is *cpController) different with DefaultCopyController.
+//
+// Use New:
+//
+//     src, tgt := 123, 0
+//     evendeep.New().CopyTo(src, &tgt)
+//
+// Use package functions:
+//
+//     evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
+//     tgt = evendeep.MakeClone(src)
+//
+// Use DefaultCopyController:
+//
+//     evendeep.DefaultCopyController.CopyTo(src, &tgt)
+//
+func New(opts ...Opt) DeepCopier {
+	// lazyInitRoutines()
+	var c = newDeepCopier()
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
 // Copy is a synonym of DeepCopy.
 //
 // DeepCopy makes a deep clone of a source object or merges it into the target.
@@ -34,7 +60,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 // MakeClone makes a deep clone of a source object.
 func MakeClone(fromObj interface{}) (result interface{}) {
 	if fromObj == nil {
-		return fromObj
+		return nil
 	}
 
 	var (
@@ -88,32 +114,6 @@ var (
 
 	// onceCpController sync.Once
 )
-
-// New gets a new instance of DeepCopier (the underlying
-// is *cpController) different with DefaultCopyController.
-//
-// Use New:
-//
-//     src, tgt := 123, 0
-//     evendeep.New().CopyTo(src, &tgt)
-//
-// Use package functions:
-//
-//     evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
-//     tgt = evendeep.MakeClone(src)
-//
-// Use DefaultCopyController:
-//
-//     evendeep.DefaultCopyController.CopyTo(src, &tgt)
-//
-func New(opts ...Opt) DeepCopier {
-	// lazyInitRoutines()
-	var c = newDeepCopier()
-	for _, opt := range opts {
-		opt(c)
-	}
-	return c
-}
 
 // NewFlatDeepCopier gets a new instance of DeepCopier (the underlying
 // is *cpController) like NewDeepCopier but no merge strategies

@@ -113,7 +113,7 @@ func rToInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 				var fval float64
 				fval, err = strconv.ParseFloat(str, bitSize)
 				if err == nil {
-					ival = int64(math.Floor(fval + 0/5))
+					ival = int64(math.Floor(fval + 0.5)) //nolint:gomnd
 					k := desiredType.Kind()
 					ret = genret(ival, k)
 				}
@@ -169,7 +169,7 @@ func rToUInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, 
 				var fval float64
 				fval, err = strconv.ParseFloat(str, bitSize)
 				if err == nil {
-					ival = uint64(math.Floor(fval + 0/5))
+					ival = uint64(math.Floor(fval + 0.5)) //nolint:gomnd
 					k := desiredType.Kind()
 					ret = genret(ival, k)
 				}
@@ -425,7 +425,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 	return //nolint:nakedret
 }
 
-//nolint:deadcode
+//nolint:unused,deadcode
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
@@ -453,7 +453,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 	return
 }
 
-//nolint:deadcode
+//nolint:unused,deadcode
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
@@ -480,7 +480,7 @@ func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 	return
 }
 
-//nolint:deadcode
+//nolint:unused,deadcode
 func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	ec := errors.New("cannot transform item into map")
 	defer ec.Defer(&err)
@@ -521,8 +521,9 @@ func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desi
 	return //nolint:nakedret
 }
 
+//nolint:unused
 func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.Type) (err error) {
-	if sTyp.AssignableTo(dTyp) { //nolint:gocritic
+	if sTyp.AssignableTo(dTyp) { //nolint:gocritic // no need to switch to 'switch' clause
 		target.SetMapIndex(key, srcVal)
 	} else if sTyp.ConvertibleTo(dTyp) {
 		target.SetMapIndex(key, srcVal.Convert(dTyp))
@@ -533,12 +534,12 @@ func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.
 	return
 }
 
-//nolint:deadcode
+//nolint:unused
 func nameToMapKey(name string, mapType reflect.Type) (key reflect.Value, err error) {
 	nameval := reflect.ValueOf(name)
 	nametyp := nameval.Type()
 
-	if keytyp := mapType.Key(); nametyp.AssignableTo(keytyp) { //nolint:gocritic
+	if keytyp := mapType.Key(); nametyp.AssignableTo(keytyp) { //nolint:gocritic // no need to switch to 'switch' clause
 		key = nameval
 	} else if nametyp.ConvertibleTo(keytyp) {
 		key = nameval.Convert(keytyp)
@@ -549,14 +550,14 @@ func nameToMapKey(name string, mapType reflect.Type) (key reflect.Value, err err
 	return
 }
 
-//nolint:deadcode
+//nolint:unused,deadcode
 func rToStruct(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	// result (source) -> struct (target)
 
 	return
 }
 
-//nolint:deadcode
+//nolint:unused,deadcode
 func rToFunc(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	return
 }

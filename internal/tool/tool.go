@@ -12,10 +12,6 @@ import (
 )
 
 func PtrOf(tgt reflect.Value) reflect.Value {
-	// for tgt.Kind() != reflect.Ptr {
-	//	Log("tgt: %v, get pointer", tgt.Kind())
-	//	tgt = reflect.NewAt(tgt.Elem().Type(), unsafe.Pointer(tgt.UnsafeAddr()))
-	// }
 	ret := reflect.NewAt(tgt.Type(), unsafe.Pointer(tgt.UnsafeAddr()))
 	return ret
 }

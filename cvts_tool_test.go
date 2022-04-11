@@ -3,10 +3,6 @@ package evendeep
 import (
 	"bytes"
 	"fmt"
-	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/dbglog"
-	"github.com/hedzr/evendeep/internal/tool"
 	"math"
 	"reflect"
 	"strconv"
@@ -14,6 +10,11 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 )
 
 type sample struct {
@@ -72,7 +73,7 @@ func TestToBool(t *testing.T) {
 		complex(math.Float64frombits(0), math.Float64frombits(0)),
 		[0]int{},
 		[1]int{0},
-		(func())(nil),
+		(func())(nil), // nolint:gocritic // cannot remove paran
 		struct{}{},
 		"f",
 		"false",
@@ -131,7 +132,7 @@ func TestForInteger(t *testing.T) {
 		t.Fatalf("failed, x = %v", x)
 	}
 
-	z = "bug"
+	z = "bug" //nolint:goconst
 	v1 = reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForInteger(v1).Interface(); x != "0" {
@@ -379,7 +380,7 @@ func TestBytesBufferConverter_Transform(t *testing.T) {
 	}
 	if x, ok := tgt.Interface().(bytes.Buffer); !ok {
 		t.Fatalf("unexpect target value type: %v", tgt.Type())
-	} else if x.String() != "hello" {
+	} else if x.String() != "hello" { //nolint:goconst
 		t.Fatalf("convert failed, want 'hello' but got %q", x.String())
 	}
 }
@@ -863,7 +864,7 @@ func TestNameToMapKey(t *testing.T) {
 	}
 
 	for _, m := range mapslice {
-		mv := reflect.ValueOf(&m)
+		mv := reflect.ValueOf(&m) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		mvind := tool.Rdecodesimple(mv)
 		t.Logf("    target map is %v", tool.Typfmtv(&mvind))
 		mt := tool.Rdecodetypesimple(mvind.Type())
@@ -954,7 +955,7 @@ func TestFromFuncConverter(t *testing.T) {
 		{func() int { return 3 }, &intTgt, 3},
 		{func() (int, error) { return 5, nil }, &intTgt, 5},
 	} {
-		if fncase.fn != nil {
+		if fncase.fn != nil { //nolint:gocritic //nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
 			fnv := reflect.ValueOf(&fncase.fn)
 			tgtv := reflect.ValueOf(&fncase.target)
 			ff, tt := tool.Rdecodesimple(fnv), tool.Rdecodesimple(tgtv)

@@ -3,11 +3,12 @@ package evendeep
 import (
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/tool"
+
 	"reflect"
 	"testing"
 )
 
-func testDeepEqual(print func(msg string, args ...interface{}), got, expect interface{}) {
+func testDeepEqual(printer func(msg string, args ...interface{}), got, expect interface{}) {
 	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
 	// switch kind:=a.Kind();kind {
 	// case reflect.Map:
@@ -15,7 +16,7 @@ func testDeepEqual(print func(msg string, args ...interface{}), got, expect inte
 	// }
 
 	if !reflect.DeepEqual(got, expect) {
-		print("expecting %v but got %v", expect, got)
+		printer("expecting %v but got %v", expect, got)
 	}
 }
 
