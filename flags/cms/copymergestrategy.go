@@ -1,4 +1,4 @@
-// go: generate stringer -type=CopyMergeStrategy -linecomment
+//go:generate stringer -type=CopyMergeStrategy -linecomment
 
 package cms
 
@@ -26,17 +26,24 @@ const (
 	// Must the must-be-copied fields will always be copied to the target
 	Must // must
 
-	// ClearIfEq the target field will be reset/clear to zero if it equals to the source.
+	// ClearIfEq the target field will be reset/clear to zero if it
+	// equals to the source.
 	// Just for struct fields
 	ClearIfEq CopyMergeStrategy = iota + 10 // cleareq
 
-	// KeepIfNotEq the source field will not be copied if it does not equal to the target
+	// KeepIfNotEq the source field will not be copied if it does not
+	// equal to the target.
 	// Just for struct fields
 	KeepIfNotEq // keepneq
 
-	// ClearIfInvalid the target field will be reset/cleart to zero if source is invalid.
+	// ClearIfInvalid the target field will be reset/clear to zero if
+	// source is invalid.
 	// default is ON.
 	ClearIfInvalid // clearinvalid
+
+	// ClearIfMissed clear/reset the target field if source field not
+	// found.
+	ClearIfMissed // clearmissed
 
 	// NoOmit never omit any source fields
 	NoOmit CopyMergeStrategy = iota + 20 - 5 // noomit
@@ -92,7 +99,8 @@ const (
 	// ByName will be applied to struct or map.
 	ByName // byname
 
-	// MaxStrategy is a mark to indicate the max value of all available CopyMergeStrategies
+	// MaxStrategy is a mark to indicate the max value of all available
+	// CopyMergeStrategies.
 	MaxStrategy
 
 	// reserved:
