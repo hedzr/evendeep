@@ -114,7 +114,15 @@ badReturn:
 }
 
 func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err error) {
-	err = copyStructInternal(c, params, from, to, forEachField)
+	// default is cms.ByOrdinal:
+	//   loops all source fields and copy its value to the corresponding target field.
+	cb := forEachField
+	if c.targetOriented || params.isGroupedFlagOKDeeply(cms.ByName) {
+		// cmd.ByName strategy:
+		//   loops all target fields and try copying value from source field by its name.
+		cb = forEachTargetField
+	}
+	err = copyStructInternal(c, params, from, to, cb)
 	return
 }
 
@@ -236,6 +244,51 @@ func cpStructToNewSliceElem0(params *Params) (err error) {
 	return
 }
 
+func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
+	c := params.controller
+
+	var sst = params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
+	var val reflect.Value
+	var fcz = params.isGroupedFlagOKDeeply(cms.ClearIfMissed)
+	var aun = c.autoNewStruct // autoNew mode:
+	// we will do new(field) for each target fields if it's invalid.
+	//
+	// It's not cms.ClearIfInvalid - which will detect if the source
+	// field is invalid or not, but target one.
+	dbglog.Log("     c.autoNewStruct = %v, cms.ClearIfMissed is set: %v", c.autoNewStruct, params.isGroupedFlagOKDeeply(cms.ClearIfMissed))
+	dbglog.Log("     c.copyFunctionResultToTarget = %v", c.copyFunctionResultToTarget)
+
+	for *i, *amount = 0, len(sst.TableRecords()); params.nextTargetFieldLite(); *i++ {
+		name := params.accessor.StructFieldName()
+		if params.shouldBeIgnored(name) {
+			continue
+		}
+
+		if ex := c.sourceExtractor; ex != nil {
+			v := ex(name)
+			val = reflect.ValueOf(v)
+		} else {
+			if ind := sst.RecordByName(name); ind != nil {
+				val = *ind
+			} else if c.copyFunctionResultToTarget {
+				if _, ind = sst.MethodCallByName(name); ind != nil {
+					val = *ind
+				} else {
+					continue // skip the field
+				}
+			} else if fcz || (aun && !params.accessor.ValueValid()) {
+				tt := params.accessor.FieldType()
+				val = reflect.Zero(*tt)
+				dbglog.Log("     target is invalid: %v, autoNewStruct: %v", params.accessor.ValueValid(), aun)
+			} else {
+				continue // skip the field
+			}
+		}
+		params.accessor.Set(val)
+	}
+	return
+}
+
 func forEachField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 	sst := params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
 	c := params.controller
@@ -246,7 +299,7 @@ func forEachField(params *Params, ec errors.Error, i, amount *int, padding strin
 			continue
 		}
 
-		var sourceField tablerec
+		var sourceField *tableRecT
 		var ok bool
 		if sourceField, ok = params.nextTargetField(); !ok {
 			continue
@@ -351,7 +404,7 @@ func invokeStructFieldTransformer(
 	}
 
 	if fftk == reflect.Struct && ff.NumField() == 0 {
-		// never get into here because tablerecords.getallfields skip empty struct
+		// never get into here because tableRecordsT.getAllFields skip empty struct
 		log.Warnf("should never get into here, might be algor wrong ?")
 	}
 	if dftk == reflect.Struct && df.NumField() == 0 {

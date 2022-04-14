@@ -21,6 +21,7 @@ import (
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/log"
+
 	"gopkg.in/hedzr/errors.v3"
 )
 
@@ -450,6 +451,10 @@ func NewForTest() DeepCopier {
 		WithCopyUnexportedFieldOpt,
 		WithCopyFunctionResultToTargetOpt,
 		WithPassSourceToTargetFunctionOpt,
+
+		WithTryApplyConverterAtFirstOpt,
+		WithByNameStrategyOpt,
+		WithByOrdinalStrategyOpt,
 
 		WithIgnoreNamesReset(),
 		WithIgnoreNames("Bugs*", "Test*"),

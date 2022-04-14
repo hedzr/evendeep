@@ -2,7 +2,10 @@ package evendeep_test
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/hedzr/evendeep/typ"
 	"io"
 	"math"
 	"reflect"
@@ -472,6 +475,10 @@ func TestErrorCodeIs(t *testing.T) {
 	if errors.Is(err, errors.BadRequest) {
 		t.Fatalf("want not is")
 	}
+	err = errors.NotFound
+	if errors.Is(err, errors.BadRequest) {
+		t.Fatalf("want not is (code)")
+	}
 }
 
 func TestStructStdlib(t *testing.T) {
@@ -786,7 +793,55 @@ func TestStructToSliceOrMap(t *testing.T) {
 	)
 }
 
-func TestStructOthers(t *testing.T) {
+func TestStructWithSourceExtractor(t *testing.T) {
+	c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
+		"A": 12,
+	})
+
+	tgt := struct {
+		A int
+	}{}
+
+	err := evendeep.New().CopyTo(c, &tgt, evendeep.WithSourceValueExtractor(func(name string) typ.Any {
+		if m, ok := c.Value("Data").(map[string]typ.Any); ok {
+			return m[name]
+		}
+		return nil
+	}))
+
+	if tgt.A != 12 || err != nil {
+		t.FailNow()
+	}
+}
+
+type aS struct {
+	A int
+	b bool
+	C string
+}
+
+func (s aS) B() bool { return s.b }
+
+func TestStructWithCmsByNameStrategy(t *testing.T) {
+	type bS struct {
+		Z int
+		B bool
+		C string
+	}
+
+	src := &aS{A: 6, b: true, C: "hello"}
+	var tgt = bS{Z: 1}
+	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
+
+	if tgt.Z != 1 || !tgt.B || tgt.C != "hello" || err != nil {
+		t.Fatalf("BAD COPY, tgt: %+v", tgt)
+	}
+}
+
+func TestStructWithNameConversions(t *testing.T) {
+}
+
+func TestStructWithNameConverter(t *testing.T) {
 }
 
 func TestSliceSimple(t *testing.T) {
@@ -818,6 +873,7 @@ func TestSliceTypeConvert(t *testing.T) {
 	stgt := []string{"-", "2.718280076980591"}
 	stgt2 := []string{"-", "2.718280076980591", "9", "5", "3.1415927410125732"}
 	itgt := []int{17}
+	itgt2 := []int{13}
 
 	// itgt2 := []int{17}
 	// ftgt2 := []float64{17}
@@ -841,7 +897,15 @@ func TestSliceTypeConvert(t *testing.T) {
 		evendeep.NewTestCase(
 			"slice (string(with floats) -> int)",
 			stgt2, &itgt,
-			&[]int{17, 2, 9, 5, 3},
+			&[]int{17, 3, 9, 5},
+			[]evendeep.Opt{evendeep.WithMergeStrategyOpt},
+			nil,
+		),
+		evendeep.NewTestCase(
+			"slice (string(with floats) -> int)",
+			[]string{"-", "9.718280076980591", "9", "5", "3.1415927410125732"},
+			&itgt2,
+			&[]int{13, 10, 9, 5, 3},
 			[]evendeep.Opt{evendeep.WithMergeStrategyOpt},
 			nil,
 		),
@@ -1261,11 +1325,13 @@ func (c *MyTypeToStringConverter) Match(params *evendeep.Params, source, target 
 func TestExample2(t *testing.T) {
 	var myData = MyType{I: 9}
 	var dst string
-	evendeep.DeepCopy(myData, &dst, evendeep.WithValueConverters(&MyTypeToStringConverter{}))
-	if dst != `{
-  "I": 9
-}` {
-		t.Fatalf("bad, got %v", dst)
+	c := evendeep.NewForTest()
+	_ = c.CopyTo(myData, &dst,
+		evendeep.WithValueConverters(&MyTypeToStringConverter{}),
+		evendeep.WithStringMarshaller(json.Marshal),
+	)
+	if dst != `{"I":9}` {
+		t.Fatalf("bad 1, got %v", dst)
 	}
 
 	// a stub call for coverage
@@ -1273,11 +1339,12 @@ func TestExample2(t *testing.T) {
 
 	var dst1 string
 	evendeep.RegisterDefaultConverters(&MyTypeToStringConverter{})
-	evendeep.DeepCopy(myData, &dst1)
-	if dst1 != `{
-  "I": 9
-}` {
-		t.Fatalf("bad, got %v", dst)
+	c = evendeep.NewForTest()
+	_ = c.CopyTo(myData, &dst1,
+		evendeep.WithStringMarshaller(json.Marshal),
+	)
+	if dst1 != `{"I":9}` {
+		t.Fatalf("bad 2, got %v", dst)
 	}
 
 }
@@ -1299,11 +1366,11 @@ func TestExample3(t *testing.T) {
 	var t0 = time.Unix(0, 0)
 	var expectRec = evendeep.User{Name: "Barbara", Birthday: &t0, Attr: &evendeep.Attr{}}
 
-	evendeep.DeepCopy(originRec, &newRecord)
+	_ = evendeep.New().CopyTo(originRec, &newRecord)
 	t.Logf("newRecord: %v", newRecord)
 
 	newRecord.Name = "Barbara"
-	evendeep.DeepCopy(originRec, &newRecord, evendeep.WithORMDiffOpt)
+	_ = evendeep.New().CopyTo(originRec, &newRecord, evendeep.WithORMDiffOpt)
 	if len(newRecord.Attr.Attrs) == len(expectRec.Attr.Attrs) {
 		newRecord.Attr = expectRec.Attr
 	}

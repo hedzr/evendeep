@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"encoding/json"
+	"github.com/hedzr/evendeep/typ"
 
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
@@ -24,6 +25,39 @@ func WithValueConverters(cvt ...ValueConverter) Opt {
 func WithValueCopiers(cvt ...ValueCopier) Opt {
 	return func(c *cpController) {
 		c.valueCopiers = append(c.valueCopiers, cvt...)
+	}
+}
+
+// WithSourceValueExtractor specify a source field value extractor,
+// which will be applied on each field being copied to target.
+//
+// This feature is only available for single depth struct (target).
+//
+// For instance:
+//
+//      c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
+//      	"A": 12,
+//      })
+//
+//      tgt := struct {
+//      	A int
+//      }{}
+//
+//      evendeep.DeepCopy(c, &tgt,
+//        evendeep.WithSourceValueExtractor(func(name string) typ.Any {
+//      	if m, ok := c.Value("Data").(map[string]typ.Any); ok {
+//      		return m[name]
+//      	}
+//      	return nil
+//      }))
+//
+//      if tgt.A != 12 {
+//      	t.FailNow()
+//      }
+//
+func WithSourceValueExtractor(e func(name string) typ.Any) Opt {
+	return func(c *cpController) {
+		c.sourceExtractor = e
 	}
 }
 
@@ -68,6 +102,12 @@ func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 		}
 	}
 }
+
+// WithByNameStrategyOpt is synonym of cms.ByName
+var WithByNameStrategyOpt = WithStrategies(cms.ByName)
+
+// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal
+var WithByOrdinalStrategyOpt = WithStrategies(cms.ByOrdinal)
 
 // WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy
 var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
@@ -218,18 +258,18 @@ func WithoutPanic() Opt {
 // be applied.
 func WithStringMarshaller(m TextMarshaller) Opt {
 	return func(c *cpController) {
-		RegisterStringMarshaller(m)
+		RegisterDefaultStringMarshaller(m)
 	}
 }
 
-// RegisterStringMarshaller provides a string marshaller which will
+// RegisterDefaultStringMarshaller provides a string marshaller which will
 // be applied when a map is going to be copied to string.
 //
 // Default is json marshaller (json.MarshalIndent).
 //
 // If encoding.TextMarshaler/json.Marshaler have been implemented, the
 // source.MarshalText/MarshalJSON() will be applied.
-func RegisterStringMarshaller(m TextMarshaller) {
+func RegisterDefaultStringMarshaller(m TextMarshaller) {
 	if m == nil {
 		m = json.Marshal
 	}

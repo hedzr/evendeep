@@ -53,7 +53,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 	x2 := new(X1)
 	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
 
-	t.Run("getallfields at once", testgetallfieldsX1)
+	t.Run("getAllFields at once", testgetallfieldsX1)
 
 	t.Run("by struct iterator", teststructiteratorNextT1)
 
@@ -61,10 +61,10 @@ func TestStructIterator_Next_X1(t *testing.T) {
 
 		targetIterator := newStructIterator(t1)
 
-		var sourcefields fieldstable
-		sourcefields = sourcefields.getallfields(t1, false)
-		for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
-			sourcefield := sourcefields.tablerecords[i]
+		var sourcefields fieldsTableT
+		sourcefields = sourcefields.getAllFields(t1, false)
+		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
+			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next()
 			if flags.isFlagExists(cms.Ignore) || !ok {
@@ -85,11 +85,11 @@ func TestStructIterator_Next_X1(t *testing.T) {
 
 		targetIterator := newStructIterator(t2, withStructPtrAutoExpand(true))
 
-		var sourcefields fieldstable
-		sourcefields = sourcefields.getallfields(t2, true)
+		var sourcefields fieldsTableT
+		sourcefields = sourcefields.getAllFields(t2, true)
 
-		for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
-			sourcefield := sourcefields.tablerecords[i]
+		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
+			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next()
 			if flags.isFlagExists(cms.Ignore) || !ok {
@@ -134,10 +134,10 @@ func testgetallfieldsX1(t *testing.T) {
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := tool.Rdecode(v1)
 
-	var sourcefields fieldstable
-	sourcefields = sourcefields.getallfields(t1, false)
-	for i, amount := 0, len(sourcefields.tablerecords); i < amount; i++ {
-		sourcefield := sourcefields.tablerecords[i]
+	var sourcefields fieldsTableT
+	sourcefields = sourcefields.getAllFields(t1, false)
+	for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
+		sourcefield := sourcefields.tableRecordsT[i]
 		srcval := sourcefield.FieldValue()
 		srctypstr := tool.Typfmtv(srcval)
 		dbglog.Log("%d. %s (%v) %v -> %s (%v)", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), srctypstr, "", "")
@@ -630,13 +630,13 @@ func testfieldstableGetFieldsDeeply(t *testing.T) {
 	x2 := new(X1)
 	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
 
-	var sourcefields fieldstable
-	sourcefields.getallfields(t2, true)
+	var sourcefields fieldsTableT
+	sourcefields.getAllFields(t2, true)
 
 	var sb strings.Builder
 	defer func() { t.Log(sb.String()) }()
 
-	for i, f := range sourcefields.tablerecords {
+	for i, f := range sourcefields.tableRecordsT {
 		_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 			f.FieldName(), f.indexes,
 			tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
@@ -649,13 +649,13 @@ func testfieldstableGetallfields(t *testing.T) {
 	a4 := prepareDataA4()
 	v4 := reflect.ValueOf(&a4)
 
-	var sourcefields fieldstable
-	sourcefields.getallfields(v4, true)
+	var sourcefields fieldsTableT
+	sourcefields.getAllFields(v4, true)
 
 	var sb strings.Builder
 	defer func() { t.Log(sb.String()) }()
 
-	for i, f := range sourcefields.tablerecords {
+	for i, f := range sourcefields.tableRecordsT {
 		_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 			f.FieldName(), f.indexes,
 			tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
@@ -736,13 +736,13 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 
 		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
-		var sourcefields fieldstable
-		sourcefields.getallfields(v4, true)
+		var sourcefields fieldsTableT
+		sourcefields.getAllFields(v4, true)
 
 		var sb1 strings.Builder
 		// defer func() { t.Log(sb.String()) }()
 
-		for i, f := range sourcefields.tablerecords {
+		for i, f := range sourcefields.tableRecordsT {
 			_, _ = fmt.Fprintf(&sb1, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
 				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
@@ -798,10 +798,10 @@ func testfieldstableGetallfieldsEmployee22(t *testing.T) {
 
 		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
-		var sourcefields fieldstable
-		sourcefields.getallfields(v4, true)
+		var sourcefields fieldsTableT
+		sourcefields.getAllFields(v4, true)
 
-		for i, f := range sourcefields.tablerecords {
+		for i, f := range sourcefields.tableRecordsT {
 			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
 				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
@@ -862,10 +862,10 @@ func testfieldstableGetallfieldsUser(t *testing.T) {
 
 		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
-		var sourcefields fieldstable
-		sourcefields.getallfields(v4, true)
+		var sourcefields fieldsTableT
+		sourcefields.getAllFields(v4, true)
 
-		for i, f := range sourcefields.tablerecords {
+		for i, f := range sourcefields.tableRecordsT {
 			_, _ = fmt.Fprintf(&sb, "%v. %v, %v | %v, %q, %q\n", i,
 				f.FieldName(), f.indexes,
 				tool.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,

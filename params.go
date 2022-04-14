@@ -142,7 +142,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 	}
 }
 
-// func (params *Params) withIteratorIndex(srcIndex int) (sourcefield tablerec) {
+// func (params *Params) withIteratorIndex(srcIndex int) (sourcefield tableRecT) {
 //	params.srcIndex = srcIndex
 //
 //	//if i < params.srcType.NumField() {
@@ -151,8 +151,8 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 //	//	params.fieldTags = parseFieldTags(t.Tag)
 //	//}
 //
-//	if srcIndex < len(params.sourcefields.tablerecords) {
-//		sourcefield = params.sourcefields.tablerecords[srcIndex]
+//	if srcIndex < len(params.sourcefields.tableRecordsT) {
+//		sourcefield = params.sourcefields.tableRecordsT[srcIndex]
 //		params.field = sourcefield.StructField()
 //		params.fieldTags = parseFieldTags(params.field.Tag)
 //	}
@@ -166,13 +166,27 @@ func (params *Params) sourceFieldShouldBeIgnored() (yes bool) {
 	return
 }
 
-func (params *Params) nextTargetField() (sourceField tablerec, ok bool) {
+func (params *Params) shouldBeIgnored(name string) (yes bool) {
+	if params.targetIterator != nil {
+		yes = params.targetIterator.ShouldBeIgnored(name, params.controller.ignoreNames)
+	}
+	return
+}
+
+func (params *Params) nextTargetField() (sourceField *tableRecT, ok bool) {
 	if params.targetIterator != nil {
 		params.accessor, ok = params.targetIterator.Next()
 		if ok {
 			sourceField = params.accessor.SourceField()
 			ok = !params.parseFieldTags(sourceField.structField.Tag)
 		}
+	}
+	return
+}
+
+func (params *Params) nextTargetFieldLite() (ok bool) {
+	if params.targetIterator != nil {
+		params.accessor, ok = params.targetIterator.Next()
 	}
 	return
 }

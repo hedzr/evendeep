@@ -32,6 +32,9 @@ type cpController struct {
 
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
+
+	sourceExtractor func(name string) typ.Any // simple struct field value extractor in one depth
+	targetOriented  bool                      // loop for target fields? default is for source
 }
 
 // CopyTo _
@@ -50,9 +53,10 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
-	dbglog.Log("    flags: %v", c.flags)
-	dbglog.Log("from.type: %v | input: %v", tool.Typfmtv(&from), tool.Typfmtv(&from0))
-	dbglog.Log("  to.type: %v | input: %v", tool.Typfmtv(&to), tool.Typfmtv(&to0))
+	dbglog.Log("          flags: %v", c.flags)
+	dbglog.Log("flags (verbose): %+v", c.flags)
+	dbglog.Log("      from.type: %v | input: %v", tool.Typfmtv(&from), tool.Typfmtv(&from0))
+	dbglog.Log("        to.type: %v | input: %v", tool.Typfmtv(&to), tool.Typfmtv(&to0))
 
 	err = c.copyTo(root, from, to)
 	return
@@ -61,8 +65,16 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
-			kind := from.Kind()
-			if kind != reflect.Struct || !packageisreserved(from.Type().PkgPath()) {
+			kind, pkgPath := from.Kind(), from.Type().PkgPath()
+			if c.sourceExtractor != nil && to.IsValid() && !tool.IsNil(to) {
+				// use tool.IsNil because we are checking for:
+				// 1. to,IsNil() if 'to' is an addressable value (such as slice, map, or ptr)
+				// 2. false if 'to' is not an addressable value (such as struct, int, ...)
+				kind, pkgPath, c.targetOriented = to.Kind(), to.Type().PkgPath(), true
+			} else {
+				c.targetOriented = false
+			}
+			if kind != reflect.Struct || !packageisreserved(pkgPath) {
 				if fn, ok := copyToRoutines[kind]; ok && fn != nil {
 					err = fn(c, params, from, to)
 					return
