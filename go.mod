@@ -13,6 +13,6 @@ go 1.11
 //replace gitlab.com/hedzr/localtest => ../29.localtest
 
 require (
-	github.com/hedzr/log v1.5.45
-	gopkg.in/hedzr/errors.v3 v3.0.17
+	github.com/hedzr/log v1.5.49
+	gopkg.in/hedzr/errors.v3 v3.0.19
 )
