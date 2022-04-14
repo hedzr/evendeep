@@ -1,7 +1,10 @@
 package flags
 
 import (
+	"fmt"
 	"github.com/hedzr/evendeep/flags/cms"
+	"io"
+	"sort"
 
 	"reflect"
 	"strings"
@@ -47,6 +50,59 @@ func (flags Flags) String() string {
 	sbfinal.WriteRune(']')
 
 	return sbfinal.String()
+}
+
+func (flags Flags) StringEx() string {
+	var sb, sbfinal strings.Builder
+	var cache = make(Flags)
+
+	for fx, ok := range flags {
+		if ok {
+			cache[fx] = ok
+		}
+	}
+
+	for i := cms.Default; i < cms.MaxStrategy; i++ {
+		if flags.IsGroupedFlagOK(i) {
+			cache[i] = true
+		}
+	}
+
+	var keys []int
+	for fx, ok := range cache {
+		if ok {
+			keys = append(keys, int(fx))
+		}
+	}
+	sort.Ints(keys)
+
+	for _, fx := range keys {
+		if sb.Len() > 0 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(((cms.CopyMergeStrategy)(fx)).String())
+	}
+
+	sbfinal.WriteRune('[')
+	sbfinal.WriteString(sb.String())
+	sbfinal.WriteRune(']')
+
+	return sbfinal.String()
+}
+
+func (flags *Flags) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			_, _ = fmt.Fprintf(s, "%+v", flags.StringEx())
+			return
+		}
+		fallthrough
+	case 's':
+		_, _ = io.WriteString(s, flags.String())
+	case 'q':
+		_, _ = fmt.Fprintf(s, "%q", flags.String())
+	}
 }
 
 func (flags Flags) WithFlags(flg ...cms.CopyMergeStrategy) Flags {
