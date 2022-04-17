@@ -252,7 +252,8 @@ func toggleTheRadio(f cms.CopyMergeStrategy, flags Flags) {
 }
 
 // Parse _
-func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule string) {
+// use "copy" if tagName is empty.
+func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule NameConvertRule) {
 	lazyInitFieldTagsFlags()
 
 	if flags == nil {
@@ -267,7 +268,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule str
 
 	for i, wh := range strings.Split(tags, ",") {
 		if i == 0 && wh != "-" {
-			targetNameRule = wh
+			targetNameRule = NameConvertRule(wh)
 			continue
 		}
 
@@ -300,4 +301,36 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule str
 		}
 	}
 	return //nolint:nakedret //no
+}
+
+// NameConvertRule _
+type NameConvertRule string
+type nameConvertRule struct {
+	Valid     bool
+	IsIgnored bool
+	From      string
+	To        string
+}
+
+func (s NameConvertRule) Valid() bool      { return s != "" && s.get().Valid }
+func (s NameConvertRule) IsIgnored() bool  { return s.get().IsIgnored }
+func (s NameConvertRule) FromName() string { return s.get().From }
+func (s NameConvertRule) ToName() string   { return s.get().To }
+
+func (s NameConvertRule) get() (r nameConvertRule) {
+	a := strings.Split(string(s), "->")
+	if len(a) > 0 {
+		if a[0] == "-" {
+			r.IsIgnored = true
+		} else if len(a) == 1 {
+			r.To = strings.TrimSpace(a[0])
+			r.Valid = true
+		} else {
+			r.From = strings.TrimSpace(a[0])
+			r.To = strings.TrimSpace(a[1])
+			r.Valid = true
+		}
+	}
+	// dbglog.Log("      nameConvertRule: %+v", r)
+	return
 }
