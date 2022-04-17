@@ -167,7 +167,7 @@ type structIterable interface {
 	//
 	// For an empty struct, Next return it exactly rather than
 	// field since it has nothing to iterate.
-	Next() (accessor accessor, ok bool)
+	Next(params *Params, byName bool) (accessor accessor, ok bool)
 
 	// SourceFieldShouldBeIgnored _
 	SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool)
@@ -244,11 +244,11 @@ type accessor interface {
 	ValueValid() bool
 	FieldValue() *reflect.Value
 	FieldType() *reflect.Type
-	StructField() *reflect.StructField
-	StructFieldName() string
+	StructField() *reflect.StructField // return target struct field type
+	StructFieldName() string           // return target struct field name
 	NumField() int
 
-	SourceField() *tableRecT
+	SourceField() *tableRecT // return source struct (or others types)
 	// SourceFieldShouldBeIgnored(ignoredNames []string) bool
 
 	IsFlagOK(f cms.CopyMergeStrategy) bool
@@ -270,8 +270,11 @@ type fieldAccessorT struct {
 }
 
 func setToZero(fieldValue reflect.Value) {
+	setToZeroAs(fieldValue, fieldValue.Type(), fieldValue.Kind())
+}
+func setToZeroAs(fieldValue reflect.Value, typ reflect.Type, kind reflect.Kind) {
 	if fieldValue.CanSet() {
-		switch k := fieldValue.Kind(); k {
+		switch kind { //nolint:exhaustive
 		case reflect.Bool:
 			fieldValue.SetBool(false)
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
@@ -292,8 +295,12 @@ func setToZero(fieldValue reflect.Value) {
 			fieldValue.Set(v)
 		case reflect.Ptr:
 			fieldValue.SetPointer(unsafe.Pointer(uintptr(0)))
+		case reflect.Interface:
+			ind := typ.Elem()
+			setToZeroAs(fieldValue, ind, ind.Kind())
 		default:
-			dbglog.Log("   NOT SUPPORTED (kind: %v), cannot set to zero value.", k)
+			// Array, Chan, Func, Interface, Invalid, Struct, UnsafePointer
+			dbglog.Log("   NOT SUPPORTED (kind: %v), cannot set to zero value.", kind)
 		}
 	}
 }
@@ -301,6 +308,7 @@ func setToZero(fieldValue reflect.Value) {
 func (s *fieldAccessorT) Set(v reflect.Value) {
 	if s.ValueValid() {
 		if s.isStruct {
+			// dbglog.Log("    target struct type: %v", tool.Typfmt(s.structType))
 			dbglog.Log("    setting struct.%q", s.structType.Field(s.index).Name)
 			sv := tool.Rindirect(*s.structValue).Field(s.index)
 			dbglog.Log("      set %v (%v) -> struct.%q", tool.Valfmt(&v), tool.Typfmtv(&v), s.structType.Field(s.index).Name)
@@ -576,20 +584,6 @@ func (s *structIteratorT) MethodCallByName(name string) (mtd reflect.Method, v *
 
 //
 
-func (s *structIteratorT) SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool) {
-	shortName := s.srcFields.tableRecordsT[s.srcIndex].ShortFieldName()
-	return s.ShouldBeIgnored(shortName, ignoredNames)
-}
-
-func (s *structIteratorT) ShouldBeIgnored(name string, ignoredNames []string) (yes bool) {
-	for _, x := range ignoredNames {
-		if yes = isWildMatch(name, x); yes {
-			break
-		}
-	}
-	return
-}
-
 func (s *structIteratorT) withSourceIteratorIndexIncrease(srcIndexDelta int) (sourcefield *tableRecT, ok bool) {
 	if s.srcIndex < 0 {
 		s.srcIndex = 0
@@ -613,37 +607,24 @@ func (s *structIteratorT) withSourceIteratorIndexIncrease(srcIndexDelta int) (so
 	return
 }
 
-func (s *structIteratorT) Next() (acc accessor, ok bool) {
+func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bool) {
 	var sourceTableRec *tableRecT
 	var accessorTmp *fieldAccessorT
 	sourceTableRec, ok = s.withSourceIteratorIndexIncrease(+1)
 	if ok {
 		srcStructField := sourceTableRec.StructField()
-		isfn := srcStructField.Type.Kind() == reflect.Func
-
+		srcIsFunc := srcStructField.Type.Kind() == reflect.Func
 		kind := s.dstStruct.Kind()
+
 		if kind == reflect.Map {
-			eltyp := s.dstStruct.Type().Elem()
-			tk := eltyp.Kind()
-			if srcStructField.Type.ConvertibleTo(eltyp) ||
-				srcStructField.Type.AssignableTo(eltyp) ||
-				tk == reflect.String || tk == reflect.Interface {
-				acc = &fieldAccessorT{
-					structValue:    &s.dstStruct,
-					structType:     s.dstStruct.Type(),
-					index:          s.dstIndex,
-					structField:    nil,
-					isStruct:       false,
-					sourceTableRec: sourceTableRec,
-					srcStructField: srcStructField,
-					fieldTags:      nil,
-				}
-				s.dstIndex++
-			}
-			return
+			return s.doNextMapItem(params, sourceTableRec, srcStructField)
 		}
 
-		accessorTmp, ok = s.doNext(isfn && !s.noExpandIfSrcFieldIsFunc)
+		if params != nil && byName {
+			return s.doNextFieldByName(sourceTableRec, srcStructField)
+		}
+
+		accessorTmp, ok = s.doNext(srcIsFunc && !s.noExpandIfSrcFieldIsFunc)
 		if ok {
 			accessorTmp.sourceTableRec = sourceTableRec
 			accessorTmp.srcStructField = srcStructField
@@ -668,6 +649,64 @@ func (s *structIteratorT) Next() (acc accessor, ok bool) {
 	}
 	acc = accessorTmp
 	return //nolint:nakedret
+}
+
+func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRecT, srcStructField *reflect.StructField) (acc accessor, ok bool) {
+	st := srcStructField.Type
+	elTyp := s.dstStruct.Type().Elem()
+	tk := elTyp.Kind()
+	if st.ConvertibleTo(elTyp) || st.AssignableTo(elTyp) ||
+		tk == reflect.String || tk == reflect.Interface {
+		acc = &fieldAccessorT{
+			structValue:    &s.dstStruct,
+			structType:     s.dstStruct.Type(),
+			index:          s.dstIndex,
+			structField:    nil,
+			isStruct:       false,
+			sourceTableRec: sourceTableRec,
+			srcStructField: srcStructField,
+			fieldTags:      nil,
+		}
+		s.dstIndex++
+		ok = true
+	}
+	return
+}
+
+func (s *structIteratorT) doNextFieldByName(sourceTableRec *tableRecT, srcStructField *reflect.StructField) (acc accessor, ok bool) {
+	dbglog.Log("     looking for src field: %v", srcStructField)
+	dstFieldName, ignored := s.getTargetFieldNameBySourceField(srcStructField, "")
+
+	ok = true
+	if ignored {
+		return // return ok = true so that caller can continue to the next field, rather than stop looping.
+	}
+
+	dbglog.Log("     looking for field %q (src field: %q)", dstFieldName, srcStructField.Name)
+	var tsf reflect.StructField
+	ts := tool.Rindirect(s.dstStruct)
+	tsf, ok = ts.Type().FieldByName(dstFieldName)
+	if ok {
+		dbglog.Log("     tsf: %v", tsf)
+		// tv := ts.FieldByName(dstFieldName)
+		s.dstIndex = tsf.Index[0]
+		acc = &fieldAccessorT{
+			structValue:    &ts,
+			structType:     ts.Type(),
+			index:          s.dstIndex,
+			structField:    &tsf,
+			isStruct:       true,
+			sourceTableRec: sourceTableRec,
+			srcStructField: srcStructField,
+			fieldTags:      parseFieldTags(srcStructField.Tag, ""),
+		}
+	} else {
+		log.Warnf("     [WARN] dstFieldName %q NOT FOUND, it'll be ignored", dstFieldName)
+		acc = &fieldAccessorT{} // return an empty accessor
+		ok = true               // return ok = true so caller can keep going to next field
+	}
+	// no need: dstIndex++
+	return // return ok = false, the caller loop will be broken.
 }
 
 func (s *structIteratorT) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (accessor *fieldAccessorT, ok bool) {
@@ -703,7 +742,7 @@ retryExpand:
 			}
 			if k1 == reflect.Struct &&
 				!srcFieldIsFuncAndTargetShouldNotExpand &&
-				!s.shouldIgnore(field, tind, k1) {
+				!s.typShouldBeIgnored(tind) {
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
 				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", tool.Typfmt(tind))
@@ -732,29 +771,86 @@ retryExpand:
 	return //nolint:nakedret
 }
 
-func (s *structIteratorT) shouldIgnore(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
+func (s *structIteratorT) getTargetFieldName(knownSrcName, tagName string) (dstFieldName string, ignored bool) {
+	dstFieldName = knownSrcName
+
+	// var flagsInTag *fieldTags
+	// var ok bool
+	if sf := s.CurrRecord().StructField(); sf != nil {
+		dstFieldName, ignored = s.getTargetFieldNameBySourceField(sf, tagName)
+		// 	flagsInTag = parseFieldTags(sf.Tag, tagName)
+		// 	if ignored = flagsInTag.isFlagExists(cms.Ignore); ignored {
+		// 		return
+		// 	}
+		// 	ctx := &NameConverterContext{Params: nil}
+		// 	dstFieldName, ok = flagsInTag.CalcTargetName(sf.Name, ctx)
+		// 	if !ok {
+		// 		if tr := s.dstStruct.FieldByName(knownSrcName); !tool.IsNil(tr) {
+		// 			dstFieldName = knownSrcName
+		// 			dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, sf.Name, sf.Tag)
+		// 		}
+		// 	}
+	}
+	return
+}
+
+func (s *structIteratorT) getTargetFieldNameBySourceField(knownSrcField *reflect.StructField, tagName string) (dstFieldName string, ignored bool) {
+	var flagsInTag *fieldTags
+	var ok bool
+
+	flagsInTag = parseFieldTags(knownSrcField.Tag, tagName)
+	if ignored = flagsInTag.isFlagExists(cms.Ignore); ignored {
+		return
+	}
+	ctx := &NameConverterContext{Params: nil}
+	dstFieldName, ok = flagsInTag.CalcTargetName(knownSrcField.Name, ctx)
+	if !ok {
+		if tr := s.dstStruct.FieldByName(knownSrcField.Name); !tool.IsNil(tr) {
+			dstFieldName = knownSrcField.Name
+			dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, knownSrcField.Name, knownSrcField.Tag)
+		}
+	}
+	return
+}
+
+func (s *structIteratorT) typShouldBeIgnored(typ reflect.Type) bool {
 	n := typ.PkgPath()
 	return packageisreserved(n) // ignore golang stdlib, such as "io", "runtime", ...
+}
+
+func (s *structIteratorT) SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool) {
+	shortName := s.srcFields.tableRecordsT[s.srcIndex].ShortFieldName()
+	return s.ShouldBeIgnored(shortName, ignoredNames)
+}
+
+func (s *structIteratorT) ShouldBeIgnored(name string, ignoredNames []string) (yes bool) {
+	for _, x := range ignoredNames {
+		if yes = isWildMatch(name, x); yes {
+			break
+		}
+	}
+	return
 }
 
 var onceinitignoredpackages sync.Once
 var _ignoredpackages ignoredpackages
 var _ignoredpackageprefixes ignoredpackageprefixes
 
-type ignoredpackages []string
+type ignoredpackages map[string]bool
 type ignoredpackageprefixes []string
 
-func (a ignoredpackages) contains(packagename string) (yes bool) {
-	for _, s := range a {
-		if yes = s == packagename; yes {
-			break
-		}
-	}
+func (a ignoredpackages) contains(packageName string) (yes bool) {
+	// for _, s := range a {
+	// 	if yes = s == packageName; yes {
+	// 		break
+	// 	}
+	// }
+	_, yes = a[packageName]
 	return
 }
-func (a ignoredpackageprefixes) contains(packagename string) (yes bool) {
+func (a ignoredpackageprefixes) contains(packageName string) (yes bool) {
 	for _, s := range a {
-		if yes = strings.HasPrefix(packagename, s); yes {
+		if yes = strings.HasPrefix(packageName, s); yes {
 			break
 		}
 	}
@@ -768,55 +864,55 @@ func packageisreserved(packagename string) (shouldIgnored bool) {
 			"golang.org/",
 			"google.golang.org/",
 		}
-		// the following names comes with go1.18beta1 src/.
+		// the following name list comes with go1.18beta1 src/.
 		// Perhaps it would need to be updated in the future.
 		_ignoredpackages = ignoredpackages{
-			"archive",
-			"bufio",
-			"builtin",
-			"bytes",
-			"cmd",
-			"compress",
-			"constraints",
-			"container",
-			"context",
-			"crypto",
-			"database",
-			"debug",
-			"embed",
-			"encoding",
-			"errors",
-			"expvar",
-			"flag",
-			"fmt",
-			"go",
-			"hash",
-			"html",
-			"image",
-			"index",
-			"internal",
-			"io",
-			"log",
-			"math",
-			"mime",
-			"net",
-			"os",
-			"path",
-			"plugin",
-			"reflect",
-			"regexp",
-			"runtime",
-			"sort",
-			"strconv",
-			"strings",
-			"sync",
-			"syscall",
-			"testdata",
-			"testing",
-			"text",
-			"time",
-			"unicode",
-			"unsafe",
+			"archive":     true,
+			"bufio":       true,
+			"builtin":     true,
+			"bytes":       true,
+			"cmd":         true,
+			"compress":    true,
+			"constraints": true,
+			"container":   true,
+			"context":     true,
+			"crypto":      true,
+			"database":    true,
+			"debug":       true,
+			"embed":       true,
+			"encoding":    true,
+			"errors":      true,
+			"expvar":      true,
+			"flag":        true,
+			"fmt":         true,
+			"go":          true,
+			"hash":        true,
+			"html":        true,
+			"image":       true,
+			"index":       true,
+			"internal":    true,
+			"io":          true,
+			"log":         true,
+			"math":        true,
+			"mime":        true,
+			"net":         true,
+			"os":          true,
+			"path":        true,
+			"plugin":      true,
+			"reflect":     true,
+			"regexp":      true,
+			"runtime":     true,
+			"sort":        true,
+			"strconv":     true,
+			"strings":     true,
+			"sync":        true,
+			"syscall":     true,
+			"testdata":    true,
+			"testing":     true,
+			"text":        true,
+			"time":        true,
+			"unicode":     true,
+			"unsafe":      true,
 		}
 	})
 

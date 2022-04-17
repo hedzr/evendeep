@@ -13,12 +13,12 @@ import (
 	"github.com/hedzr/evendeep/internal/tool"
 )
 
-func TestIgnoredpackageprefixesContains(t *testing.T) {
+func TestIgnoredPackagePrefixesContains(t *testing.T) {
 	_ignoredpackageprefixes.contains("abc")
 	_ignoredpackageprefixes.contains("golang.org/grpc")
 }
 
-func TestFieldaccessorOperations(t *testing.T) {
+func TestFieldAccessorOperations(t *testing.T) {
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := tool.Rdecode(v1)
@@ -26,9 +26,11 @@ func TestFieldaccessorOperations(t *testing.T) {
 	// x2 := new(X1)
 	// t2 := rdecodesimple(reflect.ValueOf(&x2))
 
+	const byName = false
+
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -53,9 +55,11 @@ func TestStructIterator_Next_X1(t *testing.T) {
 	x2 := new(X1)
 	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
 
-	t.Run("getAllFields at once", testgetallfieldsX1)
+	const byName = false
 
-	t.Run("by struct iterator", teststructiteratorNextT1)
+	t.Run("getAllFields at once", testGetAllFieldsX1)
+
+	t.Run("by struct iterator", testStructIteratorNextT1)
 
 	t.Run("get further: loop src & dst at same time", func(t *testing.T) {
 
@@ -66,7 +70,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
-			accessor, ok := targetIterator.Next()
+			accessor, ok := targetIterator.Next(nil, byName)
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
@@ -91,7 +95,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
-			accessor, ok := targetIterator.Next()
+			accessor, ok := targetIterator.Next(nil, byName)
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
@@ -128,7 +132,7 @@ func x1data() X1 {
 	return x1
 }
 
-func testgetallfieldsX1(t *testing.T) {
+func testGetAllFieldsX1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
@@ -144,15 +148,17 @@ func testgetallfieldsX1(t *testing.T) {
 	}
 }
 
-func teststructiteratorNextT1(t *testing.T) {
+func testStructIteratorNextT1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := tool.Rdecode(v1)
 
+	const byName = false
+
 	it := newStructIterator(t1)
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -166,11 +172,11 @@ func teststructiteratorNextT1(t *testing.T) {
 }
 
 func TestStructIterator_Next_Employee2(t *testing.T) {
-	t.Run("testStructIterator_Next_Employee2", teststructiteratorNextEmployee2)
-	t.Run("testStructIterator_Next_Employee2_exp", teststructiteratorNextEmployee2Exp)
+	t.Run("testStructIterator_Next_Employee2", testStructIteratorNextEmployee2)
+	t.Run("testStructIterator_Next_Employee2_exp", testStructIteratorNextEmployee2Exp)
 }
 
-func teststructiteratorNextEmployee2(t *testing.T) {
+func testStructIteratorNextEmployee2(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -194,8 +200,9 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 	v1 := reflect.ValueOf(&src)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1)
+	const byName = false
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -221,7 +228,7 @@ func teststructiteratorNextEmployee2(t *testing.T) {
 	}
 }
 
-func teststructiteratorNextEmployee2Exp(t *testing.T) {
+func testStructIteratorNextEmployee2Exp(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -245,8 +252,9 @@ func teststructiteratorNextEmployee2Exp(t *testing.T) {
 	v1 := reflect.ValueOf(&src)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
+	const byName = false
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -277,14 +285,14 @@ func teststructiteratorNextEmployee2Exp(t *testing.T) {
 
 func TestStructIterator_Next_User(t *testing.T) {
 	// new target with new children automatically
-	t.Run("testStructIterator_Next_User_new", teststructiteratorNextUserNew)
+	t.Run("testStructIterator_Next_User_new", testStructIteratorNextUserNew)
 
-	t.Run("testStructIterator_Next_User", teststructiteratorNextUser)
-	t.Run("testStructIterator_Next_User_zero", teststructiteratorNextUserZero)
-	t.Run("testStructIterator_Next_User_more", teststructiteratorNextUserMore)
+	t.Run("testStructIterator_Next_User", testStructIteratorNextUser)
+	t.Run("testStructIterator_Next_User_zero", testStructIteratorNextUserZero)
+	t.Run("testStructIterator_Next_User_more", testStructIteratorNextUserMore)
 }
 
-func teststructiteratorNextUser(t *testing.T) {
+func testStructIteratorNextUser(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
@@ -305,8 +313,9 @@ func teststructiteratorNextUser(t *testing.T) {
 	v1 := reflect.ValueOf(&tgt)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1)
+	const byName = false
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -316,7 +325,7 @@ func teststructiteratorNextUser(t *testing.T) {
 
 }
 
-func teststructiteratorNextUserNew(t *testing.T) {
+func testStructIteratorNextUserNew(t *testing.T) {
 
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -325,6 +334,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 	// //tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
+	const byName = false
 	var sb strings.Builder
 	defer func() {
 		t.Logf("\n%v\n", sb.String())
@@ -338,7 +348,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
 		for i := 0; ; i++ {
-			accessor, ok := it.Next()
+			accessor, ok := it.Next(nil, false)
 			if !ok {
 				break
 			}
@@ -349,7 +359,7 @@ func teststructiteratorNextUserNew(t *testing.T) {
 
 }
 
-func teststructiteratorNextUserZero(t *testing.T) {
+func testStructIteratorNextUserZero(t *testing.T) {
 
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -358,6 +368,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
+	const byName = false
 	var sb strings.Builder
 	defer func() {
 		t.Logf("\n%v\n", sb.String())
@@ -371,7 +382,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
-			accessor, ok := it.Next()
+			accessor, ok := it.Next(nil, byName)
 			if !ok {
 				break
 			}
@@ -382,7 +393,7 @@ func teststructiteratorNextUserZero(t *testing.T) {
 
 }
 
-func teststructiteratorNextUserMore(t *testing.T) {
+func testStructIteratorNextUserMore(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -391,6 +402,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 	// tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
+	const byName = false
 	var sb strings.Builder
 	defer func() {
 		t.Logf("\n%v\n", sb.String())
@@ -418,7 +430,7 @@ func teststructiteratorNextUserMore(t *testing.T) {
 		t1, _ := tool.Rdecode(v1)
 		it := newStructIterator(t1)
 		for i := 0; ; i++ {
-			accessor, ok := it.Next()
+			accessor, ok := it.Next(nil, byName)
 			if !ok {
 				break
 			}
@@ -437,16 +449,14 @@ func TestStructIterator_Next_A4(t *testing.T) {
 }
 
 func teststructiteratorNextA4New(t *testing.T) {
-
-	a4 := new(A4)
-
 	var sb strings.Builder
-
+	const byName = false
+	a4 := new(A4)
 	v1 := reflect.ValueOf(&a4)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -498,16 +508,14 @@ func teststructiteratorNextA4New(t *testing.T) {
 }
 
 func teststructiteratorNextA4Zero(t *testing.T) {
-
-	a4 := new(A4)
-
 	var sb strings.Builder
-
+	const byName = false
+	a4 := new(A4)
 	v1 := reflect.ValueOf(&a4)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -558,16 +566,14 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 }
 
 func teststructiteratorNextA4(t *testing.T) {
-
-	a4 := prepareDataA4()
-
 	var sb strings.Builder
-
+	const byName = false
+	a4 := prepareDataA4()
 	v1 := reflect.ValueOf(&a4)
 	t1, _ := tool.Rdecode(v1)
 	it := newStructIterator(t1, withStructPtrAutoExpand(true))
 	for i := 0; ; i++ {
-		accessor, ok := it.Next()
+		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
@@ -618,14 +624,14 @@ func teststructiteratorNextA4(t *testing.T) {
 }
 
 func TestFieldsTable_getallfields(t *testing.T) {
-	t.Run("test_getallfields X1 deep", testfieldstableGetFieldsDeeply)
-	t.Run("test_getallfields", testfieldstableGetallfields)
-	t.Run("test_getallfields_Employee2", testfieldstableGetallfieldsEmployee2)
-	t.Run("test_getallfields_Employee2_2", testfieldstableGetallfieldsEmployee22)
-	t.Run("test_getallfields_User", testfieldstableGetallfieldsUser)
+	t.Run("test_getallfields X1 deep", testFieldsTableGetFieldsDeeply)
+	t.Run("test_getallfields", testFieldsTableGetAllFields)
+	t.Run("test_getallfields_Employee2", testFieldsTableGetAllFieldsEmployee2)
+	t.Run("test_getallfields_Employee2_2", testFieldsTableGetAllFieldsEmployee22)
+	t.Run("test_getallfields_User", testFieldsTableGetAllFieldsUser)
 }
 
-func testfieldstableGetFieldsDeeply(t *testing.T) {
+func testFieldsTableGetFieldsDeeply(t *testing.T) {
 
 	x2 := new(X1)
 	t2 := tool.Rdecodesimple(reflect.ValueOf(&x2))
@@ -645,7 +651,7 @@ func testfieldstableGetFieldsDeeply(t *testing.T) {
 
 }
 
-func testfieldstableGetallfields(t *testing.T) {
+func testFieldsTableGetAllFields(t *testing.T) {
 	a4 := prepareDataA4()
 	v4 := reflect.ValueOf(&a4)
 
@@ -703,7 +709,7 @@ func testfieldstableGetallfields(t *testing.T) {
 	// 15. [Bool1 A1], [2 2] | &{Bool1  bool  24 [2] false}
 }
 
-func testfieldstableGetallfieldsEmployee2(t *testing.T) {
+func testFieldsTableGetAllFieldsEmployee2(t *testing.T) {
 
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -767,7 +773,7 @@ func testfieldstableGetallfieldsEmployee2(t *testing.T) {
 	}
 }
 
-func testfieldstableGetallfieldsEmployee22(t *testing.T) {
+func testFieldsTableGetAllFieldsEmployee22(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -826,7 +832,7 @@ func testfieldstableGetallfieldsEmployee22(t *testing.T) {
 	}
 }
 
-func testfieldstableGetallfieldsUser(t *testing.T) {
+func testFieldsTableGetAllFieldsUser(t *testing.T) {
 
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
