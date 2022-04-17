@@ -116,7 +116,7 @@ badReturn:
 func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	// default is cms.ByOrdinal:
 	//   loops all source fields and copy its value to the corresponding target field.
-	cb := forEachField
+	cb := forEachSourceField
 	if c.targetOriented || params.isGroupedFlagOKDeeply(cms.ByName) {
 		// cmd.ByName strategy:
 		//   loops all target fields and try copying value from source field by its name.
@@ -244,6 +244,62 @@ func cpStructToNewSliceElem0(params *Params) (err error) {
 	return
 }
 
+func getSourceFieldName(knownDestName string, params *Params) (srcFieldName string, flagsInTag *fieldTags, ignored bool) {
+	srcFieldName = knownDestName
+	// var flagsInTag *fieldTags
+	var ok bool
+	if sf := params.accessor.StructField(); sf != nil {
+		flagsInTag, ignored = params.parseFieldTags(sf.Tag)
+		if ignored {
+			return
+		}
+		srcFieldName, ok = flagsInTag.CalcSourceName(sf.Name)
+		// dbglog.Log("     srcName: %v, ok: %v [pre 1, fld: %v, tag: %v]", srcFieldName, ok, sf.Name, sf.Tag)
+		if !ok {
+			if tr := params.accessor.SourceField(); tr != nil {
+				if sf = tr.structField; sf != nil {
+					flagsInTag, ignored = params.parseFieldTags(sf.Tag)
+					if ignored {
+						return
+					}
+					srcFieldName, ok = flagsInTag.CalcSourceName(sf.Name)
+					// dbglog.Log("     srcName: %v, ok: %v [pre 2, fld: %v, tag: %v]", srcFieldName, ok, sf.Name, sf.Tag)
+				}
+			}
+		}
+	}
+	dbglog.Log("     srcName: %v, ok: %v | dstName: %v", srcFieldName, ok, knownDestName)
+	return
+}
+
+// func getTargetFieldName(knownSrcName string, params *Params) (dstFieldName string, ignored bool) {
+// 	dstFieldName = knownSrcName
+// 	var flagsInTag *fieldTags
+// 	var ok bool
+// 	if sf := params.accessor.StructField(); sf != nil {
+// 		flagsInTag, ignored = params.parseFieldTags(sf.Tag)
+// 		if ignored {
+// 			return
+// 		}
+// 		ctx := &NameConverterContext{Params: params}
+// 		dstFieldName, ok = flagsInTag.CalcTargetName(sf.Name, ctx)
+// 		if !ok {
+// 			if tr := params.accessor.SourceField(); tr != nil {
+// 				if sf = tr.structField; sf != nil {
+// 					flagsInTag, ignored = params.parseFieldTags(sf.Tag)
+// 					if ignored {
+// 						return
+// 					}
+// 					dstFieldName, ok = flagsInTag.CalcTargetName(sf.Name, ctx)
+// 					dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, sf.Name, sf.Tag)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return
+// }
+
+// forEachTargetField works for cms.ByName mode enabled.
 func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 	c := params.controller
 
@@ -259,7 +315,7 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 	dbglog.Log("     c.copyFunctionResultToTarget = %v", c.copyFunctionResultToTarget)
 
 	for *i, *amount = 0, len(sst.TableRecords()); params.nextTargetFieldLite(); *i++ {
-		name := params.accessor.StructFieldName()
+		name := params.accessor.StructFieldName() // get target field name
 		if params.shouldBeIgnored(name) {
 			continue
 		}
@@ -268,10 +324,17 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 			v := ex(name)
 			val = reflect.ValueOf(v)
 		} else {
-			if ind := sst.RecordByName(name); ind != nil {
+			srcFieldName, _, ignored := getSourceFieldName(name, params)
+			if ignored {
+				continue
+			}
+
+			if ind := sst.RecordByName(srcFieldName); ind != nil {
 				val = *ind
 			} else if c.copyFunctionResultToTarget {
-				if _, ind = sst.MethodCallByName(name); ind != nil {
+				if _, ind = sst.MethodCallByName(srcFieldName); ind != nil {
+					val = *ind
+				} else if _, ind = sst.MethodCallByName(name); ind != nil {
 					val = *ind
 				} else {
 					continue // skip the field
@@ -289,7 +352,7 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 	return
 }
 
-func forEachField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
+func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 	sst := params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
 	c := params.controller
 
@@ -365,26 +428,6 @@ func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, ar
 		// logger(" %s  %s -> %s", padding, fq, dq)
 	}
 }
-
-// func dbgMakeInfoString(typ reflect.Type, params *Params, src bool, logger func(msg string, args ...interface{})) (qstr string) {
-//	if typ.Kind() == reflect.Struct && params != nil && params.accessor != nil && params.accessor.StructField() != nil {
-//		qstr = dbgMakeFieldInfoString(params.accessor.StructField(), params.owner, logger)
-//	} else {
-//		qstr = fmt.Sprintf("%v (%v)", typ, typ.Kind())
-//	}
-//	return
-// }
-//
-// func dbgMakeFieldInfoString(fld *reflect.StructField, params *Params, logger func(msg string, args ...interface{})) (qstr string) {
-//	ft := fld.Type
-//	ftk := ft.Kind()
-//	if params != nil {
-//		qstr = fmt.Sprintf("Field%v %q (%v (%v)) | %v", fld.Index, fld.Name, ft, ftk, fld)
-//	} else {
-//		qstr = fmt.Sprintf("Field%v %q (%v (%v)) | %v", fld.Index, fld.Name, ft, ftk, fld)
-//	}
-//	return
-// }
 
 func invokeStructFieldTransformer(
 	c *cpController, params *Params, ff, df *reflect.Value,

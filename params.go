@@ -167,6 +167,9 @@ func (params *Params) sourceFieldShouldBeIgnored() (yes bool) {
 }
 
 func (params *Params) shouldBeIgnored(name string) (yes bool) {
+	if name == "" {
+		return true
+	}
 	if params.targetIterator != nil {
 		yes = params.targetIterator.ShouldBeIgnored(name, params.controller.ignoreNames)
 	}
@@ -175,10 +178,12 @@ func (params *Params) shouldBeIgnored(name string) (yes bool) {
 
 func (params *Params) nextTargetField() (sourceField *tableRecT, ok bool) {
 	if params.targetIterator != nil {
-		params.accessor, ok = params.targetIterator.Next()
+		byName := params.isGroupedFlagOKDeeply(cms.ByName)
+		params.accessor, ok = params.targetIterator.Next(params, byName)
 		if ok {
 			sourceField = params.accessor.SourceField()
-			ok = !params.parseFieldTags(sourceField.structField.Tag)
+			_, isIgnored := params.parseFieldTags(sourceField.structField.Tag)
+			ok = !isIgnored
 		}
 	}
 	return
@@ -186,7 +191,8 @@ func (params *Params) nextTargetField() (sourceField *tableRecT, ok bool) {
 
 func (params *Params) nextTargetFieldLite() (ok bool) {
 	if params.targetIterator != nil {
-		params.accessor, ok = params.targetIterator.Next()
+		byName := params.isGroupedFlagOKDeeply(cms.ByName)
+		params.accessor, ok = params.targetIterator.Next(params, byName)
 	}
 	return
 }
@@ -330,12 +336,12 @@ func (params *Params) isStruct() bool { //nolint:unused
 	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil
 }
 
-func (params *Params) parseFieldTags(tag reflect.StructTag) (isIgnored bool) {
+func (params *Params) parseFieldTags(tag reflect.StructTag) (flagsInTag *fieldTags, isIgnored bool) {
 	var tagName string
 	if params.controller != nil {
 		tagName = params.controller.tagName
 	}
-	flagsInTag := parseFieldTags(tag, tagName)
+	flagsInTag = parseFieldTags(tag, tagName)
 	isIgnored = flagsInTag.isFlagExists(cms.Ignore)
 	return
 }

@@ -794,7 +794,10 @@ func TestStructToSliceOrMap(t *testing.T) {
 }
 
 func TestStructWithSourceExtractor(t *testing.T) {
-	c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
+	type MyValue map[string]typ.Any
+	type MyKey string
+	const key MyKey = "data-in-sess"
+	c := context.WithValue(context.TODO(), key, MyValue{
 		"A": 12,
 	})
 
@@ -803,7 +806,7 @@ func TestStructWithSourceExtractor(t *testing.T) {
 	}{}
 
 	err := evendeep.New().CopyTo(c, &tgt, evendeep.WithSourceValueExtractor(func(name string) typ.Any {
-		if m, ok := c.Value("Data").(map[string]typ.Any); ok {
+		if m, ok := c.Value(key).(MyValue); ok {
 			return m[name]
 		}
 		return nil
@@ -812,6 +815,10 @@ func TestStructWithSourceExtractor(t *testing.T) {
 	if tgt.A != 12 || err != nil {
 		t.FailNow()
 	}
+}
+
+func TestStructWithTargetSetter(t *testing.T) {
+	//
 }
 
 type aS struct {
@@ -831,6 +838,9 @@ func TestStructWithCmsByNameStrategy(t *testing.T) {
 
 	src := &aS{A: 6, b: true, C: "hello"}
 	var tgt = bS{Z: 1}
+
+	// use ByName strategy,
+	// use copyFunctionResultsToTarget
 	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
 
 	if tgt.Z != 1 || !tgt.B || tgt.C != "hello" || err != nil {
@@ -839,9 +849,31 @@ func TestStructWithCmsByNameStrategy(t *testing.T) {
 }
 
 func TestStructWithNameConversions(t *testing.T) {
+	type srcS struct {
+		A int    `copy:"A1"`
+		B bool   `copy:"B1,std"`
+		C string `copy:"C1,"`
+	}
+
+	type dstS struct {
+		A1 int
+		B1 bool
+		C1 string
+	}
+
+	src := &srcS{A: 6, B: true, C: "hello"}
+	var tgt = dstS{A1: 1}
+
+	// use ByName strategy,
+	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
+
+	if tgt.A1 != 6 || !tgt.B1 || tgt.C1 != "hello" || err != nil {
+		t.Fatalf("BAD COPY, tgt: %+v", tgt)
+	}
 }
 
 func TestStructWithNameConverter(t *testing.T) {
+	// TODO enable name converter for each field, and TestStructWithNameConverter()
 }
 
 func TestSliceSimple(t *testing.T) {
