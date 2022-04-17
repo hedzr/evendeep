@@ -152,7 +152,8 @@ func TestToInteger(t *testing.T) {
 		for vv, ii := range map[string]int64{
 			"123":  123,
 			"-123": -123,
-			"8.75": 8,
+			"8.75": 9,
+			"8.49": 8,
 		} {
 			v := reflect.ValueOf(vv)
 			ret, err := rToInteger(v, dt)
@@ -204,7 +205,8 @@ func TestToUInteger(t *testing.T) {
 		for vv, ii := range map[string]uint64{
 			"123":  123,
 			"9":    9,
-			"8.75": 8,
+			"8.75": 9,
+			"8.49": 8,
 		} {
 			v := reflect.ValueOf(vv)
 			ret, err := rToUInteger(v, dt)
