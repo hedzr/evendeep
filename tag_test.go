@@ -85,11 +85,11 @@ func subtestFlagTests(t *testing.T) {
 	t.Logf("nilArray: %v, nil: %v", tool.Valfmt(&v), tool.Valfmt(nil))
 
 	v = reflect.ValueOf(&fieldTags{
-		flags:          nil,
-		converter:      nil,
-		copier:         nil,
-		nameConverter:  nil,
-		targetNameRule: "",
+		flags:           nil,
+		converter:       nil,
+		copier:          nil,
+		nameConverter:   nil,
+		nameConvertRule: "",
 	})
 	tool.Rwant(v, reflect.Struct)
 
