@@ -162,8 +162,8 @@ func (c *cpController) copyToInternal(
 
 	defer func() {
 		if e := recover(); e != nil {
-			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v]), causes: %v",
-				tool.RindirectType(from.Type()), tool.RindirectType(to.Type()), e).
+			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v])",
+				tool.RindirectType(from.Type()), tool.RindirectType(to.Type())).
 				WithData(e).
 				WithTaggedData(errors.TaggedData{
 					"source": from,
