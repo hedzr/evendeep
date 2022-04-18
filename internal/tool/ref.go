@@ -71,8 +71,7 @@ func Rdecodetype(reflectType reflect.Type) (ret, prev reflect.Type) {
 //
 // It might not work properly on some cases because interface{} cannot
 // be stripped with calling typ.Elem().
-//
-// In this case, use rdecodesimple(value).Type() instead
+// For this case, use Rdecodesimple(value).Type() instead
 // of Rdecodetypesimple(value.Type()).
 func Rdecodetypesimple(reflectType reflect.Type) (ret reflect.Type) {
 	ret, _ = Rdecodetype(reflectType)
@@ -178,6 +177,18 @@ func Typfmtptr(t *reflect.Type) string { //nolint:gocritic //ptrToRefParam: cons
 		return "???"
 	}
 	return fmt.Sprintf("%v (%v)", *t, (*t).Kind())
+}
+
+// Valfmtptr will step into a ptr value at first, then Valfmt
+func Valfmtptr(v *reflect.Value) string {
+	if v == nil || !v.IsValid() {
+		return "<invalid>"
+	}
+	if v.Kind() == reflect.Ptr {
+		vp := v.Elem()
+		return Valfmtptr(&vp)
+	}
+	return Valfmt(v)
 }
 
 func Valfmt(v *reflect.Value) string {
