@@ -981,6 +981,18 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 				copyKey := reflect.New(tgt.Type().Key())
 				ec.Attach(c.copyTo(params, key, copyKey.Elem()))
 
+				if c.targetSetter != nil && copyKey.Elem().Kind() == reflect.String {
+					srcval := copyValue.Elem()
+					err = c.targetSetter(&srcval, copyKey.Elem().String())
+					if err != nil {
+						if err != ErrShouldFallback {
+							return
+						}
+						err = nil
+					} else {
+						return
+					}
+				}
 				tgt.SetMapIndex(copyKey.Elem(), copyValue.Elem())
 			}
 			return
@@ -1022,12 +1034,30 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	eltyp := tgt.Type().Elem() // get map value type
 	eltypind, _ := tool.Rskiptype(eltyp, reflect.Ptr)
 
+	var processed bool
+	presetter := func(ck, cv reflect.Value) (processed bool, err error) {
+		if c.targetSetter != nil && ck.Kind() == reflect.String {
+			err = c.targetSetter(&cv, ck.String())
+			if err != nil {
+				if err == ErrShouldFallback {
+					processed, err = true, nil
+				}
+			} else {
+				processed = true
+			}
+		}
+		return
+	}
+
 	var ptrToCopyValue, cv reflect.Value
 	if eltypind.Kind() == reflect.Interface {
 		tgtvalind, _ := tool.Rdecode(tgtval)
 		dbglog.Log("  tgtval: [%v] %v, ind: %v", tool.Typfmtv(&tgtval), tgtval.Interface(), tool.Typfmtv(&tgtvalind))
 		ptrToCopyValue = reflect.New(tgtvalind.Type())
 		cv = ptrToCopyValue.Elem()
+		if processed, err = presetter(ck, cv); processed {
+			return
+		}
 		defer func() {
 			tgt.SetMapIndex(ck, cv)
 			dbglog.Log("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
@@ -1035,6 +1065,9 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	} else {
 		ptrToCopyValue = reflect.New(eltypind)
 		cv = ptrToCopyValue.Elem()
+		if processed, err = presetter(ck, cv); processed {
+			return
+		}
 		defer func() {
 			if cv.Type() == eltyp {
 				tgt.SetMapIndex(ck, cv)
