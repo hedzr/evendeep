@@ -18,9 +18,9 @@ type cpController struct {
 	copyUnexportedFields       bool
 	copyFunctionResultToTarget bool
 	passSourceAsFunctionInArgs bool
-	autoExpandStruct           bool
-	autoNewStruct              bool
-	tryApplyConverterAtFirst   bool
+	autoExpandStruct           bool // navigate into nested struct?
+	autoNewStruct              bool // create new instance if field is a ptr
+	tryApplyConverterAtFirst   bool // ValueConverters first, or ValueCopiers?
 
 	makeNewClone bool        // make a new clone by copying to a fresh new object
 	flags        flags.Flags // CopyMergeStrategies globally

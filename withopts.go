@@ -26,6 +26,17 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 	}
 }
 
+// WithTryApplyConverterAtFirst specifies which is first when
+// trying/applying ValueConverters and ValueCopiers.
+func WithTryApplyConverterAtFirst(b bool) Opt {
+	return func(c *cpController) {
+		c.tryApplyConverterAtFirst = b
+	}
+}
+
+// WithTryApplyConverterAtFirstOpt is shortcut of WithTryApplyConverterAtFirst(true)
+var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true)
+
 // WithSourceValueExtractor specify a source field value extractor,
 // which will be applied on each field being copied to target.
 //

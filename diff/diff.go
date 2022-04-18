@@ -53,8 +53,8 @@ func WithIgnoredFields(names ...string) Opt {
 //
 // 1. false (default), each element will be compared one by one.
 //
-// 2. true, the elements in slice will be compared without ordered sensitive.
-// In this case, [9, 5] and [5, 9] are equal.
+// 2. true, the elements in slice will be compared without ordered
+// insensitive. In this case, [9, 5] and [5, 9] are equal.
 func WithSliceOrderedComparison(b bool) Opt {
 	return func(i *info) {
 		i.sliceNoOrder = b
