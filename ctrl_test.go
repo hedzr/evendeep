@@ -9,6 +9,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
@@ -18,6 +19,13 @@ import (
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"gopkg.in/hedzr/errors.v3"
+)
+
+const (
+	helloString  = "hello"
+	worldString  = "world"
+	aHelloString = "Hello"
+	aWorldString = "World"
 )
 
 func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
@@ -170,7 +178,7 @@ func TestSimple(t *testing.T) {
 		),
 		evendeep.NewTestCase(
 			"primitive - string",
-			"hello", "world", "hello",
+			helloString, worldString, helloString,
 			[]evendeep.Opt{
 				evendeep.WithStrategiesReset(),
 			},
@@ -178,9 +186,9 @@ func TestSimple(t *testing.T) {
 		),
 		evendeep.NewTestCase(
 			"primitive - string slice",
-			[]string{"hello", "world"},
-			&[]string{"andy"},           // target needn't addressof
-			&[]string{"hello", "world"}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
+			[]string{helloString, worldString},
+			&[]string{"andy"},                   // target needn't addressof
+			&[]string{helloString, worldString}, // SliceCopy: copy to target; SliceCopyAppend: append to target; SliceMerge: merge into slice
 			[]evendeep.Opt{
 				evendeep.WithStrategiesReset(),
 			},
@@ -188,9 +196,9 @@ func TestSimple(t *testing.T) {
 		),
 		evendeep.NewTestCase(
 			"primitive - string slice - merge",
-			[]string{"hello", "hello", "world"}, // elements in source will be merged into target with uniqueness.
-			&[]string{"andy", "andy"},           // target needn't addressof
-			&[]string{"andy", "hello", "world"}, // In merge mode, any dup elems will be removed.
+			[]string{helloString, helloString, worldString}, // elements in source will be merged into target with uniqueness.
+			&[]string{"andy", "andy"},                       // target needn't addressof
+			&[]string{"andy", helloString, worldString},     // In merge mode, any dup elems will be removed.
 			[]evendeep.Opt{
 				evendeep.WithMergeStrategyOpt,
 			},
@@ -548,9 +556,9 @@ func TestStructSimple(t *testing.T) {
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
-	a[0] = "Hello" //nolint:goconst
-	a[1] = "World" //nolint:goconst
-	var a3 = [3]string{"Hello", "World"}
+	a[0] = aHelloString
+	a[1] = aWorldString
+	var a3 = [3]string{aHelloString, aWorldString}
 
 	x0 := evendeep.X0{}
 	x1 := evendeep.X1{
@@ -638,7 +646,7 @@ func TestStructEmbedded(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:  true,
 	}
 
@@ -658,7 +666,7 @@ func TestStructEmbedded(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"baby", "hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{"baby", helloString, worldString}},
 		Valid:     true,
 	}
 
@@ -702,7 +710,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:  true,
 	}
 
@@ -718,7 +726,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:     true,
 	}
 
@@ -729,7 +737,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 		"EmployeID": int64(7),
 		"Avatar":    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		"Image":     []byte{95, 27, 43, 66, 0, 21, 210},
-		"Attrs":     []string{"hello", "world"},
+		"Attrs":     []string{helloString, worldString},
 		"Valid":     true,
 		"Deleted":   false,
 	}
@@ -805,9 +813,9 @@ func TestStructWithSourceExtractor(t *testing.T) {
 		A int
 	}{}
 
-	err := evendeep.New().CopyTo(c, &tgt, evendeep.WithSourceValueExtractor(func(name string) typ.Any {
+	err := evendeep.New().CopyTo(c, &tgt, evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
 		if m, ok := c.Value(key).(MyValue); ok {
-			return m[name]
+			return m[targetName]
 		}
 		return nil
 	}))
@@ -818,6 +826,64 @@ func TestStructWithSourceExtractor(t *testing.T) {
 }
 
 func TestStructWithTargetSetter(t *testing.T) {
+	type srcS struct {
+		A int
+		B bool
+		C string
+	}
+
+	src := &srcS{
+		A: 5,
+		B: true,
+		C: helloString,
+	}
+	tgt := map[string]typ.Any{
+		"Z": "str",
+	}
+
+	err := evendeep.New().CopyTo(src, &tgt,
+		evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
+			if value != nil {
+				name := "Mo" + strings.Join(sourceNames, ".")
+				tgt[name] = value.Interface()
+			}
+			return // ErrShouldFallback to call the evendeep standard processing
+		}),
+	)
+
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+		t.Errorf("err: %v, tgt: %v", err, tgt)
+		t.FailNow()
+	}
+}
+
+func TestStructWithTargetSetter_map2map(t *testing.T) {
+	src := map[string]typ.Any{
+		"A": 5,
+		"B": true,
+		"C": helloString,
+	}
+	tgt := map[string]typ.Any{
+		"Z": "str",
+	}
+
+	err := evendeep.New().CopyTo(src, &tgt,
+		evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
+			if value != nil {
+				name := "Mo" + strings.Join(sourceNames, ".")
+				tgt[name] = value.Interface()
+			}
+			return // ErrShouldFallback to call the evendeep standard processing
+		}),
+	)
+
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+		t.Errorf("err: %v, tgt: %v", err, tgt)
+		t.FailNow()
+	}
+}
+
+func TestStructWithSSS(t *testing.T) {
 	//
 }
 
@@ -836,14 +902,14 @@ func TestStructWithCmsByNameStrategy(t *testing.T) {
 		C string
 	}
 
-	src := &aS{A: 6, b: true, C: "hello"}
+	src := &aS{A: 6, b: true, C: helloString}
 	var tgt = bS{Z: 1}
 
 	// use ByName strategy,
 	// use copyFunctionResultsToTarget
 	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
 
-	if tgt.Z != 1 || !tgt.B || tgt.C != "hello" || err != nil {
+	if tgt.Z != 1 || !tgt.B || tgt.C != helloString || err != nil {
 		t.Fatalf("BAD COPY, tgt: %+v", tgt)
 	}
 }
@@ -861,13 +927,13 @@ func TestStructWithNameConversions(t *testing.T) {
 		C1 string
 	}
 
-	src := &srcS{A: 6, B: true, C: "hello"}
+	src := &srcS{A: 6, B: true, C: helloString}
 	var tgt = dstS{A1: 1}
 
 	// use ByName strategy,
 	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
 
-	if tgt.A1 != 6 || !tgt.B1 || tgt.C1 != "hello" || err != nil {
+	if tgt.A1 != 6 || !tgt.B1 || tgt.C1 != helloString || err != nil {
 		t.Fatalf("BAD COPY, tgt: %+v", tgt)
 	}
 }
@@ -1007,7 +1073,7 @@ func TestMapAndStruct(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:  true,
 	}
 
@@ -1058,7 +1124,7 @@ func TestMapAndStruct(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"get", "hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{"get", helloString, worldString}},
 		Valid:     true,
 	}
 
@@ -1125,7 +1191,7 @@ func TestMapToString(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:     true,
 	}
 
@@ -1138,7 +1204,7 @@ func TestMapToString(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:  true,
 	}
 
@@ -1154,7 +1220,7 @@ func TestMapToString(t *testing.T) {
 		"EmployeID": int64(7),
 		"Avatar":    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		"Image":     []byte{95, 27, 43, 66, 0, 21, 210},
-		"Attr":      map[string]interface{}{"Attrs": []string{"hello", "world"}},
+		"Attr":      map[string]interface{}{"Attrs": []string{helloString, worldString}},
 		"Valid":     true,
 		"Deleted":   false,
 	}
@@ -1292,7 +1358,7 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 func TestExample1(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	src := evendeep.Employee2{
+	var src = evendeep.Employee2{
 		Base: evendeep.Base{
 			Name:      "Bob",
 			Birthday:  &tm,
@@ -1301,7 +1367,7 @@ func TestExample1(t *testing.T) {
 		},
 		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:  true,
 	}
 	var dst evendeep.User
@@ -1318,7 +1384,7 @@ func TestExample1(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:     true,
 	}) {
 		t.Fatalf("bad, got %v", dst)
@@ -1391,7 +1457,7 @@ func TestExample3(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:     true,
 	}
 	var newRecord evendeep.User
@@ -1426,7 +1492,7 @@ func TestExample4(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
 		Valid:     true,
 	}
 	var dstRecord evendeep.User
@@ -1435,7 +1501,7 @@ func TestExample4(t *testing.T) {
 	var expectRecord = evendeep.User{Name: "Barbara", Birthday: &t0,
 		Image: []byte{95, 27, 43, 66, 0, 21, 210},
 		Attr:  &evendeep.Attr{},
-		// Attr:  &evendeep.Attr{Attrs: []string{"hello", "world"}},
+		// Attr:  &evendeep.Attr{Attrs: []string{"hello", worldString},
 		// Valid: true,
 	}
 

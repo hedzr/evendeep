@@ -2,8 +2,6 @@ package evendeep
 
 import (
 	"encoding/json"
-	"github.com/hedzr/evendeep/typ"
-
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/log/dir"
@@ -31,7 +29,7 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 // WithSourceValueExtractor specify a source field value extractor,
 // which will be applied on each field being copied to target.
 //
-// This feature is only available for single depth struct (target).
+// Just work for non-nested struct.
 //
 // For instance:
 //
@@ -44,9 +42,9 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 //      }{}
 //
 //      evendeep.DeepCopy(c, &tgt,
-//        evendeep.WithSourceValueExtractor(func(name string) typ.Any {
+//        evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
 //      	if m, ok := c.Value("Data").(map[string]typ.Any); ok {
-//      		return m[name]
+//      		return m[targetName]
 //      	}
 //      	return nil
 //      }))
@@ -55,22 +53,60 @@ func WithValueCopiers(cvt ...ValueCopier) Opt {
 //      	t.FailNow()
 //      }
 //
-func WithSourceValueExtractor(e func(name string) typ.Any) Opt {
+func WithSourceValueExtractor(e SourceValueExtractor) Opt {
 	return func(c *cpController) {
 		c.sourceExtractor = e
 	}
 }
 
-// WithTryApplyConverterAtFirst specifies which is first when
-// trying/applying ValueConverters and ValueCopiers.
-func WithTryApplyConverterAtFirst(b bool) Opt {
+// WithTargetValueSetter _
+//
+// In the TargetValueSetter you could return evendeep.ErrShouldFallback to
+// call the evendeep standard processing.
+//
+// TargetValueSetter can work for struct and map.
+//
+// NOTE that the sourceNames[0] is current field name, and the whole
+// sourceNames slice includes the path of the nested struct(s),
+// in reversal order.
+//
+// For instance:
+//
+//    type srcS struct {
+//      A int
+//      B bool
+//      C string
+//    }
+//
+//    src := &srcS{
+//      A: 5,
+//      B: true,
+//      C: helloString,
+//    }
+//    tgt := map[string]typ.Any{
+//      "Z": "str",
+//    }
+//
+//    err := evendeep.New().CopyTo(src, &tgt,
+//      evendeep.WithTargetValueSetter(
+//      func(value *reflect.Value, sourceNames ...string) (err error) {
+//        if value != nil {
+//          name := "Mo" + strings.Join(sourceNames, ".")
+//          tgt[name] = value.Interface()
+//        }
+//        return // ErrShouldFallback to call the evendeep standard processing
+//      }),
+//    )
+//
+//    if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+//      t.Errorf("err: %v, tgt: %v", err, tgt)
+//      t.FailNow()
+//    }
+func WithTargetValueSetter(e TargetValueSetter) Opt {
 	return func(c *cpController) {
-		c.tryApplyConverterAtFirst = b
+		c.targetSetter = e
 	}
 }
-
-// WithTryApplyConverterAtFirstOpt is shortcut of WithTryApplyConverterAtFirst(true)
-var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true)
 
 // WithCloneStyle sets the cpController to clone mode.
 // In this mode, source object will be cloned to a new

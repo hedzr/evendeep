@@ -307,10 +307,11 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 	var val reflect.Value
 	var fcz = params.isGroupedFlagOKDeeply(cms.ClearIfMissed)
 	var aun = c.autoNewStruct // autoNew mode:
-	// we will do new(field) for each target fields if it's invalid.
+	// We will do new(field) for each target field if it's invalid.
 	//
 	// It's not cms.ClearIfInvalid - which will detect if the source
 	// field is invalid or not, but target one.
+	//
 	dbglog.Log("     c.autoNewStruct = %v, cms.ClearIfMissed is set: %v", c.autoNewStruct, params.isGroupedFlagOKDeeply(cms.ClearIfMissed))
 	dbglog.Log("     c.copyFunctionResultToTarget = %v", c.copyFunctionResultToTarget)
 
@@ -360,6 +361,20 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 		if params.sourceFieldShouldBeIgnored() {
 			sst.Step(1) // step the source field index(pointer) backward
 			continue
+		}
+
+		if c.targetSetter != nil {
+			currec := sst.CurrRecord()
+			srcval := currec.FieldValue()
+			if err = c.targetSetter(srcval, currec.names...); err == nil {
+				sst.Step(1)
+			}
+			if err != nil {
+				if err != ErrShouldFallback {
+					return
+				}
+				err = nil // fallback
+			}
 		}
 
 		var sourceField *tableRecT

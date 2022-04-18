@@ -33,9 +33,37 @@ type cpController struct {
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
 
-	sourceExtractor func(name string) typ.Any // simple struct field value extractor in one depth
-	targetOriented  bool                      // loop for target fields? default is for source
+	sourceExtractor SourceValueExtractor // simple struct field value extractor in single depth
+	targetSetter    TargetValueSetter    //
+
+	// targetOriented indicates both sourceExtractor and target object are available.
+	//
+	// When targetOriented is true or cms.ByName has been specified, Copier
+	// do traverse on a struct with target-oriented way. That is, copier will
+	// pick up a source field and the corresponding target field with same name,
+	// or a prefer one after name transformed.
+	// See also Name Conversions.
+	targetOriented bool // loop for target struct fields? default is for source.
 }
+
+// SourceValueExtractor provides a hook for handling
+// the extraction from source field.
+//
+// SourceValueExtractor can work for non-nested struct.
+type SourceValueExtractor func(targetName string) typ.Any
+
+// TargetValueSetter provide a hook for handling the setup
+// to a target field.
+//
+// In the TargetValueSetter you could return evendeep.ErrShouldFallback to
+// call the evendeep standard processing.
+//
+// TargetValueSetter can work for struct and map.
+//
+// NOTE that the sourceNames[0] is current field name, and the whole
+// sourceNames slice includes the path of the nested struct(s),
+// in reversal order.
+type TargetValueSetter func(value *reflect.Value, sourceNames ...string) (err error)
 
 // CopyTo _
 func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
