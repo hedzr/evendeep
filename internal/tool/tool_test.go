@@ -2,6 +2,7 @@ package tool_test
 
 import (
 	"bytes"
+	"github.com/hedzr/log"
 	"reflect"
 	"testing"
 	"time"
@@ -9,6 +10,28 @@ import (
 
 	"github.com/hedzr/evendeep/internal/tool"
 )
+
+func TestNestedRecovery(t *testing.T) {
+	zero := 0
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Errorf("ERR [TestRec]: %v", e)
+		}
+	}()
+
+	func(v int) {
+		defer func() {
+			if e := recover(); e != nil {
+				// log.Errorf("ERR: %v", e)
+				log.Panicf("ERR: %v", e)
+			}
+		}()
+
+		v /= zero
+		t.Log(v)
+	}(9)
+}
 
 func TestMinInt(t *testing.T) {
 	t.Log(tool.MinInt(1, 9))
