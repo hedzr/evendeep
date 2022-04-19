@@ -666,11 +666,25 @@ func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target ref
 		return
 	}
 
+	if ctx.controller.targetSetter != nil {
+		if tgttyp.Kind() == reflect.Struct {
+			// DON'T get into c.Transform(), because Transform will modify
+			// a temporary new instance and return it to caller, and
+			// the new instance will be set to 'target'.
+			// When target setter is valid, we assume the setter will
+			// modify the real target directly rather than on a temporary
+			// object.
+			err = c.toStructDirectly(ctx, source, target, tgttyp)
+			return
+		}
+	}
+
 	if ret, e := c.Transform(ctx, source, tgttyp); e == nil {
 		if k := tgtptr.Kind(); k == reflect.Interface { //nolint:gocritic // no need to switch to 'switch' clause
 			tgtptr.Set(ret)
 		} else if k == reflect.Ptr {
 			tgtptr.Elem().Set(ret)
+			// } else if tool.IsZero(tgt) {
 		} else if tgt.CanSet() {
 			tgt.Set(ret)
 		} else {
@@ -704,9 +718,7 @@ func (c *fromMapConverter) Transform(ctx *ValueConverterContext, source reflect.
 			target, err = c.toStruct(ctx, source, targetType)
 
 		// case reflect.Slice:
-		// 	fallthrough // todo map -> slice
 		// case reflect.Array:
-		// 	fallthrough // todo map -> array
 
 		default:
 			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
@@ -717,9 +729,28 @@ func (c *fromMapConverter) Transform(ctx *ValueConverterContext, source reflect.
 	return
 }
 
-func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-	keys := source.MapKeys()
+func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, target reflect.Value, targetType reflect.Type) (err error) {
+	cc := ctx.controller
+
+	preSetter := func(value reflect.Value, names ...string) (processed bool, err error) {
+		if cc.targetSetter != nil {
+			if err = cc.targetSetter(&value, names...); err == nil {
+				processed = true
+			} else {
+				if err != ErrShouldFallback {
+					return // has error
+				}
+				err, processed = nil, false
+			}
+		}
+		return
+	}
+
+	var ec = errors.New("map -> struct errors")
+	defer ec.Defer(&err)
+
 	target = reflect.New(targetType).Elem()
+	keys := source.MapKeys()
 	for _, key := range keys {
 		src := source.MapIndex(key)
 		st := src.Kind()
@@ -727,14 +758,79 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			src = src.Elem()
 		}
 
+		// convert map key to string type
 		key, err = rToString(key, tool.StringType)
 		if err != nil {
-			continue
+			continue // ignore non-string key
 		}
 		ks := key.String()
-		// nolint:gocritic //no
-		// dbglog.Log("  key %q, src: %v (%v)", ks, valfmt(&src), typfmtv(&src))
+		dbglog.Log("  key %q, src: %v (%v)", ks, tool.Valfmt(&src), tool.Typfmtv(&src))
 
+		if cc.targetSetter != nil {
+			newtyp := src.Type()
+			val := reflect.New(newtyp).Elem()
+			err = ctx.controller.copyTo(ctx.Params, src, val)
+			dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&val), tool.Typfmtv(&val))
+			var processed bool
+			if processed, err = preSetter(val, ks); err != nil || processed {
+				ec.Attach(err)
+				continue
+			}
+		}
+	}
+	return
+}
+
+func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	cc := ctx.controller
+
+	preSetter := func(value reflect.Value, names ...string) (processed bool, err error) {
+		if cc.targetSetter != nil {
+			if err = cc.targetSetter(&value, names...); err == nil {
+				processed = true
+			} else {
+				if err != ErrShouldFallback {
+					return // has error
+				}
+				err, processed = nil, false
+			}
+		}
+		return
+	}
+
+	var ec = errors.New("map -> struct errors")
+	defer ec.Defer(&err)
+
+	target = reflect.New(targetType).Elem()
+	keys := source.MapKeys()
+	for _, key := range keys {
+		src := source.MapIndex(key)
+		st := src.Kind()
+		if st == reflect.Interface {
+			src = src.Elem()
+		}
+
+		// convert map key to string type
+		key, err = rToString(key, tool.StringType)
+		if err != nil {
+			continue // ignore non-string key
+		}
+		ks := key.String()
+		dbglog.Log("  key %q, src: %v (%v)", ks, tool.Valfmt(&src), tool.Typfmtv(&src))
+
+		if cc.targetSetter != nil {
+			newtyp := src.Type()
+			val := reflect.New(newtyp).Elem()
+			err = ctx.controller.copyTo(ctx.Params, src, val)
+			dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&val), tool.Typfmtv(&val))
+			var processed bool
+			if processed, err = preSetter(val, ks); err != nil || processed {
+				ec.Attach(err)
+				continue
+			}
+		}
+
+		// use the key.(string) as the target struct field name
 		tsf, ok := targetType.FieldByName(ks)
 		if !ok {
 			continue
@@ -764,6 +860,7 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 
 		err = ctx.controller.copyTo(ctx.Params, src, fld)
 		dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&fld), tool.Typfmtv(&fld))
+		ec.Attach(err)
 
 		// nolint:gocritic //no
 		// var nv reflect.Value

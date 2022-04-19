@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
 	"io"
 	"math"
@@ -825,7 +826,59 @@ func TestStructWithSourceExtractor(t *testing.T) {
 	}
 }
 
-func TestStructWithTargetSetter(t *testing.T) {
+func TestStructWithTargetSetter_struct2struct(t *testing.T) {
+	type srcS struct {
+		A int64
+		B bool
+		C string
+		D float64
+	}
+	type dstS struct {
+		MoA int32
+		MoB bool
+		MoC string
+		MoZ string
+	}
+	src := &srcS{
+		A: 5,
+		B: true,
+		C: helloString,
+	}
+	tgt := &dstS{
+		MoA: 1,
+		MoB: false,
+		MoZ: worldString,
+	}
+
+	setStructByName := func(s reflect.Value, fld string, val reflect.Value) {
+		var f = s.FieldByName(fld)
+		if f.IsValid() {
+			if val.Type().ConvertibleTo(f.Type()) {
+				f.Set(val.Convert(f.Type()))
+			} else {
+				f.Set(val)
+			}
+		}
+	}
+	err := evendeep.New().CopyTo(src, &tgt,
+		evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
+			if value != nil {
+				name := "Mo" + strings.Join(sourceNames, ".")
+				setStructByName(reflect.ValueOf(tgt).Elem(), name, *value)
+			}
+			return // ErrShouldFallback to call the evendeep standard processing
+		}),
+	)
+
+	if err != nil || tgt.MoA != 5 || !tgt.MoB || tgt.MoC != helloString || tgt.MoZ != worldString {
+		t.Errorf("err: %v, tgt: %v", err, tgt)
+		t.FailNow()
+	} else {
+		t.Logf("new map got: %v", tgt)
+	}
+}
+
+func TestStructWithTargetSetter_struct2map(t *testing.T) {
 	type srcS struct {
 		A int
 		B bool
@@ -856,6 +909,55 @@ func TestStructWithTargetSetter(t *testing.T) {
 		t.FailNow()
 	} else if _, ok := tgt["A"]; ok {
 		t.Errorf("err: key 'A' shouldn't exists, tgt: %v", tgt)
+		t.FailNow()
+	} else {
+		t.Logf("new map got: %v", tgt)
+	}
+}
+
+func TestStructWithTargetSetter_map2struct(t *testing.T) {
+	type dstS struct {
+		MoA int32
+		MoB bool
+		MoC string
+		MoZ string
+	}
+	src := map[string]typ.Any{
+		"A": 5,
+		"B": true,
+		"C": helloString,
+	}
+	tgt := &dstS{
+		MoA: 1,
+		MoB: false,
+		MoZ: worldString,
+	}
+
+	setStructByName := func(s reflect.Value, fldName string, value reflect.Value) {
+		var f = s.FieldByName(fldName)
+		if f.IsValid() {
+			if value.Type().ConvertibleTo(f.Type()) {
+				dbglog.Log("struct.%q <- %v", fldName, tool.Valfmt(&value))
+				f.Set(value.Convert(f.Type()))
+			} else {
+				dbglog.Log("struct.%q <- %v", fldName, tool.Valfmt(&value))
+				f.Set(value)
+			}
+		}
+	}
+	err := evendeep.New().CopyTo(src, &tgt,
+		evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
+			if value != nil {
+				name := "Mo" + strings.Join(sourceNames, ".")
+				setStructByName(reflect.ValueOf(tgt).Elem(), name, *value)
+				dbglog.Log("struct.%q <- %v", name, tool.Valfmt(value))
+			}
+			return // ErrShouldFallback to call the evendeep standard processing
+		}),
+	)
+
+	if err != nil || tgt.MoA != 5 || !tgt.MoB || tgt.MoC != helloString || tgt.MoZ != worldString {
+		t.Errorf("err: %v, tgt: %v", err, tgt)
 		t.FailNow()
 	} else {
 		t.Logf("new map got: %v", tgt)
