@@ -749,7 +749,6 @@ func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, 
 	var ec = errors.New("map -> struct errors")
 	defer ec.Defer(&err)
 
-	target = reflect.New(targetType).Elem()
 	keys := source.MapKeys()
 	for _, key := range keys {
 		src := source.MapIndex(key)
