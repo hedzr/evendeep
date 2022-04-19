@@ -359,7 +359,7 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 	for *i, *amount = 0, len(sst.TableRecords()); *i < *amount; *i++ {
 		if params.sourceFieldShouldBeIgnored() {
-			sst.Step(1) // step the source field index(pointer) backward
+			sst.Step(1) // step the source field index subscription
 			continue
 		}
 
@@ -367,11 +367,12 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			currec := sst.CurrRecord()
 			srcval := currec.FieldValue()
 			if err = c.targetSetter(srcval, currec.names...); err == nil {
-				sst.Step(1)
+				sst.Step(1) // step the source field index
+				continue    // targetSetter make things done, so continue to next field
 			}
 			if err != nil {
 				if err != ErrShouldFallback {
-					return
+					return // has error, break the whole copier loop
 				}
 				err = nil // fallback
 			}
@@ -1026,25 +1027,34 @@ func mapMergePreSetter(c *cpController, ck, cv reflect.Value) (processed bool, e
 
 func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Value) (err error) {
 	var processed bool
-	originalValue := src.MapIndex(key)
 
-	keyType := tgt.Type().Key()
-	ptrToCopyKey := reflect.New(keyType)
-	dbglog.Log("  tgt.type: %v, ptrToCopyKey.type: %v", tool.Typfmtv(&tgt), tool.Typfmtv(&ptrToCopyKey))
-	ck := ptrToCopyKey.Elem()
-	if err = c.copyTo(params, key, ptrToCopyKey); err != nil {
+	var ck reflect.Value
+	if ck, err = cloneMapKey(c, params, tgt, key); err != nil {
 		return
 	}
 
-	tgtval, newelemcreated := ensureMapPtrValue(tgt, ck)
+	originalValue := src.MapIndex(key)
+
+	tgtval, newelemcreated, err2 := ensureMapPtrValue(c, params, tgt, ck, originalValue)
+	if err = err2; err2 != nil {
+		return
+	}
 	if newelemcreated {
+		cv := tool.Rindirect(tgtval)
+		if processed, err = mapMergePreSetter(c, ck, cv); processed {
+			return
+		}
+		defer func() {
+			tgt.SetMapIndex(ck, cv)
+			dbglog.Log("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
+		}()
 		if err = c.copyTo(params, originalValue, tgtval); err != nil {
 			return
 		}
-		tgtval = tgtval.Elem()
-		dbglog.Log("  Update Map: %v -> %v", ck.Interface(), tgtval.Interface())
+		dbglog.Log("         <MAP> updated: set map[%v] to %v", tool.Valfmtptr(&ck), tool.Valfmt(&tgtval))
 		return
 	}
+	dbglog.Log("         <VAL> duplicated/gotten: %v", tool.Valfmtptr(&tgtval))
 
 	eltyp := tgt.Type().Elem() // get map value type
 	eltypind, _ := tool.Rskiptype(eltyp, reflect.Ptr)
@@ -1052,7 +1062,7 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	var ptrToCopyValue, cv reflect.Value
 	if eltypind.Kind() == reflect.Interface {
 		tgtvalind, _ := tool.Rdecode(tgtval)
-		dbglog.Log("  tgtval: [%v] %v, ind: %v", tool.Typfmtv(&tgtval), tgtval.Interface(), tool.Typfmtv(&tgtvalind))
+		dbglog.Log("  tgtval: [%v] %v, ind: %v", tool.Typfmtv(&tgtval), tool.Valfmt(&tgtval), tool.Typfmtv(&tgtvalind))
 		ptrToCopyValue = reflect.New(tgtvalind.Type())
 		cv = ptrToCopyValue.Elem()
 		if processed, err = mapMergePreSetter(c, ck, cv); processed {
@@ -1090,25 +1100,51 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	return //nolint:nakedret
 }
 
-func ensureMapPtrValue(tgt, key reflect.Value) (val reflect.Value, ptr bool) {
-	val = tgt.MapIndex(key)
-	if val.Kind() == reflect.Ptr {
+func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue reflect.Value) (val reflect.Value, ptr bool, err error) {
+	val = m.MapIndex(key)
+	vk := val.Kind()
+	if vk == reflect.Ptr {
 		if tool.IsNil(val) {
-			typ := tgt.Type().Elem()
-			val = reflect.New(typ)
-			vind := tool.Rindirect(val)
-			tgt.SetMapIndex(key, val)
-			ptr = true // val = vind
-			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmt(&vind))
+			typ := m.Type().Elem()  // make new instance of type pointed by pointer
+			val = reflect.New(typ)  //
+			m.SetMapIndex(key, val) // and set the new pointer into map
+			ptr = true              //
+			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
 		}
 	} else if !val.IsValid() {
-		typ := tgt.Type().Elem()
-		val = reflect.New(typ)
-		vind := tool.Rindirect(val)
-		dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmt(&vind))
-		tgt.SetMapIndex(key, vind)
-		ptr = true // val = vind
+		typ := m.Type().Elem()
+		if typ.Kind() != reflect.Interface {
+			val = reflect.New(typ)
+			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			m.SetMapIndex(key, val.Elem())
+			ptr = true // val = vind
+		} else if originalValue.IsValid() {
+			typ = tool.Rdecodesimple(originalValue).Type()
+			val = reflect.New(typ).Elem()
+			ptr = true
+			if err = c.copyTo(params, originalValue, val); err != nil {
+				return
+			}
+			var processed bool
+			if processed, err = mapMergePreSetter(c, key, val); processed {
+				return
+			}
+			m.SetMapIndex(key, val)
+			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+		}
 	}
+	return
+}
+
+func cloneMapKey(c *cpController, params *Params, tgt, key reflect.Value) (ck reflect.Value, err error) {
+	keyType := tgt.Type().Key()
+	ptrToCopyKey := reflect.New(keyType)
+	dbglog.Log("  tgt.type: %v, ptrToCopyKey.type: %v", tool.Typfmtv(&tgt), tool.Typfmtv(&ptrToCopyKey))
+	ck = ptrToCopyKey.Elem()
+	if err = c.copyTo(params, key, ck); err != nil {
+		return
+	}
+	dbglog.Log("         <KEY> duplicated: %v", tool.Valfmtptr(&ck))
 	return
 }
 
@@ -1208,15 +1244,19 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 
 	// //////////////// source is primitive types but target isn't its
 	var processed bool
-	processed, err = copyPrimitiveToComposite(c, params, from, to, toind.Type())
+	var toIndType = targetType
+	if toind.IsValid() {
+		toIndType = toind.Type()
+	}
+	processed, err = copyPrimitiveToComposite(c, params, from, to, toIndType)
 	if processed || err != nil {
 		return
 	}
 
-	// //////////////// primitive
+	// create new
 	if !toind.IsValid() && to.Kind() == reflect.Ptr {
 		tgt := reflect.New(targetType.Elem())
-		toind = tool.Rindirect(tgt)
+		toind = tgt.Elem()
 		defer func() {
 			if err == nil {
 				to.Set(tgt)
@@ -1225,8 +1265,8 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	}
 
 	// try primitive -> primitive at first
-	if tool.CanConvert(&fromind, toind.Type()) {
-		var val = fromind.Convert(toind.Type())
+	if tool.CanConvert(&fromind, toIndType) {
+		var val = fromind.Convert(toIndType)
 		err = setTargetValue1(params, to, toind, val)
 		return
 	}

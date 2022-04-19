@@ -838,7 +838,7 @@ func TestStructWithTargetSetter(t *testing.T) {
 		C: helloString,
 	}
 	tgt := map[string]typ.Any{
-		"Z": "str",
+		"Z": worldString,
 	}
 
 	err := evendeep.New().CopyTo(src, &tgt,
@@ -851,9 +851,14 @@ func TestStructWithTargetSetter(t *testing.T) {
 		}),
 	)
 
-	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString {
 		t.Errorf("err: %v, tgt: %v", err, tgt)
 		t.FailNow()
+	} else if _, ok := tgt["A"]; ok {
+		t.Errorf("err: key 'A' shouldn't exists, tgt: %v", tgt)
+		t.FailNow()
+	} else {
+		t.Logf("new map got: %v", tgt)
 	}
 }
 
@@ -864,7 +869,7 @@ func TestStructWithTargetSetter_map2map(t *testing.T) {
 		"C": helloString,
 	}
 	tgt := map[string]typ.Any{
-		"Z": "str",
+		"Z": worldString,
 	}
 
 	err := evendeep.New().CopyTo(src, &tgt,
@@ -877,9 +882,14 @@ func TestStructWithTargetSetter_map2map(t *testing.T) {
 		}),
 	)
 
-	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString {
 		t.Errorf("err: %v, tgt: %v", err, tgt)
 		t.FailNow()
+	} else if _, ok := tgt["A"]; ok {
+		t.Errorf("err: key 'A' shouldn't exists, tgt: %v", tgt)
+		t.FailNow()
+	} else {
+		t.Logf("new map got: %v", tgt)
 	}
 }
 

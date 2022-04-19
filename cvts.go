@@ -269,6 +269,9 @@ func (c *cvtbase) safeType(tgt, tgtptr reflect.Value) reflect.Type {
 		return tgt.Type()
 	}
 	if tgtptr.IsValid() {
+		if tgtptr.Kind() == reflect.Interface {
+			return tgtptr.Type()
+		}
 		return tgtptr.Type().Elem()
 	}
 	log.Panicf("niltyp !! CANNOT fetch type: tgt = %v, tgtptr = %v", tool.Typfmtv(&tgt), tool.Typfmtv(&tgtptr))
@@ -440,7 +443,7 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 		if c.processUnexportedField(ctx, target, ret) {
 			return
 		}
-		dbglog.Log("set: %v (%v) <- %v", tool.Valfmt(&target), tool.Typfmtv(&target), tool.Valfmt(&ret))
+		dbglog.Log("     set: %v (%v) <- %v", tool.Valfmt(&target), tool.Typfmtv(&target), tool.Valfmt(&ret))
 		tgtptr.Set(ret)
 	} else {
 		err = c.postCopyTo(ctx, source, target)
