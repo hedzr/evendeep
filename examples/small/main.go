@@ -7,6 +7,7 @@ import (
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/diff"
+	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/log"
 )
 
@@ -43,7 +44,7 @@ func main() {
 	tgt := X2{N: nn[1:3]}
 	log.Printf("   src: %+v", x1)
 	log.Printf("   tgt: %+v", tgt)
-	evendeep.Copy(x1, &tgt, evendeep.WithStrategiesReset())
+	evendeep.Copy(x1, &tgt, evendeep.WithStrategiesReset(cms.Default))
 	if delta, ok := evendeep.DeepDiff(*expect1, x1); !ok {
 		log.Errorf("want %v but got %v", expect1, tgt)
 		log.Panicf("The diffs:\n%v", delta)
