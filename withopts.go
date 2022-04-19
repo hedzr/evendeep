@@ -150,22 +150,22 @@ func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	}
 }
 
-// WithByNameStrategyOpt is synonym of cms.ByName
+// WithByNameStrategyOpt is synonym of cms.ByName by calling WithStrategies
 var WithByNameStrategyOpt = WithStrategies(cms.ByName)
 
-// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal
+// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithStrategies
 var WithByOrdinalStrategyOpt = WithStrategies(cms.ByOrdinal)
 
-// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy
+// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithStrategies
 var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
 
-// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge
+// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithStrategies
 var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
 
-// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid
+// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithStrategies
 var WithORMDiffOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
 
-// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty
+// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling WithStrategies
 var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
@@ -176,8 +176,9 @@ var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
 // means that a set of default strategies will be applied,
 // in other words, its include:
 //
-//    cms.Default, cms.OmitIfEmpty, cms.SliceCopy,
-//    cms.MapCopy, cms.ByOrdinal.
+//    cms.Default, cms.NoOmit, cms.NoOmitTarget,
+//    cms.SliceCopy, cms.MapCopy,
+//    cms.ByOrdinal,
 //
 //
 func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
@@ -192,9 +193,29 @@ func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
 }
 
 // WithAutoExpandForInnerStruct does copy fields with flat struct.
-func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
+// When autoExpandForInnerStruct is enabled, the iterator will go into
+// any embedded struct and traverse its fields with a flatten mode.
+//
+// For a instance, the iteration on struct:
+//
+//    type A struct {
+//       F1 string
+//       F2 int
+//    }
+//    type B struct {
+//       F1 bool
+//       F2 A
+//       F3 float32
+//    }
+//
+// will produce the sequences:
+//
+//    B.F1, B.F2, B.F2 - A.F1, B.F2 - A.F2, B.F3
+//
+// Default is true.
+func WithAutoExpandForInnerStruct(autoExpand bool) Opt {
 	return func(c *cpController) {
-		c.autoExpandStruct = autoexpand
+		c.autoExpandStruct = autoExpand
 	}
 }
 
@@ -202,6 +223,10 @@ func WithAutoExpandForInnerStruct(autoexpand bool) Opt {
 var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
 
 // WithAutoNewForStructField does create new instance on ptr field of a struct.
+//
+// When cloning to a new target object, it might be helpful.
+//
+// Default is true.
 func WithAutoNewForStructField(autoNew bool) Opt {
 	return func(c *cpController) {
 		c.autoNewStruct = autoNew
@@ -213,6 +238,10 @@ var WithAutoNewForStructFieldOpt = WithAutoNewForStructField(true)
 
 // WithCopyUnexportedField try to copy the unexported fields
 // with special way.
+//
+// This feature needs unsafe package present.
+//
+// Default is true.
 func WithCopyUnexportedField(b bool) Opt {
 	return func(c *cpController) {
 		c.copyUnexportedFields = b
@@ -226,6 +255,8 @@ var WithCopyUnexportedFieldOpt = WithCopyUnexportedField(true)
 // pass the result to the responsible target field.
 //
 // It just works when target field is acceptable.
+//
+// Default is true.
 func WithCopyFunctionResultToTarget(b bool) Opt {
 	return func(c *cpController) {
 		c.copyFunctionResultToTarget = b
@@ -237,6 +268,8 @@ var WithCopyFunctionResultToTargetOpt = WithCopyFunctionResultToTarget(true)
 
 // WithPassSourceToTargetFunction invoke target function member and
 // pass the source as its input parameters.
+//
+// Default is true.
 func WithPassSourceToTargetFunction(b bool) Opt {
 	return func(c *cpController) {
 		c.passSourceAsFunctionInArgs = b
@@ -289,7 +322,9 @@ func WithStructTagName(name string) Opt {
 	}
 }
 
-// WithoutPanic disable panic() call internally
+// WithoutPanic disable panic() call internally.
+//
+// Default is true.
 func WithoutPanic() Opt {
 	return func(c *cpController) {
 		c.rethrow = false
@@ -303,6 +338,8 @@ func WithoutPanic() Opt {
 //
 // If BinaryMarshaler has been implemented, the source.Marshal() will
 // be applied.
+//
+// It's synonym of RegisterDefaultStringMarshaller.
 func WithStringMarshaller(m TextMarshaller) Opt {
 	return func(c *cpController) {
 		RegisterDefaultStringMarshaller(m)
@@ -316,6 +353,8 @@ func WithStringMarshaller(m TextMarshaller) Opt {
 //
 // If encoding.TextMarshaler/json.Marshaler have been implemented, the
 // source.MarshalText/MarshalJSON() will be applied.
+//
+// It's synonym of WithStringMarshaller.
 func RegisterDefaultStringMarshaller(m TextMarshaller) {
 	if m == nil {
 		m = json.Marshal
@@ -323,5 +362,5 @@ func RegisterDefaultStringMarshaller(m TextMarshaller) {
 	textMarshaller = m
 }
 
-// TextMarshaller for string
+// TextMarshaller for string marshalling
 type TextMarshaller func(v interface{}) ([]byte, error)

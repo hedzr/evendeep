@@ -15,19 +15,22 @@ import (
 // Use New:
 //
 //     src, tgt := 123, 0
-//     evendeep.New().CopyTo(src, &tgt)
+//     err = evendeep.New().CopyTo(src, &tgt)
 //
-// Use package functions:
+// Use package functions (With-opts might cumulate):
 //
 //     evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
 //     tgt = evendeep.MakeClone(src)
 //
-// Use DefaultCopyController:
+// Use DefaultCopyController (With-opts might cumulate):
 //
 //     evendeep.DefaultCopyController.CopyTo(src, &tgt)
 //
+// The most conventional way is:
+//
+//     err := evendeep.New().CopyTo(src, &tgt)
+//
 func New(opts ...Opt) DeepCopier {
-	// lazyInitRoutines()
 	var c = newDeepCopier()
 	for _, opt := range opts {
 		opt(c)
@@ -129,6 +132,7 @@ func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 }
 
 func newDeepCopier() *cpController {
+	// lazyInitRoutines()
 	return &cpController{
 		valueConverters: defaultValueConverters(),
 		valueCopiers:    defaultValueCopiers(),
