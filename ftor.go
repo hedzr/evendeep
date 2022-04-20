@@ -394,7 +394,7 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 		}
 
 		srcval, dstval := sourceField.FieldValue(), params.accessor.FieldValue()
-		log.VDebugf("%d. %s (%v) -> %s (%v) | (%v) -> (%v)", i,
+		log.VDebugf("%d. %s (%v) -> %s (%v) | (%v) -> (%v)", *i,
 			sourceField.FieldName(), tool.Typfmtv(srcval), params.accessor.StructFieldName(),
 			tool.Typfmt(*params.accessor.FieldType()), tool.Valfmt(srcval), tool.Valfmt(dstval))
 
@@ -467,6 +467,9 @@ func invokeStructFieldTransformer(
 	if processed = checkClearIfEqualOpt(params, ff, df, dft); processed {
 		return
 	}
+	if processed = checkOmitEmptyOpt(params, ff, df, dft); processed {
+		return
+	}
 	if processed, err = tryConverters(c, params, ff, df, dftyp, false); processed {
 		return
 	}
@@ -524,6 +527,16 @@ func dtypzz(df *reflect.Value, deftyp *reflect.Type) reflect.Type { //nolint:goc
 		return df.Type()
 	}
 	return *deftyp
+}
+
+func checkOmitEmptyOpt(params *Params, ff, df *reflect.Value, dft reflect.Type) (processed bool) {
+	if tool.IsNilv(ff) && params.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty) {
+		processed = true
+	}
+	if tool.IsZerov(ff) && params.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty) {
+		processed = true
+	}
+	return
 }
 
 func checkClearIfEqualOpt(params *Params, ff, df *reflect.Value, dft reflect.Type) (processed bool) {

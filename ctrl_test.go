@@ -181,7 +181,7 @@ func TestSimple(t *testing.T) {
 			"primitive - string",
 			helloString, worldString, helloString,
 			[]evendeep.Opt{
-				evendeep.WithStrategiesReset(),
+				evendeep.WithStrategiesReset(cms.Default),
 			},
 			nil,
 		),
@@ -1596,6 +1596,7 @@ func TestExample3(t *testing.T) {
 
 func TestExample4(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
+	attr := &evendeep.Attr{Attrs: []string{helloString, worldString}}
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	var originRec = evendeep.User{
 		Name:      "Bob",
@@ -1604,18 +1605,26 @@ func TestExample4(t *testing.T) {
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
+		Attr:      attr,
 		Valid:     true,
 	}
-	var dstRecord evendeep.User
+	var dstRecord = new(evendeep.User)
 	var t0 = time.Unix(0, 0)
 	var emptyRecord = evendeep.User{Name: "Barbara", Birthday: &t0}
-	var expectRecord = evendeep.User{Name: "Barbara", Birthday: &t0,
-		Image: []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:  &evendeep.Attr{},
-		// Attr:  &evendeep.Attr{Attrs: []string{"hello", worldString},
-		// Valid: true,
+	var expectRecord = &evendeep.User{Name: "Barbara", Birthday: &t0,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      attr,
+		Valid:     true,
 	}
+	// var expectRecordZero = evendeep.User{Name: "Barbara", Birthday: &t0,
+	// 	// Image: []byte{95, 27, 43, 66, 0, 21, 210},
+	// 	Attr: &evendeep.Attr{},
+	// 	// Attr:  &evendeep.Attr{Attrs: []string{"hello", worldString},
+	// 	// Valid: true,
+	// }
 
 	evendeep.ResetDefaultCopyController()
 
@@ -1623,14 +1632,25 @@ func TestExample4(t *testing.T) {
 	evendeep.DeepCopy(originRec, &dstRecord)
 	t.Logf("dstRecord: %v", dstRecord)
 	dbglog.Log("---- dstRecord: %v", dstRecord)
-	if !reflect.DeepEqual(dstRecord, originRec) {
-		t.Fatalf("bad, \n   got %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, originRec, dstRecord.Attr, originRec.Attr)
+	if !evendeep.DeepEqual(dstRecord, &originRec) {
+		t.Fatalf("bad, \n   got: %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, originRec, dstRecord.Attr, originRec.Attr)
 	}
 
 	// now update dstRecord with the non-empty fields.
 	evendeep.DeepCopy(emptyRecord, &dstRecord, evendeep.WithOmitEmptyOpt)
 	t.Logf("dstRecord (WithOmitEmptyOpt): %v", dstRecord)
-	if !reflect.DeepEqual(dstRecord, expectRecord) {
-		t.Fatalf("bad, \n   got %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, expectRecord, dstRecord.Attr, expectRecord.Attr)
+	// if !evendeep.DeepEqual(dstRecord, expectRecord) {
+	// 	t.Fatalf("bad, \n   got: %v\nexpect: %v\n   got.Attr: %v\nexpect.Attr: %v", dstRecord, expectRecord, dstRecord.Attr, expectRecord.Attr)
+	// }
+	if delta, equal := evendeep.DeepDiff(dstRecord, expectRecord); !equal {
+		t.Fatalf("bad, \n   got: %v\nexpect: %v\n delta:\n%v", dstRecord, expectRecord, delta)
 	}
+
+	// evendeep.ResetDefaultCopyController()
+	// // now update dstRecord with the non-empty fields.
+	// evendeep.DeepCopy(emptyRecord, &dstRecord, evendeep.WithStrategies(cms.OmitIfEmpty))
+	// t.Logf("dstRecord (ClearIfInvalid): %v", dstRecord)
+	// if delta, equal := evendeep.DeepDiff(dstRecord, expectRecordZero); !equal {
+	// 	t.Fatalf("bad, \n   got: %v\nexpect: %v\n delta:\n%v", dstRecord, expectRecordZero, delta)
+	// }
 }
