@@ -25,6 +25,13 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 )
 
+func TestRegisterInitRoutines(t *testing.T) {
+	registerInitRoutines(nil)
+	registerInitRoutines(func() {})
+	registerLazyInitRoutines(nil)
+	registerLazyInitRoutines(func() {})
+}
+
 // TestLogNormal _
 func TestLogNormal(t *testing.T) {
 	// config := log.NewLoggerConfigWith(true, "logrus", "trace")
@@ -452,6 +459,8 @@ func NewForTest() DeepCopier {
 		WithCopyFunctionResultToTargetOpt,
 		WithPassSourceToTargetFunctionOpt,
 
+		WithSyncAdvancingOpt,
+
 		WithTryApplyConverterAtFirstOpt,
 		WithByNameStrategyOpt,
 		WithByOrdinalStrategyOpt,
@@ -577,6 +586,7 @@ func RunTestCases(t *testing.T, cases ...TestCase) {
 
 			c := NewFlatDeepCopier(tc.opts...)
 
+			dbglog.Log("- Case %3d: %v", ix, tc.description)
 			err := c.CopyTo(&tc.src, &tc.dst)
 
 			verifier := tc.verifier
@@ -731,7 +741,7 @@ func (r *randomizer) NextStringSimple(n int) string {
 
 // Employee type for testing
 type Employee struct {
-	Name      string
+	Name      string `copy:",std"`
 	Birthday  *time.Time
 	F11       float32
 	F12       float64
