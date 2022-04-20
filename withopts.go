@@ -180,10 +180,11 @@ var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
 //    cms.SliceCopy, cms.MapCopy,
 //    cms.ByOrdinal,
 //
-//
+// If a flagsList supplied, WithStrategiesReset will add them and
+// set the state to false.
 func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
 	return func(c *cpController) {
-		c.flags = flags.New()
+		c.flags = flags.New(flagsList...)
 		for _, fx := range flagsList {
 			if _, ok := c.flags[fx]; ok {
 				c.flags[fx] = false
@@ -279,6 +280,18 @@ func WithPassSourceToTargetFunction(b bool) Opt {
 // WithPassSourceToTargetFunctionOpt is shortcut of WithPassSourceToTargetFunction
 var WithPassSourceToTargetFunctionOpt = WithPassSourceToTargetFunction(true)
 
+// WithSyncAdvancing _
+//
+// Just for cms.ByOrdinal mode.
+func WithSyncAdvancing(syncAdvancing bool) Opt {
+	return func(c *cpController) {
+		c.advanceTargetFieldPointerEvenIfSourceIgnored = syncAdvancing
+	}
+}
+
+// WithSyncAdvancingOpt is synonym of WithAutoExpandForInnerStruct(true)
+var WithSyncAdvancingOpt = WithSyncAdvancing(true)
+
 // WithIgnoreNames does specify the ignored field names list.
 //
 // Use the filename wildcard match characters (aka. '*' and '?', and '**')
@@ -318,7 +331,7 @@ func isWildMatch(s, pattern string) bool {
 //
 func WithStructTagName(name string) Opt {
 	return func(c *cpController) {
-		c.tagName = name
+		c.tagKeyName = name
 	}
 }
 

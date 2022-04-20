@@ -102,7 +102,7 @@ func TestWithXXX(t *testing.T) {
 		}
 		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
-		err := copier.CopyTo(src1, &tgt1)
+		err := copier.CopyTo(src1, &tgt1, evendeep.WithSyncAdvancing(true))
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -112,6 +112,32 @@ func TestWithXXX(t *testing.T) {
 		if tgt1.X1 == src1.X1 || tgt1.X2 == src1.X2 {
 			t.Fatalf("err: 'X1','X2' fields should be ignored, the fact is bad")
 		}
+		if tgt1.Y != src1.Y {
+			t.Fatalf("err: 'Y' field should be copied.")
+		}
+
+	})
+
+	t.Run("ignore field test - no sync advance", func(t *testing.T) {
+		copier = evendeep.New()
+
+		type AAA struct {
+			X1 string `copy:"-"`
+			X2 string `copy:",-"`
+			Y  int
+		}
+		type BBB struct {
+			Y int
+		}
+		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
+		tgt1 := &BBB{Y: -1}
+		err := copier.CopyTo(src1, &tgt1)
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+
+		t.Logf("res bb: %+v", tgt1)
+
 		if tgt1.Y != src1.Y {
 			t.Fatalf("err: 'Y' field should be copied.")
 		}
@@ -159,6 +185,40 @@ func TestWithXXX(t *testing.T) {
 
 	})
 
+}
+
+func TestIgnoreSourceField(t *testing.T) {
+	type AA struct {
+		A bool `copy:",ignore"`
+		B int
+	}
+	src := &AA{A: false, B: 9}
+	dst := &AA{A: true, B: 19}
+	err := evendeep.New().CopyTo(src, dst, evendeep.WithSyncAdvancingOpt)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("got: %v", *dst)
+	if !dst.A || dst.B != 9 {
+		t.FailNow()
+	}
+}
+
+func TestOmitEmptySourceField(t *testing.T) {
+	type AA struct {
+		A int `copy:",omitempty"`
+		B int
+	}
+	src := &AA{A: 0, B: 9}
+	dst := &AA{A: 11, B: 19}
+	err := evendeep.New().CopyTo(src, dst, evendeep.WithOmitEmptyOpt)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	t.Logf("got: %v", *dst)
+	if dst.A != 11 || dst.B != 9 {
+		t.FailNow()
+	}
 }
 
 func TestDeepCopyGenerally(t *testing.T) {

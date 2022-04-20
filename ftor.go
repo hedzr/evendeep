@@ -359,7 +359,12 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 	for *i, *amount = 0, len(sst.TableRecords()); *i < *amount; *i++ {
 		if params.sourceFieldShouldBeIgnored() {
-			sst.Step(1) // step the source field index subscription
+			log.VDebugf("%d. %s : IGNORED", *i, sst.CurrRecord().FieldName())
+			if c.advanceTargetFieldPointerEvenIfSourceIgnored {
+				_ = params.nextTargetFieldLite()
+			} else {
+				sst.Step(1) // step the source field index subscription
+			}
 			continue
 		}
 
@@ -367,8 +372,12 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			currec := sst.CurrRecord()
 			srcval := currec.FieldValue()
 			if err = c.targetSetter(srcval, currec.names...); err == nil {
-				sst.Step(1) // step the source field index
-				continue    // targetSetter make things done, so continue to next field
+				if c.advanceTargetFieldPointerEvenIfSourceIgnored {
+					_ = params.nextTargetFieldLite()
+				} else {
+					sst.Step(1) // step the source field index
+				}
+				continue // targetSetter make things done, so continue to next field
 			}
 			if err != nil {
 				if err != ErrShouldFallback {

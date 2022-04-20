@@ -28,7 +28,9 @@ type cpController struct {
 	funcInputs   []typ.Any   // preset input args for function invoking
 	rethrow      bool        // panic when error occurs
 
-	tagName string
+	advanceTargetFieldPointerEvenIfSourceIgnored bool
+
+	tagKeyName string // struct tag name for cmd.CopyMergeStrategy, default is "" and assumes using "copy" as key name
 
 	valueConverters ValueConverters
 	valueCopiers    ValueCopiers
