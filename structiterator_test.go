@@ -2,6 +2,8 @@ package evendeep
 
 import (
 	"fmt"
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/typ"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,12 +15,269 @@ import (
 	"github.com/hedzr/evendeep/internal/tool"
 )
 
+func TestTableRecT_FieldName(t *testing.T) {
+	tr := tableRecT{
+		names: nil,
+	}
+	if tr.FieldName() != "" {
+		t.FailNow()
+	}
+
+	tr = tableRecT{
+		names: []string{"C", "B", "A"},
+	}
+	if tr.FieldName() != "A.B.C" {
+		t.FailNow()
+	}
+}
+
+func TestTableRecT_ShortFieldName(t *testing.T) {
+	tr := tableRecT{
+		names: nil,
+	}
+	if tr.ShortFieldName() != "" {
+		t.FailNow()
+	}
+}
+
+func TestSetToZero(t *testing.T) {
+	val := 10
+	type Tmp struct {
+		A int16
+	}
+	fn := func() {}
+
+	run := func(v reflect.Value) {
+		// v := reflect.ValueOf(c)
+		vind := tool.Rdecodesimple(v)
+		vf := vind.Field(0)
+		// vf = vf.Elem()
+		t.Logf("src: %v", tool.Valfmt(&vf))
+		setToZero(&vf)
+	}
+
+	t.Run("TestSetToZero.bool", func(t *testing.T) {
+		type Case struct {
+			Src, Zero bool
+		}
+		c := &Case{true, false}
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.int", func(t *testing.T) {
+		type Case struct {
+			Src, Zero int
+		}
+		c := &Case{9, 0}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.uint", func(t *testing.T) {
+		type Case struct {
+			Src, Zero uint
+		}
+		c := &Case{9, 0}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.float", func(t *testing.T) {
+		type Case struct {
+			Src, Zero float32
+		}
+		c := &Case{9, 0}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.complex", func(t *testing.T) {
+		type Case struct {
+			Src, Zero complex128
+		}
+		c := &Case{9, 0}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.string", func(t *testing.T) {
+		type Case struct {
+			Src, Zero string
+		}
+		c := &Case{"9hello", ""}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.slice", func(t *testing.T) {
+		type Case struct {
+			Src, Zero []int
+		}
+		c := &Case{[]int{9, 12}, []int{}}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.array", func(t *testing.T) {
+		type Case struct {
+			Src, Zero [1]int
+		}
+		c := &Case{[1]int{1}, [1]int{0}}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.map", func(t *testing.T) {
+		type Case struct {
+			Src, Zero map[string]int
+		}
+		c := &Case{map[string]int{"x": 1, "y": 2}, map[string]int{}}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.ptr", func(t *testing.T) {
+		type Case struct {
+			Src, Zero *int
+		}
+		c := &Case{&val, (*int)(nil)}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+	t.Run("TestSetToZero.struct", func(t *testing.T) {
+		type Case struct {
+			Src, Zero Tmp
+		}
+		c := &Case{Tmp{A: 3}, Tmp{}}
+
+		v := reflect.ValueOf(c)
+		run(v)
+		if !DeepEqual(c.Src, c.Zero) {
+			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.FailNow()
+		}
+	})
+
+	for i, case_ := range []*struct {
+		Src  typ.Any
+		Zero typ.Any
+	}{
+		{true, false},
+		{9, 0},
+		{uint32(9), uint32(0)},
+		{float64(9), float64(0)},
+		{complex128(9), complex128(0)},
+		{"9hello", ""},
+		{[]int{9, 12}, []int{}},
+		{[1]int{1}, [1]int{0}},
+		{map[string]int{"x": 1, "y": 2}, map[string]int{}},
+		{&val, (*int)(nil)},
+
+		{Tmp{A: 3}, Tmp{}},
+
+		{fn, fn},
+	} {
+		v := reflect.ValueOf(case_)
+		vind := tool.Rdecodesimple(v)
+		vf := vind.Field(0)
+		// vf = vf.Elem()
+		t.Logf("src: %v", tool.Valfmt(&vf))
+		setToZero(&vf)
+		if !DeepEqual(case_.Src, case_.Zero) {
+			t.Logf("%d. For source '%v', expect '%v' but failed.", i, case_.Src, case_.Zero)
+			t.FailNow()
+		}
+	}
+
+	// for unsupported types
+
+	v := reflect.ValueOf(&fn).Elem()
+	setToZero(&v)
+}
+
 func TestIgnoredPackagePrefixesContains(t *testing.T) {
 	_ignoredpackageprefixes.contains("abc")
 	_ignoredpackageprefixes.contains("golang.org/grpc")
 }
 
-func TestFieldAccessorOperations(t *testing.T) {
+func TestFieldAccessorT_IsAnyFlagsOK(t *testing.T) {
+	const byName = false
+	x2 := x2data()
+	v1 := reflect.ValueOf(&x2)
+	t1, _ := tool.Rdecode(v1)
+	it := newStructIterator(t1)
+	loopIt(t, it, byName, nil)
+}
+
+func TestFieldAccessorT_FieldType_is_nil(t *testing.T) {
+	var a *fieldAccessorT = nil
+	_ = a.FieldType()
+
+	a = &fieldAccessorT{isStruct: false}
+	_ = a.NumField()
+}
+
+type Part struct {
+	S string
+}
+
+func (s Part) String() string {
+	return s.S
+}
+
+func TestFieldAccessorT_forMap(t *testing.T) {
+	const byName = false
+	x2 := map[Part]bool{
+		Part{"x"}: true, //nolint:gofmt
+	}
+	v1 := reflect.ValueOf(&x2)
+	t1, _ := tool.Rdecode(v1)
+	it := newStructIterator(t1)
+	loopIt(t, it, byName, nil)
+}
+
+func TestFieldAccessorT_Operations(t *testing.T) {
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := tool.Rdecode(v1)
@@ -29,24 +288,30 @@ func TestFieldAccessorOperations(t *testing.T) {
 	const byName = false
 
 	it := newStructIterator(t1)
-	for i := 0; ; i++ {
-		accessor, ok := it.Next(nil, byName)
-		if !ok {
-			break
-		}
-		field := accessor.StructField()
-		if field == nil {
-			t.Logf("%d. field info missed", i)
-			continue
-		}
+	loopIt(t, it, byName, func(accessor accessor, field *reflect.StructField) {
 		if field.Name == "O" {
 			accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
 		}
-		t.Logf("%d. %q (%v) %v %q | %v", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath, accessor.FieldValue().Interface())
-	}
+	})
+
+	// for i := 0; ; i++ {
+	// 	accessor, ok := it.Next(nil, byName)
+	// 	if !ok {
+	// 		break
+	// 	}
+	// 	field := accessor.StructField()
+	// 	if field == nil {
+	// 		t.Logf("%d. field info missed", i)
+	// 		continue
+	// 	}
+	// 	if field.Name == "O" {
+	// 		accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
+	// 	}
+	// 	t.Logf("%d. %q (%v) %v %q | %v", i, field.Name, tool.Typfmt(field.Type), field.Index, field.PkgPath, accessor.FieldValue().Interface())
+	// }
 }
 
-func TestStructIterator_Next_X1(t *testing.T) {
+func TestStructIteratorT_Next_X1(t *testing.T) {
 
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
@@ -70,7 +335,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
-			accessor, ok := targetIterator.Next(nil, byName)
+			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
@@ -95,7 +360,7 @@ func TestStructIterator_Next_X1(t *testing.T) {
 		for i, amount := 0, len(sourcefields.tableRecordsT); i < amount; i++ {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
-			accessor, ok := targetIterator.Next(nil, byName)
+			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
 			if flags.isFlagExists(cms.Ignore) || !ok {
 				continue
 			}
@@ -110,6 +375,61 @@ func TestStructIterator_Next_X1(t *testing.T) {
 
 	})
 
+}
+
+func loopIt(t *testing.T, it structIterable, byName bool, checkName func(accessor accessor, field *reflect.StructField)) {
+	for i := 0; ; i++ {
+		accessor, ok := it.Next(nil, byName)
+		if !ok {
+			break
+		}
+		field := accessor.StructField()
+		if accessor.IsStruct() && field == nil {
+			t.Logf("%d. field info missed", i)
+			continue
+		}
+
+		if checkName != nil {
+			checkName(accessor, field)
+		}
+
+		var name string
+		var fieldType *reflect.Type
+		if accessor.IsStruct() {
+			name = field.Name
+			fieldType = &field.Type
+		} else {
+			name = accessor.StructFieldName()
+			fieldType = accessor.FieldType()
+		}
+
+		// dbglog.Log("  - for field %q", name)
+
+		if name == "Name" {
+			accessor.Set(reflect.ValueOf("Meg"))
+			if p, ok := accessor.(*fieldAccessorT); ok {
+				p.fieldTags = parseFieldTags(field.Tag, "")
+				accessor.IsAnyFlagsOK(cms.Default, cms.KeepIfNotEq)
+				accessor.IsAllFlagsOK(cms.Default, cms.KeepIfNotEq)
+			}
+		} else {
+			if p, ok := accessor.(*fieldAccessorT); ok {
+				p.fieldTags = nil
+				accessor.IsAnyFlagsOK(cms.Default, cms.KeepIfNotEq)
+				accessor.IsAllFlagsOK(cms.Default, cms.KeepIfNotEq)
+			}
+		}
+
+		var val reflect.Value
+		if accessor.IsStruct() && !tool.IsExported(field) {
+			val = *accessor.FieldValue()
+			val = cl.GetUnexportedField(val)
+			// cl.SetUnexportedField(target, newval)
+		} else {
+			val = *accessor.FieldValue()
+		}
+		t.Logf("%d. %q (%v) | %v", i, name, tool.Typfmt(*fieldType), tool.Valfmt(&val))
+	}
 }
 
 func x1data() X1 {
@@ -130,6 +450,12 @@ func x1data() X1 {
 		Q: a,
 	}
 	return x1
+}
+
+func x2data() Employee {
+	return Employee{
+		Name: "Bob",
+	}
 }
 
 func testGetAllFieldsX1(t *testing.T) {

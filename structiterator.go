@@ -6,8 +6,6 @@ import (
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/log"
-	"unsafe"
-
 	"reflect"
 	"strings"
 	"sync"
@@ -51,6 +49,13 @@ func (rec tableRecT) ShortFieldName() string {
 		return rec.names[0]
 	}
 	return ""
+}
+func (rec tableRecT) ShouldIgnore() bool {
+	if rec.structField != nil {
+		ft := parseFieldTags(rec.structField.Tag, "")
+		return ft.flags.IsGroupedFlagOK(cms.Ignore)
+	}
+	return false
 }
 
 func (table *fieldsTableT) shouldIgnore(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
@@ -269,10 +274,11 @@ type fieldAccessorT struct {
 	fieldTags      *fieldTags           // tag of source field
 }
 
-func setToZero(fieldValue reflect.Value) {
+func setToZero(fieldValue *reflect.Value) {
 	setToZeroAs(fieldValue, fieldValue.Type(), fieldValue.Kind())
 }
-func setToZeroAs(fieldValue reflect.Value, typ reflect.Type, kind reflect.Kind) {
+
+func setToZeroAs(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
 	if fieldValue.CanSet() {
 		switch kind { //nolint:exhaustive
 		case reflect.Bool:
@@ -290,18 +296,35 @@ func setToZeroAs(fieldValue reflect.Value, typ reflect.Type, kind reflect.Kind) 
 		case reflect.Slice:
 			v := reflect.New(reflect.SliceOf(fieldValue.Type().Elem())).Elem()
 			fieldValue.Set(v)
+		case reflect.Array:
+			for i, amount := 0, fieldValue.Len(); i < amount; i++ {
+				v := fieldValue.Index(i)
+				vt, vk := v.Type(), v.Kind()
+				setToZeroAs(&v, vt, vk)
+			}
 		case reflect.Map:
-			v := reflect.MakeMap(fieldValue.Type()).Elem()
+			v := reflect.MakeMap(fieldValue.Type()) // .Elem()
 			fieldValue.Set(v)
 		case reflect.Ptr:
-			fieldValue.SetPointer(unsafe.Pointer(uintptr(0)))
+			fieldValue.Set(reflect.Zero(typ))
+			// fieldValue.SetPointer(unsafe.Pointer(uintptr(0)))
 		case reflect.Interface:
-			ind := typ.Elem()
-			setToZeroAs(fieldValue, ind, ind.Kind())
+			ind := fieldValue.Elem().Type()
+			fieldValue.Set(reflect.Zero(ind))
+
+		case reflect.Struct:
+			setToZeroForStruct(fieldValue, typ, kind)
 		default:
 			// Array, Chan, Func, Interface, Invalid, Struct, UnsafePointer
 			dbglog.Log("   NOT SUPPORTED (kind: %v), cannot set to zero value.", kind)
 		}
+	}
+}
+
+func setToZeroForStruct(structValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+	for i, amount := 0, structValue.NumField(); i < amount; i++ {
+		fv := structValue.Field(i)
+		setToZero(&fv)
 	}
 }
 
@@ -317,7 +340,7 @@ func (s *fieldAccessorT) Set(v reflect.Value) {
 				sv.Set(v)
 			} else {
 				dbglog.Log("      setToZero")
-				setToZero(sv)
+				setToZero(&sv)
 			}
 		} else if s.structType.Kind() == reflect.Map {
 			key := s.mapkey()
@@ -366,7 +389,7 @@ func (s *fieldAccessorT) FieldValue() *reflect.Value {
 					return &r
 				}
 			}
-		} else if s.structType.Kind() == reflect.Map {
+		} else { // if s.structType != nil && s.structType.Kind() == reflect.Map {
 			key := s.mapkey()
 			val := s.structValue.MapIndex(key)
 			return &val
@@ -409,7 +432,7 @@ func (s *fieldAccessorT) StructField() *reflect.StructField {
 }
 func (s *fieldAccessorT) getStructField() *reflect.StructField {
 	if s.isStruct {
-		if s.structField == nil && s.index < s.structType.NumField() {
+		if s.structField == nil && s.index >= 0 && s.index < s.structType.NumField() {
 			r := s.structType.Field(s.index)
 			s.structField = &r
 		}
@@ -422,8 +445,15 @@ func (s *fieldAccessorT) getStructField() *reflect.StructField {
 	return nil
 }
 func (s *fieldAccessorT) StructFieldName() string {
-	if fld := s.StructField(); fld != nil {
-		return fld.Name
+	if s.isStruct {
+		if fld := s.StructField(); fld != nil {
+			return fld.Name
+		}
+	} else if keys := s.structValue.MapKeys(); s.index < len(keys) {
+		ck := keys[s.index]
+		if target, err := rToString(ck, ck.Type()); err == nil {
+			return target.String()
+		}
 	}
 	return ""
 }
@@ -434,29 +464,33 @@ func (s *fieldAccessorT) incr() *fieldAccessorT {
 }
 func (s *fieldAccessorT) ensurePtrField() {
 	if s.isStruct && s.index < s.structType.NumField() {
-		if s.structValue == nil {
-			return // cannot do anything except return
-		}
-		// if s.structValue.IsValid() {
-		//	return
-		// }
-		sf := s.structType.Field(s.index)
-		vind := tool.Rindirect(*s.structValue)
-		fv := vind.Field(s.index)
+		if s.structValue != nil {
+			sf := s.structType.Field(s.index)
+			vind := tool.Rindirect(*s.structValue)
+			fv := vind.Field(s.index)
 
-		switch kind := sf.Type.Kind(); kind { //nolint:exhaustive
-		case reflect.Ptr:
-			if tool.IsNil(fv) {
-				dbglog.Log("   autoNew")
-				typ := sf.Type.Elem()
-				nv := reflect.New(typ)
-				fv.Set(nv)
+			switch kind := sf.Type.Kind(); kind { //nolint:exhaustive
+			case reflect.Ptr:
+				if tool.IsNil(fv) {
+					dbglog.Log("   autoNew")
+					typ := sf.Type.Elem()
+					nv := reflect.New(typ)
+					fv.Set(nv)
+				}
+			default:
 			}
-		default:
 		}
 	}
 }
 func (s *fieldAccessorT) mapkey() reflect.Value {
+	if s.sourceTableRec == nil {
+		var ck reflect.Value
+		if keys := s.structValue.MapKeys(); s.index < len(keys) {
+			ck = keys[s.index]
+		}
+		return ck
+	}
+
 	name := s.sourceTableRec.ShortFieldName()
 	kt := s.structType.Key() // , s.structType.Elem()
 	var key reflect.Value
@@ -639,6 +673,12 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 			s.dstIndex++
 		}
 	} else {
+		kind := s.dstStruct.Kind()
+
+		if kind == reflect.Map {
+			return s.doNextMapItem(params, sourceTableRec, nil)
+		}
+
 		accessorTmp, ok = s.doNext(false)
 		if ok {
 			dbglog.Log("   | Next %d | -> %v (%v)",
@@ -652,11 +692,19 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 }
 
 func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRecT, srcStructField *reflect.StructField) (acc accessor, ok bool) {
-	st := srcStructField.Type
-	elTyp := s.dstStruct.Type().Elem()
-	tk := elTyp.Kind()
-	if st.ConvertibleTo(elTyp) || st.AssignableTo(elTyp) ||
-		tk == reflect.String || tk == reflect.Interface {
+	checkSourceTypeIsSettable := func(srcStructField *reflect.StructField) (tk reflect.Kind, ok bool) {
+		if srcStructField == nil {
+			return reflect.Invalid, true
+		}
+		st := srcStructField.Type
+		elTyp := s.dstStruct.Type().Elem()
+		tk = elTyp.Kind()
+		ok = st.ConvertibleTo(elTyp) || st.AssignableTo(elTyp) ||
+			tk == reflect.String || tk == reflect.Interface
+		return
+	}
+
+	if _, ok = checkSourceTypeIsSettable(srcStructField); ok {
 		acc = &fieldAccessorT{
 			structValue:    &s.dstStruct,
 			structType:     s.dstStruct.Type(),
@@ -667,8 +715,8 @@ func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRec
 			srcStructField: srcStructField,
 			fieldTags:      nil,
 		}
+		ok = srcStructField != nil || s.dstIndex < len(s.dstStruct.MapKeys())
 		s.dstIndex++
-		ok = true
 	}
 	return
 }
@@ -702,8 +750,18 @@ func (s *structIteratorT) doNextFieldByName(sourceTableRec *tableRecT, srcStruct
 		}
 	} else {
 		log.Warnf("     [WARN] dstFieldName %q NOT FOUND, it'll be ignored", dstFieldName)
-		acc = &fieldAccessorT{} // return an empty accessor
-		ok = true               // return ok = true so caller can keep going to next field
+		s.dstIndex = -1
+		acc = &fieldAccessorT{
+			structValue:    &ts,
+			structType:     ts.Type(),
+			index:          s.dstIndex, // return an empty accessor
+			structField:    nil,        // return an empty accessor
+			isStruct:       true,
+			sourceTableRec: sourceTableRec,
+			srcStructField: srcStructField,
+			fieldTags:      parseFieldTags(srcStructField.Tag, ""),
+		}
+		ok = true // return ok = true so caller can keep going to next field
 	}
 	// no need: dstIndex++
 	return // return ok = false, the caller loop will be broken.
@@ -771,28 +829,28 @@ retryExpand:
 	return //nolint:nakedret
 }
 
-func (s *structIteratorT) getTargetFieldName(knownSrcName, tagName string) (dstFieldName string, ignored bool) {
-	dstFieldName = knownSrcName
-
-	// var flagsInTag *fieldTags
-	// var ok bool
-	if sf := s.CurrRecord().StructField(); sf != nil {
-		dstFieldName, ignored = s.getTargetFieldNameBySourceField(sf, tagName)
-		// 	flagsInTag = parseFieldTags(sf.Tag, tagName)
-		// 	if ignored = flagsInTag.isFlagExists(cms.Ignore); ignored {
-		// 		return
-		// 	}
-		// 	ctx := &NameConverterContext{Params: nil}
-		// 	dstFieldName, ok = flagsInTag.CalcTargetName(sf.Name, ctx)
-		// 	if !ok {
-		// 		if tr := s.dstStruct.FieldByName(knownSrcName); !tool.IsNil(tr) {
-		// 			dstFieldName = knownSrcName
-		// 			dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, sf.Name, sf.Tag)
-		// 		}
-		// 	}
-	}
-	return
-}
+// func (s *structIteratorT) getTargetFieldName(knownSrcName, tagKeyName string) (dstFieldName string, ignored bool) {
+// 	dstFieldName = knownSrcName
+//
+// 	// var flagsInTag *fieldTags
+// 	// var ok bool
+// 	if sf := s.CurrRecord().StructField(); sf != nil {
+// 		dstFieldName, ignored = s.getTargetFieldNameBySourceField(sf, tagKeyName)
+// 		// 	flagsInTag = parseFieldTags(sf.Tag, tagKeyName)
+// 		// 	if ignored = flagsInTag.isFlagExists(cms.Ignore); ignored {
+// 		// 		return
+// 		// 	}
+// 		// 	ctx := &NameConverterContext{Params: nil}
+// 		// 	dstFieldName, ok = flagsInTag.CalcTargetName(sf.Name, ctx)
+// 		// 	if !ok {
+// 		// 		if tr := s.dstStruct.FieldByName(knownSrcName); !tool.IsNil(tr) {
+// 		// 			dstFieldName = knownSrcName
+// 		// 			dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, sf.Name, sf.Tag)
+// 		// 		}
+// 		// 	}
+// 	}
+// 	return
+// }
 
 func (s *structIteratorT) getTargetFieldNameBySourceField(knownSrcField *reflect.StructField, tagName string) (dstFieldName string, ignored bool) {
 	var flagsInTag *fieldTags
@@ -819,7 +877,11 @@ func (s *structIteratorT) typShouldBeIgnored(typ reflect.Type) bool {
 }
 
 func (s *structIteratorT) SourceFieldShouldBeIgnored(ignoredNames []string) (yes bool) {
-	shortName := s.srcFields.tableRecordsT[s.srcIndex].ShortFieldName()
+	rec := s.srcFields.tableRecordsT[s.srcIndex]
+	if yes = rec.ShouldIgnore(); yes {
+		return
+	}
+	shortName := rec.ShortFieldName()
 	return s.ShouldBeIgnored(shortName, ignoredNames)
 }
 
