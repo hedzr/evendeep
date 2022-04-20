@@ -239,31 +239,42 @@ var Niltyp = reflect.TypeOf((*string)(nil))
 // IsZero for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsZero
 func IsZero(v reflect.Value) (ret bool) {
-	switch k := v.Kind(); k { //nolint:exhaustive //others unlisted cases can be ignored
-	case reflect.Bool:
-		ret = !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		ret = v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		ret = v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		ret = math.Float64bits(v.Float()) == 0
-	case reflect.Complex64, reflect.Complex128:
-		c := v.Complex()
-		ret = math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
-	case reflect.Array:
-		ret = ArrayIsZero(v)
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		ret = IsNil(v)
-	case reflect.Struct:
-		ret = StructIsZero(v)
-	case reflect.String:
-		ret = v.Len() == 0
+	return IsZerov(&v)
+}
+
+// IsZerov for go1.12+, the difference is it never panic on unavailable kinds.
+// see also reflect.IsZero
+func IsZerov(v *reflect.Value) (ret bool) {
+	if v != nil {
+		switch k := v.Kind(); k { //nolint:exhaustive //others unlisted cases can be ignored
+		case reflect.Bool:
+			ret = !v.Bool()
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			ret = v.Int() == 0
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			ret = v.Uint() == 0
+		case reflect.Float32, reflect.Float64:
+			ret = math.Float64bits(v.Float()) == 0
+		case reflect.Complex64, reflect.Complex128:
+			c := v.Complex()
+			ret = math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
+		case reflect.Slice:
+			ret = v.Len() == 0
+		case reflect.Array:
+			ret = ArrayIsZerov(v)
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.UnsafePointer:
+			ret = IsNilv(v)
+		case reflect.Struct:
+			ret = StructIsZerov(v)
+		case reflect.String:
+			ret = v.Len() == 0
+		}
 	}
 	return
 }
 
-func StructIsZero(v reflect.Value) bool {
+func StructIsZero(v reflect.Value) bool { return StructIsZerov(&v) }
+func StructIsZerov(v *reflect.Value) bool {
 	for i := 0; i < v.NumField(); i++ {
 		if !IsZero(v.Field(i)) {
 			return false
@@ -272,7 +283,8 @@ func StructIsZero(v reflect.Value) bool {
 	return true
 }
 
-func ArrayIsZero(v reflect.Value) bool {
+func ArrayIsZero(v reflect.Value) bool { return ArrayIsZerov(&v) }
+func ArrayIsZerov(v *reflect.Value) bool {
 	for i := 0; i < v.Len(); i++ {
 		if !IsZero(v.Index(i)) {
 			return false
@@ -284,21 +296,29 @@ func ArrayIsZero(v reflect.Value) bool {
 // IsNil for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsNil
 func IsNil(v reflect.Value) bool {
-	switch k := v.Kind(); k { //nolint:exhaustive //no
-	case reflect.Uintptr:
-		if v.CanAddr() {
-			return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!
+	return IsNilv(&v)
+}
+
+// IsNilv for go1.12+, the difference is it never panic on unavailable kinds.
+// see also reflect.IsNil
+func IsNilv(v *reflect.Value) bool {
+	if v != nil {
+		switch k := v.Kind(); k { //nolint:exhaustive //no
+		case reflect.Uintptr:
+			if v.CanAddr() {
+				return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!
+			}
+		case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr:
+			return v.IsNil()
+		case reflect.UnsafePointer:
+			return v.Pointer() == 0 // for go1.11, this is a workaround even not bad
+		case reflect.Interface, reflect.Slice:
+			return v.IsNil()
+			// case reflect.Array:
+			//	// never true, for an array, it is never IsNil
+			// case reflect.String:
+			// case reflect.Struct:
 		}
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr:
-		return v.IsNil()
-	case reflect.UnsafePointer:
-		return v.Pointer() == 0 // for go1.11, this is a workaround even not bad
-	case reflect.Interface, reflect.Slice:
-		return v.IsNil()
-		// case reflect.Array:
-		//	// never true, for an array, it is never IsNil
-		// case reflect.String:
-		// case reflect.Struct:
 	}
 	return false
 }
