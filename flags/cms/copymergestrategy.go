@@ -36,13 +36,13 @@ const (
 	// Just for struct fields
 	KeepIfNotEq // keepneq
 
-	// ClearIfInvalid the target field will be reset/clear to zero if
-	// source is invalid.
+	// ClearIfInvalid the target field will be reset/clear to zero
+	// if source is invalid.
 	// default is ON.
 	ClearIfInvalid // clearinvalid
 
-	// ClearIfMissed clear/reset the target field if source field not
-	// found.
+	// ClearIfMissed clear/reset the target field if source field
+	// not found.
 	ClearIfMissed // clearmissed
 
 	// NoOmit never omit any source fields
