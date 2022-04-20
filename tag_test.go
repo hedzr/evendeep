@@ -19,7 +19,7 @@ func TestFieldTags_Parse(t *testing.T) {
 type AFT struct {
 	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck
 	converter *ValueConverter //nolint:unused,structcheck
-	wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
+	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
 }
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
@@ -105,4 +105,25 @@ func subtestFlagTests(t *testing.T) {
 	t.Log(tool.CanConvertHelper(vv1, reflect.TypeOf(ss2)))
 	t.Log(tool.CanConvertHelper(vv1, tt3))
 	t.Log(tool.CanConvertHelper(vv1, tp4))
+}
+
+func TestFieldTags_CalcTargetName(t *testing.T) {
+	ft := fieldTags{
+		flags: flags.Flags{
+			cms.Default: true,
+		},
+		converter: nil,
+		copier:    nil,
+		nameConverter: func(source string, ctx *NameConverterContext) (target string, ok bool) {
+			if source == "" {
+				target, ok = "hehe", true
+			}
+			return
+		},
+		nameConvertRule: "",
+	}
+
+	if tn, ok := ft.CalcTargetName("", nil); !ok || tn != "hehe" {
+		t.FailNow()
+	}
 }

@@ -339,7 +339,7 @@ func (params *Params) isStruct() bool { //nolint:unused
 func (params *Params) parseFieldTags(tag reflect.StructTag) (flagsInTag *fieldTags, isIgnored bool) {
 	var tagName string
 	if params.controller != nil {
-		tagName = params.controller.tagName
+		tagName = params.controller.tagKeyName
 	}
 	flagsInTag = parseFieldTags(tag, tagName)
 	isIgnored = flagsInTag.isFlagExists(cms.Ignore)

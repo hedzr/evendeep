@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// parseFieldTags gets the struct field tag string by 'tagKeyName', and
+// parse the string into a fieldTags object and return it.
 func parseFieldTags(tag reflect.StructTag, tagName string) *fieldTags {
 	t := &fieldTags{}
 	t.Parse(tag, tagName)
