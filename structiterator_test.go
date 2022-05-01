@@ -269,7 +269,7 @@ func (s Part) String() string {
 func TestFieldAccessorT_forMap(t *testing.T) {
 	const byName = false
 	x2 := map[Part]bool{
-		Part{"x"}: true, //nolint:gofmt
+		{"x"}: true, //nolint:gofmt
 	}
 	v1 := reflect.ValueOf(&x2)
 	t1, _ := tool.Rdecode(v1)
@@ -1225,7 +1225,6 @@ func testFieldsTableGetAllFieldsUser(t *testing.T) {
 }
 
 func prepareDataA4() *A4 {
-
 	a4 := &A4{
 		A3: &A3{
 			A2: &A2{

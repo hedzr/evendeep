@@ -5,6 +5,7 @@ This is a fork of the `sortorder` package of [github.com/fvbommel/util](https://
 ## License
 
 * [MIT](./LICENSE)
-    - the original implementation of `sortorder` was released by [Frits van Bommel](https://github.com/fvbommel) under an MIT license.
+	- the original implementation of `sortorder` was released by [Frits van Bommel](https://github.com/fvbommel) under
+	  an MIT license.
 * [Public domain](../../UNLICENSE)
-    - any changes made in this fork are released into the public domain.
+	- any changes made in this fork are released into the public domain.
