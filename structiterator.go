@@ -280,44 +280,52 @@ func setToZero(fieldValue *reflect.Value) {
 
 func setToZeroAs(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
 	if fieldValue.CanSet() {
-		switch kind { //nolint:exhaustive //no need
-		case reflect.Bool:
-			fieldValue.SetBool(false)
-		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
-			fieldValue.SetInt(0)
-		case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Uintptr:
-			fieldValue.SetUint(0)
-		case reflect.Float64, reflect.Float32:
-			fieldValue.SetFloat(0)
-		case reflect.Complex128, reflect.Complex64:
-			fieldValue.SetComplex(0 + 0i)
-		case reflect.String:
-			fieldValue.SetString("")
-		case reflect.Slice:
-			v := reflect.New(reflect.SliceOf(fieldValue.Type().Elem())).Elem()
-			fieldValue.Set(v)
-		case reflect.Array:
-			for i, amount := 0, fieldValue.Len(); i < amount; i++ {
-				v := fieldValue.Index(i)
-				vt, vk := v.Type(), v.Kind()
-				setToZeroAs(&v, vt, vk)
-			}
-		case reflect.Map:
-			v := reflect.MakeMap(fieldValue.Type()) // .Elem()
-			fieldValue.Set(v)
-		case reflect.Ptr:
-			fieldValue.Set(reflect.Zero(typ))
-			// fieldValue.SetPointer(unsafe.Pointer(uintptr(0)))
-		case reflect.Interface:
-			ind := fieldValue.Elem().Type()
-			fieldValue.Set(reflect.Zero(ind))
+		setToZeroAsImpl(fieldValue, typ, kind)
+	}
+}
 
-		case reflect.Struct:
-			setToZeroForStruct(fieldValue, typ, kind)
-		default:
-			// Array, Chan, Func, Interface, Invalid, Struct, UnsafePointer
-			dbglog.Log("   NOT SUPPORTED (kind: %v), cannot set to zero value.", kind)
-		}
+func setToZeroAsImpl(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+	switch kind { //nolint:exhaustive //no need
+	case reflect.Bool:
+		fieldValue.SetBool(false)
+	case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
+		fieldValue.SetInt(0)
+	case reflect.Uint, reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Uintptr:
+		fieldValue.SetUint(0)
+	case reflect.Float64, reflect.Float32:
+		fieldValue.SetFloat(0)
+	case reflect.Complex128, reflect.Complex64:
+		fieldValue.SetComplex(0 + 0i)
+	case reflect.String:
+		fieldValue.SetString("")
+	case reflect.Slice:
+		v := reflect.New(reflect.SliceOf(fieldValue.Type().Elem())).Elem()
+		fieldValue.Set(v)
+	case reflect.Array:
+		setToZeroForArray(fieldValue, typ, kind)
+	case reflect.Map:
+		v := reflect.MakeMap(fieldValue.Type()) // .Elem()
+		fieldValue.Set(v)
+	case reflect.Ptr:
+		fieldValue.Set(reflect.Zero(typ))
+		// fieldValue.SetPointer(unsafe.Pointer(uintptr(0)))
+	case reflect.Interface:
+		ind := fieldValue.Elem().Type()
+		fieldValue.Set(reflect.Zero(ind))
+
+	case reflect.Struct:
+		setToZeroForStruct(fieldValue, typ, kind)
+	default:
+		// Array, Chan, Func, Interface, Invalid, Struct, UnsafePointer
+		dbglog.Log("   NOT SUPPORTED (kind: %v), cannot set to zero value.", kind)
+	}
+}
+
+func setToZeroForArray(arrayValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+	for i, amount := 0, arrayValue.Len(); i < amount; i++ {
+		v := arrayValue.Index(i)
+		vt, vk := v.Type(), v.Kind()
+		setToZeroAs(&v, vt, vk)
 	}
 }
 

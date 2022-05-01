@@ -411,10 +411,8 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			continue
 		}
 
-		if params.inMergeMode() {
-			if goon := forEachSourceFieldWithinMergeMode(params, srcval, ec, padding); goon {
-				continue
-			}
+		if goon := forEachSourceFieldCheckMergeMode(params, srcval, ec, padding); goon {
+			continue
 		}
 
 		dbglog.Log("   ignore nil/zero/invalid source or nil target")
@@ -422,27 +420,29 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 	return
 }
 
-func forEachSourceFieldWithinMergeMode(params *Params, srcval *reflect.Value, ec errors.Error, padding string) (goon bool) {
-	var err error
-	c := params.controller
+func forEachSourceFieldCheckMergeMode(params *Params, srcval *reflect.Value, ec errors.Error, padding string) (goon bool) {
+	if params.inMergeMode() {
+		var err error
+		c := params.controller
 
-	typ := params.accessor.FieldType()
-	dbglog.Log("    new object for %v", tool.Typfmt(*typ))
+		typ := params.accessor.FieldType()
+		dbglog.Log("    new object for %v", tool.Typfmt(*typ))
 
-	// create new object and pointer
-	toobjcopyptrv := reflect.New(*typ).Elem()
-	dbglog.Log("    toobjcopyptrv: %v", tool.Typfmtv(&toobjcopyptrv))
+		// create new object and pointer
+		toobjcopyptrv := reflect.New(*typ).Elem()
+		dbglog.Log("    toobjcopyptrv: %v", tool.Typfmtv(&toobjcopyptrv))
 
-	//nolint:gocritic // no need to switch to 'switch' clause
-	if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
-		ec.Attach(err)
-		log.Errorf("error: %v", err)
-	} else if toobjcopyptrv.Kind() == reflect.Slice {
-		params.accessor.Set(toobjcopyptrv)
-	} else {
-		params.accessor.Set(toobjcopyptrv.Elem())
+		//nolint:gocritic // no need to switch to 'switch' clause
+		if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
+			ec.Attach(err)
+			log.Errorf("error: %v", err)
+		} else if toobjcopyptrv.Kind() == reflect.Slice {
+			params.accessor.Set(toobjcopyptrv)
+		} else {
+			params.accessor.Set(toobjcopyptrv.Elem())
+		}
+		goon = true
 	}
-	goon = true
 	return
 }
 
@@ -1303,6 +1303,17 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 	}
 
 	// try primitive -> primitive at first
+	if processed, err = tryCopyPrimitiveTpPrimitive(params, from, fromind, to, toind, sourceType, targetType, toIndType); processed {
+		return
+	}
+
+	err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
+	log.Errorf("    %v", err)
+	return
+}
+
+func tryCopyPrimitiveTpPrimitive(params *Params, from, fromind, to, toind reflect.Value, sourceType, targetType, toIndType reflect.Type) (stop bool, err error) {
+	stop = true
 	if tool.CanConvert(&fromind, toIndType) {
 		var val = fromind.Convert(toIndType)
 		err = setTargetValue1(params, to, toind, val)
@@ -1323,9 +1334,7 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 		}
 		return
 	}
-
-	err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
-	log.Errorf("    %v", err)
+	stop = false
 	return
 }
 
