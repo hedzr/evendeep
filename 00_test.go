@@ -222,9 +222,9 @@ func TestParamsBasics3(t *testing.T) {
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck
-			converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck
-			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
+			flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck //test
+			converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck //test
+			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
@@ -394,7 +394,7 @@ func TestValueValid(t *testing.T) {
 	var ival int
 	var pival *int
 	type A struct {
-		ival int //nolint:unused,structcheck
+		ival int //nolint:unused,structcheck //test
 	}
 	var aval A
 	var paval *A
@@ -669,7 +669,7 @@ func runtestcasesverifier(t *testing.T) Verifier {
 //
 
 type randomizer struct {
-	lastErr error //nolint:unused,structcheck
+	lastErr error //nolint:unused,structcheck //usable
 }
 
 // var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -686,7 +686,7 @@ const (
 	ASCII = AlphabetNumerics + Symbols
 )
 
-var hundred = big.NewInt(100)                                            //nolint:unused,deadcode,varcheck
+var hundred = big.NewInt(100)                                            //nolint:unused,deadcode,varcheck //test
 var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
 var mu sync.Mutex
 var Randtool = &randomizer{}
@@ -767,7 +767,7 @@ type Employee struct {
 	Times     int16
 	Born      *int
 	BornU     *uint
-	flags     []byte //nolint:unused,structcheck
+	flags     []byte //nolint:unused,structcheck //test
 	Bool1     bool
 	Bool2     bool
 	Ro        []int

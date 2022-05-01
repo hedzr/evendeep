@@ -303,7 +303,7 @@ func IsNil(v reflect.Value) bool {
 // see also reflect.IsNil
 func IsNilv(v *reflect.Value) bool {
 	if v != nil {
-		switch k := v.Kind(); k { //nolint:exhaustive //no
+		switch k := v.Kind(); k { //nolint:exhaustive //no need
 		case reflect.Uintptr:
 			if v.CanAddr() {
 				return v.UnsafeAddr() == 0 // special: reflect.IsNil assumed nil check on an uintptr is illegal, faint!

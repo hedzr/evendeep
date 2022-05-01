@@ -35,5 +35,5 @@ func FormatComplex(c complex128, fmt byte, prec, bitSize int) string {
 //    c1 := cmdr.ParseComplex("3-4i")
 //    c2 := cmdr.ParseComplex("3.13+4.79i")
 func ParseComplex(s string) (v complex128, err error) {
-	return strconv.ParseComplex(s, 128) //nolint:gomnd //yes
+	return strconv.ParseComplex(s, 128) //nolint:gomnd //no need
 }

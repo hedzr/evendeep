@@ -21,7 +21,7 @@ func main() {
 	x0 := X0{}
 	x1 := X1{
 		A: uintptr(unsafe.Pointer(&x0)),
-		H: make(chan int, 5), //nolint:gomnd
+		H: make(chan int, 5), //nolint:gomnd //no need
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
 		N: nn[1:5],

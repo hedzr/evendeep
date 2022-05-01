@@ -17,9 +17,9 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck
-	converter *ValueConverter //nolint:unused,structcheck
-	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
+	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck //test only
+	converter *ValueConverter //nolint:unused,structcheck //test only
+	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test only
 }
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
@@ -56,9 +56,9 @@ func subtestParse(t *testing.T) {
 
 func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
-		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck
-		converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck
-		wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck
+		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck //test
+		converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck //test
+		wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
 	}
 	var a AFS1
 	v := reflect.ValueOf(&a)

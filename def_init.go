@@ -5,7 +5,7 @@ import "sync"
 var onceInitRoutines sync.Once
 var otherRoutines = []func(){initConverters, initGlobalOperators}
 
-func init() { //nolint:gochecknoinits
+func init() { //nolint:gochecknoinits //don't
 	onceInitRoutines.Do(func() {
 		// initConverters()
 		// initGlobalOperators()

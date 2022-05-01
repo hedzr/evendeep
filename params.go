@@ -67,13 +67,13 @@ func newParams(opts ...paramsOpt) *Params {
 	return p
 }
 
-func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:deadcode
+func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:deadcode //future code
 	return func(p *Params) {
 		p.flags = flags.New(flagsList...)
 	}
 }
 
-func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:deadcode
+func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:deadcode //future code
 	return func(p *Params) {
 		p.controller = c
 		ownerParams.addChildParams(p)
@@ -332,7 +332,7 @@ func (params *Params) revoke() {
 //	return *params.dstOwner
 // }
 
-func (params *Params) isStruct() bool { //nolint:unused
+func (params *Params) isStruct() bool { //nolint:unused //future
 	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil
 }
 

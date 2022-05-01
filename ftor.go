@@ -61,7 +61,7 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 		dbglog.Log("    pointer - tgt is invalid/cannot-be-set/ignored: src: (%v) -> tgt: (%v)", tool.Typfmtv(&src), tool.Typfmtv(&to))
 		err = newobj(c, paramsChild, src, to, tgt)
 	}
-	return //nolint:nakedret
+	return
 }
 
 func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -110,7 +110,7 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 
 badReturn:
 	err = ErrCannotSet.FormatWith(tool.Valfmt(&from), tool.Typfmtv(&from), tool.Valfmt(&to), tool.Typfmtv(&to))
-	return //nolint:nakedret
+	return
 }
 
 func copyStruct(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -143,7 +143,7 @@ func copyStructInternal(
 
 	defer func() {
 		if e := recover(); e != nil {
-			sst := paramsChild.targetIterator.(sourceStructFieldsTable) //nolint:errcheck //yes
+			sst := paramsChild.targetIterator.(sourceStructFieldsTable) //nolint:errcheck //no need
 
 			ff := sst.TableRecord(i).FieldValue()
 			var tf = paramsChild.dstOwner
@@ -153,9 +153,10 @@ func copyStructInternal(
 				tft = paramsChild.accessor.FieldType()
 			}
 
+			// .WithData(e) will collect e if it's an error object else store it simply
 			ec.Attach(errors.New("[recovered] copyStruct unsatisfied ([%v] -> [%v]), causes: %v",
 				tool.Typfmtv(ff), tool.Typfmtptr(tft), e).
-				WithData(e).                      // collect e if it's an error object else store it simply
+				WithData(e).
 				WithTaggedData(errors.TaggedData{ // record the sites
 					"source-field": ff,
 					"target-field": tf,
@@ -182,7 +183,7 @@ func copyStructInternal(
 		return
 	}
 
-	switch k := paramsChild.dstDecoded.Kind(); k { //nolint:exhaustive
+	switch k := paramsChild.dstDecoded.Kind(); k { //nolint:exhaustive //no need
 	case reflect.Slice:
 		dbglog.Log("     * struct -> slice case, ...")
 		if paramsChild.dstDecoded.Len() > 0 { //nolint:gocritic // no need to switch to 'switch' clause
@@ -222,7 +223,7 @@ func copyStructInternal(
 
 	err = fn(paramsChild, ec, &i, &amount, padding)
 	ec.Attach(err)
-	return //nolint:nakedret
+	return
 }
 
 func cpStructToNewSliceElem0(params *Params) (err error) {
@@ -303,7 +304,7 @@ func getSourceFieldName(knownDestName string, params *Params) (srcFieldName stri
 func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 	c := params.controller
 
-	var sst = params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
+	var sst = params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck //no need
 	var val reflect.Value
 	var fcz = params.isGroupedFlagOKDeeply(cms.ClearIfMissed)
 	var aun = c.autoNewStruct // autoNew mode:
@@ -330,9 +331,11 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 				continue
 			}
 
-			if ind := sst.RecordByName(srcFieldName); ind != nil {
+			ind := sst.RecordByName(srcFieldName)
+			switch {
+			case ind != nil:
 				val = *ind
-			} else if c.copyFunctionResultToTarget {
+			case c.copyFunctionResultToTarget:
 				if _, ind = sst.MethodCallByName(srcFieldName); ind != nil {
 					val = *ind
 				} else if _, ind = sst.MethodCallByName(name); ind != nil {
@@ -340,12 +343,12 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 				} else {
 					continue // skip the field
 				}
-			} else if fcz || (aun && !params.accessor.ValueValid()) {
+			case fcz || (aun && !params.accessor.ValueValid()):
 				tt := params.accessor.FieldType()
 				val = reflect.Zero(*tt)
 				dbglog.Log("     target is invalid: %v, autoNewStruct: %v", params.accessor.ValueValid(), aun)
-			} else {
-				continue // skip the field
+			default:
+				continue
 			}
 		}
 		params.accessor.Set(val)
@@ -353,8 +356,9 @@ func forEachTargetField(params *Params, ec errors.Error, i, amount *int, padding
 	return
 }
 
+//nolint:gocognit //unify scene
 func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding string) (err error) {
-	sst := params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck
+	sst := params.targetIterator.(sourceStructFieldsTable) //nolint:errcheck //no need
 	c := params.controller
 
 	for *i, *amount = 0, len(sst.TableRecords()); *i < *amount; *i++ {
@@ -380,7 +384,7 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 				continue // targetSetter make things done, so continue to next field
 			}
 			if err != nil {
-				if err != ErrShouldFallback {
+				if err != ErrShouldFallback { //nolint:errorlint //want it exactly
 					return // has error, break the whole copier loop
 				}
 				err = nil // fallback
@@ -429,7 +433,7 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 		dbglog.Log("   ignore nil/zero/invalid source or nil target")
 	}
-	return //nolint:nakedret
+	return
 }
 
 func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, args ...interface{})) {
@@ -444,7 +448,7 @@ func dbgFrontOfStruct(params *Params, padding string, logger func(msg string, ar
 		if d > 1 {
 			d -= 2
 		}
-		padding1 := strings.Repeat("  ", d*2) //nolint:gomnd
+		padding1 := strings.Repeat("  ", d*2) //nolint:gomnd //no need
 		// fromT, toT := params.srcDecoded.Type(), params.dstDecoded.Type()
 		// Log(" %s  %d, %d, %d", padding, params.index, params.srcOffset, params.dstOffset)
 		// fq := dbgMakeInfoString(fromT, params.owner, true, logger)
@@ -648,7 +652,7 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 	}
 
 	err = copySliceInternal(c, params, from, to, tgt, tgtptr)
-	return //nolint:nakedret
+	return
 }
 
 func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr reflect.Value) (err error) {
@@ -694,7 +698,7 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 		}
 	}
 
-	return //nolint:nakedret
+	return
 }
 
 type fnSliceOperator func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error)
@@ -795,11 +799,13 @@ func _sliceCopyOne(c *cpController, params *Params, ecTotal errors.Error, slice 
 		// ecTotal.Attach(ec)
 	}
 	result = slice
-	return //nolint:nakedret
+	return
 }
 
-// _sliceMergeOperation: for SliceMerge. target and source elements will be copied to new target
-// with uniqueness.
+// _sliceMergeOperation: for SliceMerge. target and source elements will be
+// copied to new target with uniqueness.
+//
+//nolint:gocognit //unify scene
 func _sliceMergeOperation(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
 	sl, tl := src.Len(), tgt.Len()
 	ns := reflect.MakeSlice(tgt.Type(), 0, 0)
@@ -864,7 +870,7 @@ func _sliceMergeOperation(c *cpController, params *Params, src, tgt reflect.Valu
 		}
 	}
 	result = ns
-	return //nolint:nakedret
+	return
 }
 
 func copyArray(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -939,7 +945,7 @@ func copyArray(c *cpController, params *Params, from, to reflect.Value) (err err
 
 	dbglog.Log("    from: %v, to: %v", src.Interface(), tgt.Interface()) // pt.Interface())
 
-	return //nolint:nakedret
+	return
 }
 
 func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -982,7 +988,7 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 			break
 		}
 	}
-	return //nolint:nakedret
+	return
 }
 
 type fnMapOperation func(c *cpController, params *Params, src, tgt reflect.Value) (err error)
@@ -1008,7 +1014,7 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 					srcval := copyValue.Elem()
 					err = c.targetSetter(&srcval, copyKey.Elem().String())
 					if err != nil {
-						if err != ErrShouldFallback {
+						if err != ErrShouldFallback { //nolint:errorlint //want it exactly
 							return
 						}
 						err = nil
@@ -1030,14 +1036,14 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 			return
 		},
 	}
-	return //nolint:nakedret
+	return
 }
 
 func mapMergePreSetter(c *cpController, ck, cv reflect.Value) (processed bool, err error) {
 	if c.targetSetter != nil && ck.Kind() == reflect.String {
 		err = c.targetSetter(&cv, ck.String())
 		if err != nil {
-			if err == ErrShouldFallback {
+			if err == ErrShouldFallback { //nolint:errorlint //want it exactly
 				processed, err = true, nil
 			}
 		} else {
@@ -1119,7 +1125,7 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 		return
 	}
 
-	return //nolint:nakedret
+	return
 }
 
 func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue reflect.Value) (val reflect.Value, ptr bool, err error) {
@@ -1201,7 +1207,7 @@ func copyUnsafePointer(c *cpController, params *Params, from, to reflect.Value) 
 
 // copyFunc never used
 // Deprecated always
-func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) { //nolint:unused,deadcode
+func copyFunc(c *cpController, params *Params, from, to reflect.Value) (err error) { //nolint:unused,deadcode //reserved
 	tgt := tool.Rindirect(to)
 	if tgt.CanSet() {
 		tgt.Set(from)
@@ -1310,11 +1316,11 @@ func copyDefaultHandler(c *cpController, params *Params, from, to reflect.Value)
 
 	err = ErrCannotConvertTo.FormatWith(fromind.Interface(), fromind.Kind(), toind.Interface(), toind.Kind())
 	log.Errorf("    %v", err)
-	return //nolint:nakedret
+	return
 }
 
 func copyPrimitiveToComposite(c *cpController, params *Params, from, to reflect.Value, desiredType reflect.Type) (processed bool, err error) {
-	switch tk := desiredType.Kind(); tk { //nolint:exhaustive
+	switch tk := desiredType.Kind(); tk { //nolint:exhaustive //no need
 	case reflect.Slice:
 		dbglog.Log("  copyPrimitiveToComposite: %v -> %v | %v", tool.Typfmtv(&from), tool.Typfmt(desiredType), tool.Typfmtv(&to))
 
@@ -1345,7 +1351,7 @@ func copyPrimitiveToComposite(c *cpController, params *Params, from, to reflect.
 		processed, err = true, copyToFuncImpl(c, from, tgt, tgt.Type())
 	}
 
-	return //nolint:nakedret
+	return
 }
 
 func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error) {

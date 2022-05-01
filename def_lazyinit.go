@@ -66,5 +66,5 @@ func lazyInitRoutines() {
 	})
 }
 
-func registerInitRoutines(fn func())     { otherRoutines = append(otherRoutines, fn) }         //nolint:unused,deadcode
-func registerLazyInitRoutines(fn func()) { otherLazyRoutines = append(otherLazyRoutines, fn) } //nolint:unused,deadcode
+func registerInitRoutines(fn func())     { otherRoutines = append(otherRoutines, fn) }         //nolint:unused,deadcode //usable
+func registerLazyInitRoutines(fn func()) { otherLazyRoutines = append(otherLazyRoutines, fn) } //nolint:unused,deadcode //usable

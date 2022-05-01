@@ -8,7 +8,7 @@ import (
 	"github.com/hedzr/evendeep/typ"
 	"github.com/hedzr/log"
 
-	"gopkg.in/hedzr/errors.v3" //nolint:typecheck
+	"gopkg.in/hedzr/errors.v3"
 
 	"reflect"
 	"unsafe"
@@ -184,7 +184,7 @@ func (c *cpController) copyToInternal(
 	}()
 
 	err = cb(c, params, from, to)
-	return //nolint:nakedret
+	return
 }
 
 func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (processed bool) {
@@ -220,7 +220,7 @@ func (c *cpController) testCloneables1(params *Params, fromObj interface{}, to r
 	return
 }
 
-func (c *cpController) withConverters(cvt ...ValueConverter) *cpController { //nolint:unused
+func (c *cpController) withConverters(cvt ...ValueConverter) *cpController { //nolint:unused //usable
 	for _, cc := range cvt {
 		if cc != nil {
 			c.valueConverters = append(c.valueConverters, cc)
@@ -229,7 +229,7 @@ func (c *cpController) withConverters(cvt ...ValueConverter) *cpController { //n
 	return c
 }
 
-func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController { //nolint:unused
+func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController { //nolint:unused //future
 	for _, cc := range cvt {
 		if cc != nil {
 			c.valueCopiers = append(c.valueCopiers, cc)

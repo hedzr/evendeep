@@ -295,7 +295,7 @@ func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path, k
 }
 
 func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
-	switch kind { //nolint:exhaustive //no
+	switch kind { //nolint:exhaustive //no need
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
 		ln, rn := tool.IsNil(lv), tool.IsNil(lv)
 		if ln && rn {

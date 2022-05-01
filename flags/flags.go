@@ -80,7 +80,7 @@ func (flags Flags) StringEx() string {
 		if sb.Len() > 0 {
 			sb.WriteRune(',')
 		}
-		sb.WriteString(((cms.CopyMergeStrategy)(fx)).String())
+		sb.WriteString((cms.CopyMergeStrategy(fx)).String())
 	}
 
 	sbfinal.WriteRune('[')
@@ -214,7 +214,7 @@ func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) {
 			}
 		}
 	}
-	return //nolint:nakedret //no
+	return
 }
 
 func (flags Flags) IsAnyFlagsOK(ftf ...cms.CopyMergeStrategy) bool {
@@ -300,7 +300,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 			flags[k] = true
 		}
 	}
-	return //nolint:nakedret //no
+	return
 }
 
 // NameConvertRule _
@@ -320,12 +320,13 @@ func (s NameConvertRule) ToName() string   { return s.get().To }
 func (s NameConvertRule) get() (r nameConvertRule) {
 	a := strings.Split(string(s), "->")
 	if len(a) > 0 {
-		if a[0] == "-" {
+		switch {
+		case a[0] == "-":
 			r.IsIgnored = true
-		} else if len(a) == 1 {
+		case len(a) == 1:
 			r.To = strings.TrimSpace(a[0])
 			r.Valid = true
-		} else {
+		default:
 			r.From = strings.TrimSpace(a[0])
 			r.To = strings.TrimSpace(a[1])
 			r.Valid = true

@@ -135,7 +135,7 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 			ret = append(ret, tr)
 		}
 	}
-	return //nolint:nakedret
+	return
 }
 
 func (table *fieldsTableT) tableRec(svind *reflect.Value, sf *reflect.StructField, index, parentIndex int, parentFieldName string) (tr *tableRecT) {
@@ -280,7 +280,7 @@ func setToZero(fieldValue *reflect.Value) {
 
 func setToZeroAs(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
 	if fieldValue.CanSet() {
-		switch kind { //nolint:exhaustive
+		switch kind { //nolint:exhaustive //no need
 		case reflect.Bool:
 			fieldValue.SetBool(false)
 		case reflect.Int, reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8:
@@ -469,7 +469,7 @@ func (s *fieldAccessorT) ensurePtrField() {
 			vind := tool.Rindirect(*s.structValue)
 			fv := vind.Field(s.index)
 
-			switch kind := sf.Type.Kind(); kind { //nolint:exhaustive
+			switch kind := sf.Type.Kind(); kind { //nolint:exhaustive //no need
 			case reflect.Ptr:
 				if tool.IsNil(fv) {
 					dbglog.Log("   autoNew")
@@ -688,7 +688,7 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 		}
 	}
 	acc = accessorTmp
-	return //nolint:nakedret
+	return
 }
 
 func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRecT, srcStructField *reflect.StructField) (acc accessor, ok bool) {
@@ -826,7 +826,7 @@ retryExpand:
 	}
 
 	ok, accessor = true, lastone
-	return //nolint:nakedret
+	return
 }
 
 // func (s *structIteratorT) getTargetFieldName(knownSrcName, tagKeyName string) (dstFieldName string, ignored bool) {
@@ -980,5 +980,5 @@ func packageisreserved(packagename string) (shouldIgnored bool) {
 
 	shouldIgnored = packagename != "" && (_ignoredpackages.contains(packagename) ||
 		_ignoredpackageprefixes.contains(packagename))
-	return //nolint:nakedret
+	return
 }

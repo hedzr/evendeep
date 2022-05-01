@@ -27,7 +27,7 @@ func TestRdecode(t *testing.T) {
 	vv, prev := tool.Rdecode(vi)
 	t.Logf("          vv (%v (%v)) : %v, &b = %v [ rdecode(vi) ]", vc.Kind(), vv.Type(), vv.Interface(), &b)
 	value := prev.Interface()
-	valptr := value.(*int) //nolint:errcheck
+	valptr := value.(*int) //nolint:errcheck //no need
 	t.Logf("       prev (%v (%v)) : %v -> %v", prev.Kind(), prev.Type(), value, *valptr)
 
 	// A result likes:
