@@ -438,9 +438,7 @@ func HelperAssertYes(t *testing.T, b bool, expect, got interface{}) { //nolint:t
 	}
 }
 
-// NewForTest creates a new copier with most common options.
-func NewForTest() DeepCopier {
-	// nolint:staticcheck
+func TestNewForTest(t *testing.T) {
 	copier := New( // nolint:ineffassign
 		WithValueConverters(&toDurationConverter{}),
 		WithValueCopiers(&toDurationConverter{}),
@@ -474,6 +472,17 @@ func NewForTest() DeepCopier {
 
 		WithStringMarshaller(nil),
 	)
+
+	var a = 1
+	var b int
+	if err := copier.CopyTo(a, &b); err != nil {
+		t.Error("bad")
+	}
+}
+
+// NewForTest creates a new copier with most common options.
+func NewForTest() DeepCopier {
+	var copier DeepCopier
 
 	lazyInitRoutines()
 	var c1 = newCopier()
