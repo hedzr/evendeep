@@ -412,27 +412,37 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 		}
 
 		if params.inMergeMode() {
-			typ := params.accessor.FieldType()
-			dbglog.Log("    new object for %v", tool.Typfmt(*typ))
-
-			// create new object and pointer
-			toobjcopyptrv := reflect.New(*typ).Elem()
-			dbglog.Log("    toobjcopyptrv: %v", tool.Typfmtv(&toobjcopyptrv))
-
-			//nolint:gocritic // no need to switch to 'switch' clause
-			if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
-				ec.Attach(err)
-				log.Errorf("error: %v", err)
-			} else if toobjcopyptrv.Kind() == reflect.Slice {
-				params.accessor.Set(toobjcopyptrv)
-			} else {
-				params.accessor.Set(toobjcopyptrv.Elem())
+			if goon := forEachSourceFieldWithinMergeMode(params, srcval, ec, padding); goon {
+				continue
 			}
-			continue
 		}
 
 		dbglog.Log("   ignore nil/zero/invalid source or nil target")
 	}
+	return
+}
+
+func forEachSourceFieldWithinMergeMode(params *Params, srcval *reflect.Value, ec errors.Error, padding string) (goon bool) {
+	var err error
+	c := params.controller
+
+	typ := params.accessor.FieldType()
+	dbglog.Log("    new object for %v", tool.Typfmt(*typ))
+
+	// create new object and pointer
+	toobjcopyptrv := reflect.New(*typ).Elem()
+	dbglog.Log("    toobjcopyptrv: %v", tool.Typfmtv(&toobjcopyptrv))
+
+	//nolint:gocritic // no need to switch to 'switch' clause
+	if err = invokeStructFieldTransformer(c, params, srcval, &toobjcopyptrv, typ, padding); err != nil {
+		ec.Attach(err)
+		log.Errorf("error: %v", err)
+	} else if toobjcopyptrv.Kind() == reflect.Slice {
+		params.accessor.Set(toobjcopyptrv)
+	} else {
+		params.accessor.Set(toobjcopyptrv.Elem())
+	}
+	goon = true
 	return
 }
 
