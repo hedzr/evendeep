@@ -280,7 +280,11 @@ func WithPassSourceToTargetFunction(b bool) Opt {
 // WithPassSourceToTargetFunctionOpt is shortcut of WithPassSourceToTargetFunction
 var WithPassSourceToTargetFunctionOpt = WithPassSourceToTargetFunction(true)
 
-// WithSyncAdvancing _
+// WithSyncAdvancing decides how to advance to next field especially
+// a source field had been ignored.
+// By default (false), the target field won't be advanced while the
+// source field had been ignored.
+// For sync-advanced flag is true, the target field step to next.
 //
 // Just for cms.ByOrdinal mode.
 func WithSyncAdvancing(syncAdvancing bool) Opt {

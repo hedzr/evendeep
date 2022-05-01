@@ -224,7 +224,7 @@ func TestPrettyDiffRecursive(t *testing.T) {
 		{
 			newRecursiveStruct(1),
 			newRecursiveStruct(2),
-			"modified: .Child.Key = 2\nmodified: .Key = 2\n",
+			"modified: .Child..Key = 2 (int) (Old: 1)\nmodified: .Key = 2 (int) (Old: 1)\n",
 			false,
 			nil,
 		},
@@ -268,7 +268,7 @@ func TestIgnoreTag(t *testing.T) {
 	if equal {
 		t.Errorf("Expected structs NOT to be equal.")
 	}
-	expect := "modified: .a = 2\nmodified: .b[1] = 9\n"
+	expect := "modified: .a = 2 (int) (Old: 1)\nmodified: .b.[1] = 9 (int) (Old: 5)\n"
 	if dif.PrettyPrint() != expect {
 		t.Errorf("Expected diff to be:\n%v\nbut got:\n%v", expect, dif)
 	}
@@ -299,7 +299,7 @@ func TestIgnoreStructFieldOption(t *testing.T) {
 	if equal {
 		t.Errorf("Expected structs NOT to be equal.")
 	}
-	expect := "modified: .X = \"xx\"\n"
+	expect := "modified: .X = xx (string) (Old: x)\n"
 	if dif.PrettyPrint() != expect {
 		t.Errorf("Expected diff to be:\n%v\nbut got:\n%v", expect, dif)
 	}

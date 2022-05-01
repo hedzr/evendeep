@@ -7,7 +7,7 @@ import (
 )
 
 func subtest1(t *testing.T) {
-	flags := newFlags().WithFlags(cms.ByName, cms.SliceCopyAppend, cms.OmitIfNil, cms.MapMerge, cms.Ignore)
+	flags := newFlags().WithFlags(cms.ByName, cms.SliceCopyAppend, cms.OmitIfEmpty, cms.OmitIfTargetEmpty, cms.MapMerge, cms.Ignore)
 
 	t.Logf("flags: %v", flags)
 
@@ -51,7 +51,6 @@ func subtest3(t *testing.T) {
 }
 
 func TestFlags_testGroupedFlag(t *testing.T) {
-
 	lazyInitFieldTagsFlags()
 
 	t.Run("dirty flags - testGroupedFlag returns the dirty flag when testing any flags of its group", subtest1)
@@ -67,7 +66,6 @@ func TestFlags_testGroupedFlag(t *testing.T) {
 }
 
 func TestFlags1(t *testing.T) {
-
 	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
@@ -96,13 +94,10 @@ func TestFlags1(t *testing.T) {
 		if flags.IsFlagOK(cms.SliceMerge) {
 			t.Fatalf("expect isFlagOK(SliceMerge) test failure")
 		}
-
 	})
-
 }
 
 func TestFlags2(t *testing.T) {
-
 	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
@@ -138,5 +133,4 @@ func TestFlags2(t *testing.T) {
 			t.Fatalf("expect isGroupedFlagOK(NoOmitTarget) test ok")
 		}
 	})
-
 }

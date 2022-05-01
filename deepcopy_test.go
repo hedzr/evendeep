@@ -2,6 +2,7 @@ package evendeep_test
 
 import (
 	"fmt"
+	"github.com/hedzr/evendeep/typ"
 	"reflect"
 	"testing"
 	"time"
@@ -273,6 +274,105 @@ func TestDeepCopyGenerally(t *testing.T) {
 
 	})
 
+}
+
+func TestDeepCopy(t *testing.T) {
+	type AA struct {
+		A bool
+		B int32
+		C string
+	}
+	type BB struct {
+		A int
+		B int16
+		C *string
+	}
+
+	var aa = AA{A: true, B: 16, C: helloString}
+	var bb BB
+	var ret typ.Any = evendeep.DeepCopy(aa, &bb,
+		evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
+	t.Logf("ret = %v", ret)
+	// ret = &{0 16 &"hello"}
+	if *bb.C != helloString {
+		t.FailNow()
+	}
+}
+
+func TestMakeClone(t *testing.T) {
+	type AA struct {
+		A bool
+		B int32
+		C string
+	}
+
+	var aa = AA{A: true, B: 16, C: helloString}
+	var ret typ.Any = evendeep.MakeClone(aa)
+	var aaCopy = ret.(AA)
+	t.Logf("ret = %v", aaCopy)
+	// ret = {true 16 hello}
+}
+
+func TestNew(t *testing.T) {
+	type AA struct {
+		A bool
+		B int32
+		C string
+	}
+	type BB struct {
+		A int
+		B int16
+		C *string
+	}
+
+	var aa = AA{A: true, B: 16, C: helloString}
+	var bb BB
+	var ret typ.Any = evendeep.New().CopyTo(aa, &bb,
+		evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
+	t.Logf("ret = %v", ret)
+	// ret = &{0 16 &"hello"}
+	if *bb.C != helloString {
+		t.FailNow()
+	}
+}
+
+func TestWithIgnoreNames(t *testing.T) {
+	type AA struct {
+		A bool
+		B int32
+		C string
+		D string
+	}
+	type BB struct {
+		A int
+		B int16
+		C *string
+	}
+
+	var aa = AA{A: true, B: 16, C: helloString, D: worldString}
+	var bb BB
+	var ret typ.Any = evendeep.DeepCopy(aa, &bb,
+		evendeep.WithIgnoreNames("C*"),
+		evendeep.WithSyncAdvancing(false),
+		evendeep.WithByOrdinalStrategyOpt,
+	)
+	t.Logf("ret = %v, .C = %v", ret, *bb.C)
+	// ret = &{0 16 &"world"}
+	if *bb.C != worldString {
+		t.FailNow()
+	}
+
+	var cc BB
+	ret = evendeep.DeepCopy(aa, &cc,
+		evendeep.WithIgnoreNames("C*"),
+		evendeep.WithSyncAdvancing(true),
+		evendeep.WithByOrdinalStrategyOpt,
+	)
+	t.Logf("ret = %v, .C = %v", ret, *cc.C)
+	// ret = &{0 16 &""}
+	if *cc.C != "" {
+		t.FailNow()
+	}
 }
 
 func TestPlainCopyFuncField(t *testing.T) {
