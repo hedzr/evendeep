@@ -30,7 +30,7 @@ This library is designed for making everything customizable.
 - copy fields by name or ordinal
 	- field to field
 	- field to method, method to field
-	- value to function (as input), funtion result to value
+	- value to function (as input), function result to value
 	- slice[0] to struct, struct to slice[0]
 	- struct to map, map to struct
 	- User-defined extractor/getter on various source
@@ -58,7 +58,7 @@ This library is designed for making everything customizable.
 By default, `DeepCopy()` will copy and merge source into destination object. That means, a map or a slice will be merged
 deeply, same to a struct.
 
-[`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110) gives a most even scaleable interface
+[`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110) gives a most even scalable interface
 than `DeepCopy`, it returns a new `DeepCopier` different to `DefaultCopyController` and you can make call
 to `DeepCopier.DeepCopy(old, new, opts...)`.
 
@@ -329,7 +329,7 @@ t.Fatalf("bad, got %v\nexpect: %v", dstRecord, expectRecord)
 #### String Marshalling
 
 While copying struct, map, slice, or other source to target string, the builtin `toStringConverter` will be launched.
-And the default logic includes marshaling the structual source to string, typically `json.Marshal`.
+And the default logic includes marshaling the structural source to string, typically `json.Marshal`.
 
 This marshaller can be customized: `RegisterStringMarshaller` and `WithStringMarshaller` enable it:
 
