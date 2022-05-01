@@ -372,32 +372,18 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			continue
 		}
 
-		if c.targetSetter != nil {
-			currec := sst.CurrRecord()
-			srcval := currec.FieldValue()
-			if err = c.targetSetter(srcval, currec.names...); err == nil {
-				if c.advanceTargetFieldPointerEvenIfSourceIgnored {
-					_ = params.nextTargetFieldLite()
-				} else {
-					sst.Step(1) // step the source field index
-				}
-				continue // targetSetter make things done, so continue to next field
-			}
-			if err != nil {
-				if err != ErrShouldFallback { //nolint:errorlint //want it exactly
-					return // has error, break the whole copier loop
-				}
-				err = nil // fallback
-			}
+		var goon bool
+		if goon, err = forEachSourceFieldCheckTargetSetter(params, sst); goon {
+			continue
 		}
 
 		var sourceField *tableRecT
-		var ok bool
-		if sourceField, ok = params.nextTargetField(); !ok {
+		if sourceField, goon = params.nextTargetField(); !goon {
 			continue
 		}
 
 		srcval, dstval := sourceField.FieldValue(), params.accessor.FieldValue()
+
 		log.VDebugf("%d. %s (%v) -> %s (%v) | (%v) -> (%v)", *i,
 			sourceField.FieldName(), tool.Typfmtv(srcval), params.accessor.StructFieldName(),
 			tool.Typfmt(*params.accessor.FieldType()), tool.Valfmt(srcval), tool.Valfmt(dstval))
@@ -411,11 +397,35 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			continue
 		}
 
-		if goon := forEachSourceFieldCheckMergeMode(params, srcval, ec, padding); goon {
+		if goon = forEachSourceFieldCheckMergeMode(params, srcval, ec, padding); goon {
 			continue
 		}
 
 		dbglog.Log("   ignore nil/zero/invalid source or nil target")
+	}
+	return
+}
+
+func forEachSourceFieldCheckTargetSetter(params *Params, sst sourceStructFieldsTable) (goon bool, err error) {
+	c := params.controller
+	if c.targetSetter != nil {
+		currec := sst.CurrRecord()
+		srcval := currec.FieldValue()
+		if err = c.targetSetter(srcval, currec.names...); err == nil {
+			if c.advanceTargetFieldPointerEvenIfSourceIgnored {
+				_ = params.nextTargetFieldLite()
+			} else {
+				sst.Step(1) // step the source field index
+			}
+			goon = true
+			return // targetSetter make things done, so continue to next field
+		}
+		if err != nil {
+			if err != ErrShouldFallback { //nolint:errorlint //want it exactly
+				return // has error, break the whole copier loop
+			}
+			err = nil // fallback
+		}
 	}
 	return
 }

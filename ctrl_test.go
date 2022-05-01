@@ -776,7 +776,13 @@ func TestStructToSliceOrMap(t *testing.T) {
 		evendeep.NewTestCase(
 			"struct -> string",
 			src, &str, &expectJSON,
-			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt, evendeep.WithAutoNewForStructFieldOpt},
+			[]evendeep.Opt{
+				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) {
+					return json.MarshalIndent(v, "", "  ")
+				}),
+				evendeep.WithMergeStrategyOpt,
+				evendeep.WithAutoExpandStructOpt,
+				evendeep.WithAutoNewForStructFieldOpt},
 			nil,
 		),
 
@@ -1358,7 +1364,12 @@ func TestMapToString(t *testing.T) {
 		evendeep.NewTestCase(
 			"map -> string [json]",
 			map1, &str1, &expect1,
-			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt},
+			[]evendeep.Opt{
+				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) {
+					return json.MarshalIndent(v, "", "  ")
+				}),
+				evendeep.WithMergeStrategyOpt,
+				evendeep.WithAutoExpandStructOpt},
 			nil,
 		),
 
