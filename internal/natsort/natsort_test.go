@@ -78,8 +78,8 @@ func TestLess(t *testing.T) {
 		{"a01b001", "a001b01", true},
 		{"a001b01", "a01b001", false},
 		{"a1", "a1x", true},
-		{"1ax", "1b", true},
-		{"1b", "1ax", false},
+		{"1ax", "1b", false},
+		{"1b", "1ax", true},
 		//
 		{"082", "83", true},
 		//
@@ -198,8 +198,13 @@ func (g *generator) NextString() (str string) {
 		if i == numpos {
 			str += num
 		} else {
-			str += string('a' + g.src.Intn(16)) // nolint:govet //yes
+			str += g.randchartostring() // nolint:govet //yes
 		}
 	}
 	return str
+}
+
+func (g *generator) randchartostring() string {
+	var runes = []rune{rune('a' + g.src.Intn(16))} // nolint:govet //yes
+	return string(runes)
 }

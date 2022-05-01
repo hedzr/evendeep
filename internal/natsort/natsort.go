@@ -33,12 +33,14 @@ func isdigit(b byte) bool {
 	return '0' <= b && b <= '9'
 }
 
-// Less compares two strings using natural ordering. This means that e.g. "abc2"
-// < "abc12".
+// Less compares two strings using natural ordering.
+//
+// This means that e.g. "abc2" < "abc12".
 //
 // Non-digit sequences and numbers are compared separately. The former are
 // compared bytewise, while the latter are compared numerically (except that
-// the number of leading zeros is used as a tie-breaker, so e.g. "2" < "02")
+// the number of leading zeros is used as a tie-breaker).
+// E.g. "2" < "02", "1b" > "1ax", ...
 //
 // Limitation: only ASCII digits (0-9) are considered.
 func Less(str1, str2 string) bool {
