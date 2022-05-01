@@ -1,5 +1,14 @@
 # even-deep
 
+![Go](https://github.com/hedzr/evendeep/workflows/Go/badge.svg)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/evendeep.svg?label=release)](https://github.com/hedzr/evendeep/releases)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/hedzr/evendeep) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fhedzr%2Fevendeep.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fhedzr%2Fevendeep?ref=badge_shield)
+[![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep)
+[![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep)<!--
+[![Coverage Status](https://coveralls.io/repos/github/hedzr/evendeep/badge.svg?branch=master)](https://coveralls.io/github/hedzr/evendeep?branch=master)-->
+
+
 Per-field copying deeply, and comparing deeply abilities.
 
 This library is designed for making everything customizable.
@@ -21,7 +30,7 @@ This library is designed for making everything customizable.
 - copy fields by name or ordinal
 	- field to field
 	- field to method, method to field
-	- value to function, funtion to value
+	- value to function (as input), funtion result to value
 	- slice[0] to struct, struct to slice[0]
 	- struct to map, map to struct
 	- User-defined extractor/getter on various source
@@ -34,6 +43,11 @@ This library is designed for making everything customizable.
 	- deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
 	- deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
 
+
+## History
+
+- v0.2.50
+  - first public release here.
 
 
 ## Usages
@@ -341,7 +355,7 @@ The default marshaler is a wraper to `json.MarshalIndent`.
 
 
 
-#### Specify CopyMergeStrategy by struct Tag
+#### Specify CopyMergeStrategy via struct Tag
 
 Sample struct is (use `copy` as key):
 
