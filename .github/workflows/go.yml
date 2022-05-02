@@ -45,7 +45,7 @@ jobs:
   coverage:
     #needs: test
     env:
-      COVERALLS_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      COVERALLS_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
