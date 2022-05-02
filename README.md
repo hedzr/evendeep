@@ -5,6 +5,7 @@
 [![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep)
 [![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep)
+[![Coverage Status](https://coveralls.io/repos/github/hedzr/evendeep/badge.svg?branch=master)](https://coveralls.io/github/hedzr/evendeep?branch=master)
 
 Per-field copying deeply, and comparing deeply abilities.
 
