@@ -2,11 +2,9 @@
 
 ![Go](https://github.com/hedzr/evendeep/workflows/Go/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/evendeep.svg?label=release)](https://github.com/hedzr/evendeep/releases)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/hedzr/evendeep) <!-- [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fhedzr%2Fevendeep.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fhedzr%2Fevendeep?ref=badge_shield)
---> [![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
+[![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep)
-[![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep)<!--
-[![Coverage Status](https://coveralls.io/repos/github/hedzr/evendeep/badge.svg?branch=master)](https://coveralls.io/github/hedzr/evendeep?branch=master)-->
+[![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep)
 
 Per-field copying deeply, and comparing deeply abilities.
 
