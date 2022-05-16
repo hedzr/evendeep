@@ -18,35 +18,37 @@ This library is designed for making everything customizable.
 - unexported values (optional), ...
 - circular references immunization
 - full customizable
-	- user-defined value/type converters/transformers
-	- user-defined field to field name converting rule via struct Tag
+  - user-defined value/type converters/transformers
+  - user-defined field to field name converting rule via struct Tag
 - easily apply different strategies
-	- basic strategies are: copy-n-merge, clone,
-	- strategies per struct field:
-	  `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
-	  `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
-	  `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
+  - basic strategies are: copy-n-merge, clone,
+  - strategies per struct field:
+    `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
+    `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
+    `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
 - copy fields by name or ordinal
-	- field to field
-	- field to method, method to field
-	- value to function (as input), function result to value
-	- slice[0] to struct, struct to slice[0]
-	- struct to map, map to struct
-	- User-defined extractor/getter on various source
-	- User-defined setter for struct or map target (if mapkey is string)
-	- ...
+  - field to field
+  - field to method, method to field
+  - value to function (as input), function result to value
+  - slice[0] to struct, struct to slice[0]
+  - struct to map, map to struct
+  - User-defined extractor/getter on various source
+  - User-defined setter for struct or map target (if mapkey is string)
+  - ...
 
 - deep series
-	- deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L20),
-	  or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110)
-	- deepclone:[ `MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
-	- deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
-	- deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
+  - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L20),
+    or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110)
+  - deepclone:[ `MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
+  - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
+  - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
 
 ## History
 
 - v0.2.50
-	- first public release here.
+  - first public release here.
+
+[譚詠麟 -《飛馬》(2001 Live) - YouTube](https://www.youtube.com/watch?v=I16b8-9x-lc)
 
 ## Usages
 
