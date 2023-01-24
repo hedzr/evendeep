@@ -44,26 +44,25 @@ var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true)
 //
 // For instance:
 //
-//      c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
-//      	"A": 12,
-//      })
+//	c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
+//		"A": 12,
+//	})
 //
-//      tgt := struct {
-//      	A int
-//      }{}
+//	tgt := struct {
+//		A int
+//	}{}
 //
-//      evendeep.DeepCopy(c, &tgt,
-//        evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
-//      	if m, ok := c.Value("Data").(map[string]typ.Any); ok {
-//      		return m[targetName]
-//      	}
-//      	return nil
-//      }))
+//	evendeep.DeepCopy(c, &tgt,
+//	  evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
+//		if m, ok := c.Value("Data").(map[string]typ.Any); ok {
+//			return m[targetName]
+//		}
+//		return nil
+//	}))
 //
-//      if tgt.A != 12 {
-//      	t.FailNow()
-//      }
-//
+//	if tgt.A != 12 {
+//		t.FailNow()
+//	}
 func WithSourceValueExtractor(e SourceValueExtractor) Opt {
 	return func(c *cpController) {
 		c.sourceExtractor = e
@@ -83,36 +82,36 @@ func WithSourceValueExtractor(e SourceValueExtractor) Opt {
 //
 // For instance:
 //
-//    type srcS struct {
-//      A int
-//      B bool
-//      C string
-//    }
+//	type srcS struct {
+//	  A int
+//	  B bool
+//	  C string
+//	}
 //
-//    src := &srcS{
-//      A: 5,
-//      B: true,
-//      C: helloString,
-//    }
-//    tgt := map[string]typ.Any{
-//      "Z": "str",
-//    }
+//	src := &srcS{
+//	  A: 5,
+//	  B: true,
+//	  C: helloString,
+//	}
+//	tgt := map[string]typ.Any{
+//	  "Z": "str",
+//	}
 //
-//    err := evendeep.New().CopyTo(src, &tgt,
-//      evendeep.WithTargetValueSetter(
-//      func(value *reflect.Value, sourceNames ...string) (err error) {
-//        if value != nil {
-//          name := "Mo" + strings.Join(sourceNames, ".")
-//          tgt[name] = value.Interface()
-//        }
-//        return // ErrShouldFallback to call the evendeep standard processing
-//      }),
-//    )
+//	err := evendeep.New().CopyTo(src, &tgt,
+//	  evendeep.WithTargetValueSetter(
+//	  func(value *reflect.Value, sourceNames ...string) (err error) {
+//	    if value != nil {
+//	      name := "Mo" + strings.Join(sourceNames, ".")
+//	      tgt[name] = value.Interface()
+//	    }
+//	    return // ErrShouldFallback to call the evendeep standard processing
+//	  }),
+//	)
 //
-//    if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
-//      t.Errorf("err: %v, tgt: %v", err, tgt)
-//      t.FailNow()
-//    }
+//	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != "str" {
+//	  t.Errorf("err: %v, tgt: %v", err, tgt)
+//	  t.FailNow()
+//	}
 func WithTargetValueSetter(e TargetValueSetter) Opt {
 	return func(c *cpController) {
 		c.targetSetter = e
@@ -150,23 +149,31 @@ func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	}
 }
 
-// WithByNameStrategyOpt is synonym of cms.ByName by calling WithStrategies
-var WithByNameStrategyOpt = WithStrategies(cms.ByName)
+// WithCleanStrategies set the given flags into *cpController, older
+// flags will be clear at first.
+func WithCleanStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
+	return func(c *cpController) {
+		c.flags = flags.New(flagsList...)
+	}
+}
 
-// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithStrategies
-var WithByOrdinalStrategyOpt = WithStrategies(cms.ByOrdinal)
+// WithByNameStrategyOpt is synonym of cms.ByName by calling WithCleanStrategies
+var WithByNameStrategyOpt = WithCleanStrategies(cms.ByName)
 
-// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithStrategies
-var WithCopyStrategyOpt = WithStrategies(cms.SliceCopy, cms.MapCopy)
+// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithCleanStrategies
+var WithByOrdinalStrategyOpt = WithCleanStrategies(cms.ByOrdinal)
 
-// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithStrategies
-var WithMergeStrategyOpt = WithStrategies(cms.SliceMerge, cms.MapMerge)
+// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithCleanStrategies
+var WithCopyStrategyOpt = WithCleanStrategies(cms.SliceCopy, cms.MapCopy)
 
-// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithStrategies
-var WithORMDiffOpt = WithStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
+// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithCleanStrategies
+var WithMergeStrategyOpt = WithCleanStrategies(cms.SliceMerge, cms.MapMerge)
 
-// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling WithStrategies
-var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
+// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithCleanStrategies
+var WithORMDiffOpt = WithCleanStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
+
+// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling Clean
+var WithOmitEmptyOpt = WithCleanStrategies(cms.OmitIfEmpty)
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
@@ -176,9 +183,9 @@ var WithOmitEmptyOpt = WithStrategies(cms.OmitIfEmpty)
 // means that a set of default strategies will be applied,
 // in other words, its include:
 //
-//    cms.Default, cms.NoOmit, cms.NoOmitTarget,
-//    cms.SliceCopy, cms.MapCopy,
-//    cms.ByOrdinal,
+//	cms.Default, cms.NoOmit, cms.NoOmitTarget,
+//	cms.SliceCopy, cms.MapCopy,
+//	cms.ByOrdinal,
 //
 // If a flagsList supplied, WithStrategiesReset will add them and
 // set the state to false.
@@ -199,19 +206,19 @@ func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
 //
 // For a instance, the iteration on struct:
 //
-//    type A struct {
-//       F1 string
-//       F2 int
-//    }
-//    type B struct {
-//       F1 bool
-//       F2 A
-//       F3 float32
-//    }
+//	type A struct {
+//	   F1 string
+//	   F2 int
+//	}
+//	type B struct {
+//	   F1 bool
+//	   F2 A
+//	   F3 float32
+//	}
 //
 // will produce the sequences:
 //
-//    B.F1, B.F2, B.F2 - A.F1, B.F2 - A.F2, B.F3
+//	B.F1, B.F2, B.F2 - A.F1, B.F2 - A.F2, B.F3
 //
 // Default is true.
 func WithAutoExpandForInnerStruct(autoExpand bool) Opt {
@@ -296,6 +303,18 @@ func WithSyncAdvancing(syncAdvancing bool) Opt {
 // WithSyncAdvancingOpt is synonym of WithAutoExpandForInnerStruct(true)
 var WithSyncAdvancingOpt = WithSyncAdvancing(true)
 
+// WithWipeTargetSliceFirst enables the option which assumes the target
+// Slice or Map will be wipe out at first before copying/merging from
+// source field.
+func WithWipeTargetSliceFirst(wipe bool) Opt {
+	return func(c *cpController) {
+		c.wipeSlice1st = wipe
+	}
+}
+
+// WithWipeTargetSliceFirstOpt is synonym of WithWipeTargetSliceFirst(true)
+var WithWipeTargetSliceFirstOpt = WithWipeTargetSliceFirst(true)
+
 // WithIgnoreNames does specify the ignored field names list.
 //
 // Use the filename wildcard match characters (aka. '*' and '?', and '**')
@@ -325,14 +344,13 @@ func isWildMatch(s, pattern string) bool {
 //
 // Default is "copy", the corresponding struct with tag looks like:
 //
-//    type AFT struct {
-//        flags     flags.Flags `copy:",cleareq"`
-//        converter *ValueConverter
-//        wouldbe   int `copy:",must,keepneq,omitzero,mapmerge"`
-//        ignored1  int `copy:"-"`
-//        ignored2  int `copy:",-"`
-//    }
-//
+//	type AFT struct {
+//	    flags     flags.Flags `copy:",cleareq"`
+//	    converter *ValueConverter
+//	    wouldbe   int `copy:",must,keepneq,omitzero,mapmerge"`
+//	    ignored1  int `copy:"-"`
+//	    ignored2  int `copy:",-"`
+//	}
 func WithStructTagName(name string) Opt {
 	return func(c *cpController) {
 		c.tagKeyName = name

@@ -160,10 +160,10 @@ func ReverseAnySlice(s interface{}) {
 func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
-		dbglog.Log("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
+		// dbglog.Log("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)
 		if reflect.DeepEqual(tev, elv) {
 			found = true
-			dbglog.Log("found exists el at tgt[%v], for src[%v], value is %v", j, i, elv)
+			dbglog.Log("found an exists el at tgt[%v], for src[%v], value is: %v", j, i, elv)
 			break
 		}
 	}

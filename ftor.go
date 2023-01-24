@@ -93,6 +93,10 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 		dbglog.Log("from.type: %v, decode to: %v", from.Type().Kind(), paramsChild.srcDecoded.Kind())
 		dbglog.Log("  to.type: %v, decode to: %v (ptr: %v) | CanSet: %v, CanAddr: %v", to.Type().Kind(), toind.Kind(), toptr.Kind(), toind.CanSet(), toind.CanAddr())
 
+		if !tool.KindIs(toind.Kind(), reflect.Map, reflect.Slice, reflect.Chan) && !toind.CanSet() {
+			log.Panicf("[copyInterface] toind.CanSet() is false!")
+		}
+
 		// var merging = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
 		//nolint:gocritic // no need to switch to 'switch' clause
 		if paramsChild.inMergeMode() || !c.makeNewClone {
@@ -652,13 +656,16 @@ func copySlice(c *cpController, params *Params, from, to reflect.Value) (err err
 		return
 	}
 
+	if !tool.KindIs(tgt.Kind(), reflect.Map, reflect.Slice, reflect.Chan) && !tgt.CanSet() {
+		log.Panicf("[copySlice] tgtptr cannot be set")
+	}
 	if params.controller != c {
 		log.Panicf("[copySlice] c *cpController != params.controller, what's up??")
 	}
 
 	tk, typ := tgt.Kind(), tgt.Type()
 	if tk != reflect.Slice {
-		dbglog.Log("from slice -> %v", tool.Typfmt(typ))
+		dbglog.Log("[copySlice] from slice -> %v", tool.Typfmt(typ))
 		var processed bool
 		if processed, err = tryConverters(c, params, &from, &tgt, &typ, false); !processed {
 			// log.Panicf("[copySlice] unsupported transforming: from slice -> %v,", typfmtv(&tgt))
@@ -698,20 +705,29 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 
 			if fn, ok := getSliceOperations()[flag]; ok {
 				if result, e := fn(c, params, from, tgt); e == nil {
+					dbglog.Log("   result: got %v (%v)", tool.Valfmt(&result), tool.Typfmtv(&result))
+					dbglog.Log("      tgt: contains %v (%v) | tgtptr: canset: %v", tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tgtptr.CanSet())
 					// tgt=ns
 					// t := c.want2(to, reflect.Slice, reflect.Interface)
 					// t.Set(tgt)
 					//   //tgtptr.Elem().Set(result)
-					if tk := tgtptr.Kind(); tk == reflect.Slice || tk == reflect.Interface {
-						tgtptr.Set(result)
+					if tgtptr.CanSet() {
+						if tk := tgtptr.Type().Elem().Kind(); tk == reflect.Slice {
+							tgtptr.Elem().Set(result)
+						} else {
+							tgtptr.Set(result)
+						}
+					} else if tk := tgtptr.Kind(); tk == reflect.Slice {
+						tgt.Set(result)
+						ec.Attach(errors.New("cannot make copy for a slice, the target slice is cannot be set"))
 					} else {
-						tgtptr.Elem().Set(result)
+						ec.Attach(errors.New("cannot make copy for a slice, the target ptr is cannot be set: tgtptr.typ = %v", tool.Typfmtv(&tgtptr)))
 					}
 				} else {
 					ec.Attach(e)
 				}
 			} else {
-				ec.Attach(errors.New("cannot make slice copy, unknown copy-merge-strategy %v", flag))
+				ec.Attach(errors.New("cannot make copy for a slice, unknown copy-merge-strategy %v", flag))
 			}
 
 			break
@@ -719,6 +735,25 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 	}
 
 	return
+}
+
+func transferSlice(src, tgt reflect.Value) reflect.Value {
+	i, sl, tl := 0, src.Len(), tgt.Len()
+	for ; i < sl && i < tl; i++ {
+		if i < tl {
+			if i >= sl {
+				tgt.SetLen(i)
+				break
+			}
+			tgt.Index(i).Set(src.Index(i))
+		}
+	}
+	if i < sl && i >= tl {
+		for ; i < sl; i++ {
+			tgt = reflect.Append(tgt, src.Index(i))
+		}
+	}
+	return tgt
 }
 
 type fnSliceOperator func(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error)
@@ -735,11 +770,15 @@ func getSliceOperations() (mapOfSliceOperations mSliceOperations) {
 
 // _sliceCopyOperation: for SliceCopy, target elements will be given up, and source copied to.
 func _sliceCopyOperation(c *cpController, params *Params, src, tgt reflect.Value) (result reflect.Value, err error) {
-	slice := reflect.MakeSlice(tgt.Type(), 0, 0)
+	slice := reflect.MakeSlice(tgt.Type(), 0, src.Len())
 	dbglog.Log("tgt slice: %v, el: %v", tgt.Type(), tgt.Type().Elem())
 
 	ecTotal := errors.New("slice merge errors (%v -> %v)", src.Type(), tgt.Type())
 	defer ecTotal.Defer(&err)
+
+	if c.wipeSlice1st {
+		// TODO c.wipeSlice1st
+	}
 
 	for _, ss := range []struct {
 		length int
@@ -1024,14 +1063,14 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 
 			for _, key := range src.MapKeys() {
 				originalValue := src.MapIndex(key)
-				copyValue := reflect.New(tgt.Type().Elem())
-				ec.Attach(c.copyTo(params, originalValue, copyValue.Elem()))
+				_, copyValueElem := newFromType(tgt.Type().Elem())
+				ec.Attach(c.copyTo(params, originalValue, copyValueElem))
 
 				copyKey := reflect.New(tgt.Type().Key())
 				ec.Attach(c.copyTo(params, key, copyKey.Elem()))
 
 				if c.targetSetter != nil && copyKey.Elem().Kind() == reflect.String {
-					srcval := copyValue.Elem()
+					srcval := copyValueElem
 					err = c.targetSetter(&srcval, copyKey.Elem().String())
 					if err != nil {
 						if err != ErrShouldFallback { //nolint:errorlint //want it exactly
@@ -1042,7 +1081,7 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 						return
 					}
 				}
-				tgt.SetMapIndex(copyKey.Elem(), copyValue.Elem())
+				tgt.SetMapIndex(copyKey.Elem(), copyValueElem)
 			}
 			return
 		},
@@ -1051,6 +1090,7 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 			defer ec.Defer(&err)
 
 			for _, key := range src.MapKeys() {
+				dbglog.Log("------------ [MapMerge] mergeOneKeyInMap: key = %q (%v) ------------------", tool.Valfmt(&key), tool.Typfmtv(&key))
 				ec.Attach(mergeOneKeyInMap(c, params, src, tgt, key))
 			}
 			return
@@ -1111,8 +1151,7 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	if eltypind.Kind() == reflect.Interface {
 		tgtvalind, _ := tool.Rdecode(tgtval)
 		dbglog.Log("  tgtval: [%v] %v, ind: %v", tool.Typfmtv(&tgtval), tool.Valfmt(&tgtval), tool.Typfmtv(&tgtvalind))
-		ptrToCopyValue = reflect.New(tgtvalind.Type())
-		cv = ptrToCopyValue.Elem()
+		ptrToCopyValue, cv = newFromType(tgtvalind.Type())
 		if processed, err = mapMergePreSetter(c, ck, cv); processed {
 			return
 		}
@@ -1121,8 +1160,7 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 			dbglog.Log("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
 		}()
 	} else {
-		ptrToCopyValue = reflect.New(eltypind)
-		cv = ptrToCopyValue.Elem()
+		ptrToCopyValue, cv = newFromType(eltypind)
 		if processed, err = mapMergePreSetter(c, ck, cv); processed {
 			return
 		}
@@ -1148,28 +1186,78 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	return
 }
 
+func newFromType(typ reflect.Type) (val, valelem reflect.Value) {
+	if k := typ.Kind(); k == reflect.Map {
+		val = reflect.MakeMap(typ)
+		valelem = val
+	} else if k == reflect.Slice {
+		val = reflect.MakeSlice(typ, 0, 0)
+		valelem = val
+	} else if k == reflect.Chan {
+		val = reflect.MakeChan(typ, 0)
+		valelem = val
+	} else if k == reflect.Func {
+		val = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value { return args })
+		valelem = val
+	} else {
+		val = reflect.New(typ)
+		valelem = val.Elem()
+	}
+	return
+}
+
+// newFromTypeEspSlice makes new instance for a given type.
+// especially for a slice, newFromTypeEspSlice will make a pointer
+// to a new slice, so that we can set the whole slice via this
+// pointer later.
+func newFromTypeEspSlice(typ reflect.Type) (val, valelem reflect.Value) {
+	if k := typ.Kind(); k == reflect.Map {
+		val = reflect.MakeMap(typ)
+		valelem = val
+	} else if k == reflect.Slice {
+		var tp = reflect.PointerTo(typ)
+		val = reflect.New(tp).Elem()
+		// valval := reflect.MakeSlice(typ, 0, 0)
+		// val.Set(valval.Addr())
+		val.Set(reflect.New(typ))
+		valelem = val
+	} else if k == reflect.Chan {
+		val = reflect.MakeChan(typ, 0)
+		valelem = val
+	} else if k == reflect.Func {
+		val = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value { return args })
+		valelem = val
+	} else {
+		val = reflect.New(typ)
+		valelem = val.Elem()
+	}
+	return
+}
+
 func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue reflect.Value) (val reflect.Value, ptr bool, err error) {
 	val = m.MapIndex(key)
 	vk := val.Kind()
 	if vk == reflect.Ptr {
 		if tool.IsNil(val) {
-			typ := m.Type().Elem()  // make new instance of type pointed by pointer
-			val = reflect.New(typ)  //
+			typ := m.Type().Elem() // make new instance of type pointed by pointer
+			val, _ = newFromType(typ)
 			m.SetMapIndex(key, val) // and set the new pointer into map
 			ptr = true              //
-			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
 		}
 	} else if !val.IsValid() {
 		typ := m.Type().Elem()
 		if typ.Kind() != reflect.Interface {
-			val = reflect.New(typ)
-			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
-			m.SetMapIndex(key, val.Elem())
+			var valelem reflect.Value
+			val, valelem = newFromType(typ)
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			m.SetMapIndex(key, valelem)
 			ptr = true // val = vind
 		} else if originalValue.IsValid() {
 			typ = tool.Rdecodesimple(originalValue).Type()
-			val = reflect.New(typ).Elem()
+			val, _ = newFromTypeEspSlice(typ)
 			ptr = true
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
 			if err = c.copyTo(params, originalValue, val); err != nil {
 				return
 			}
@@ -1178,7 +1266,7 @@ func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue re
 				return
 			}
 			m.SetMapIndex(key, val)
-			dbglog.Log("    val.typ: %v, key.typ: %v | %v -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v | DONE", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
 		}
 	}
 	return
@@ -1192,7 +1280,7 @@ func cloneMapKey(c *cpController, params *Params, tgt, key reflect.Value) (ck re
 	if err = c.copyTo(params, key, ck); err != nil {
 		return
 	}
-	dbglog.Log("         <KEY> duplicated: %v", tool.Valfmtptr(&ck))
+	dbglog.Log("         <KEY> duplicated: '%v'", tool.Valfmtptr(&ck))
 	return
 }
 

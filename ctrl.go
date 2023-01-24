@@ -21,6 +21,7 @@ type cpController struct {
 	autoExpandStruct           bool // navigate into nested struct?
 	autoNewStruct              bool // create new instance if field is a ptr
 	tryApplyConverterAtFirst   bool // ValueConverters first, or ValueCopiers?
+	wipeSlice1st               bool // wipe Slice or Map before copy/merge from source field
 
 	makeNewClone bool        // make a new clone by copying to a fresh new object
 	flags        flags.Flags // CopyMergeStrategies globally
@@ -252,8 +253,7 @@ func (c *cpController) SetFlags(f flags.Flags) { c.flags = f }
 
 // SaveFlagsAndRestore is a defer-function so the best usage is:
 //
-//    defer c.SaveFlagsAndRestore()()
-//
+//	defer c.SaveFlagsAndRestore()()
 func (c *cpController) SaveFlagsAndRestore() func() {
 	var saved = c.flags.Clone()
 	return func() {
