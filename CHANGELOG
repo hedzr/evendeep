@@ -1,5 +1,9 @@
 ## HISTORY
 
+### v0.2.51
+
+- temporary build: fixing array/slice copying logic
+
 ### v0.2.50
 
 - first public release
