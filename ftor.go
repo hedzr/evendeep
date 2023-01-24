@@ -1215,7 +1215,7 @@ func newFromTypeEspSlice(typ reflect.Type) (val, valelem reflect.Value) {
 		val = reflect.MakeMap(typ)
 		valelem = val
 	} else if k == reflect.Slice {
-		var tp = reflect.PointerTo(typ)
+		var tp = tool.PointerTo(typ)
 		val = reflect.New(tp).Elem()
 		// valval := reflect.MakeSlice(typ, 0, 0)
 		// val.Set(valval.Addr())
