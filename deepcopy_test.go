@@ -290,7 +290,7 @@ func TestDeepCopy(t *testing.T) {
 
 	var aa = AA{A: true, B: 16, C: helloString}
 	var bb BB
-	var ret typ.Any = evendeep.DeepCopy(aa, &bb,
+	var ret = evendeep.DeepCopy(aa, &bb,
 		evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 	t.Logf("ret = %v", ret)
 	// ret = &{0 16 &"hello"}
@@ -307,7 +307,7 @@ func TestMakeClone(t *testing.T) {
 	}
 
 	var aa = AA{A: true, B: 16, C: helloString}
-	var ret typ.Any = evendeep.MakeClone(aa)
+	var ret = evendeep.MakeClone(aa)
 	var aaCopy = ret.(AA)
 	t.Logf("ret = %v", aaCopy)
 	// ret = {true 16 hello}
@@ -351,7 +351,7 @@ func TestWithIgnoreNames(t *testing.T) {
 
 	var aa = AA{A: true, B: 16, C: helloString, D: worldString}
 	var bb BB
-	var ret typ.Any = evendeep.DeepCopy(aa, &bb,
+	var ret = evendeep.DeepCopy(aa, &bb,
 		evendeep.WithIgnoreNames("C*"),
 		evendeep.WithSyncAdvancing(false),
 		evendeep.WithByOrdinalStrategyOpt,

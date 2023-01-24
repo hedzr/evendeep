@@ -78,7 +78,7 @@ func TestErrorsIs(t *testing.T) {
 
 func TestSliceLen(t *testing.T) {
 	var str []string
-	var v reflect.Value = reflect.ValueOf(&str)
+	var v = reflect.ValueOf(&str)
 
 	// make value to adopt element's type - in this case string type
 
@@ -113,7 +113,7 @@ func TestCpChan(t *testing.T) {
 	t.Logf("%v (len: %v),  vv.len: %v", value.Interface(), value.Cap(), vi.Cap())
 
 	var sval chan string
-	var strVal reflect.Value = reflect.ValueOf(&sval)
+	var strVal = reflect.ValueOf(&sval)
 	indirectStr := reflect.Indirect(strVal)
 	svalue := reflect.MakeChan(indirectStr.Type(), 1024)
 	t.Logf("Type : [%v] \nCapacity : [%v]", svalue.Kind(), svalue.Cap())

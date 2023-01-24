@@ -254,7 +254,7 @@ func TestTypeConvert(t *testing.T) {
 	var i5 = 5
 	var ui6 = uint(6)
 	var i64 int64 = 10
-	var f64 float64 = 9.1
+	var f64 = 9.1
 
 	evendeep.RunTestCases(t,
 		evendeep.NewTestCase(

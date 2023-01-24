@@ -422,7 +422,7 @@ func TestToStringConverter_Transform(t *testing.T) {
 			t.Fatalf("convert failed, want %q but got %q", exp, x)
 		}
 
-		var tgtstr string = "1"
+		var tgtstr = "1"
 		tgt = reflect.ValueOf(&tgtstr).Elem()
 		dbglog.Log("target/; %v %v", tool.Valfmt(&tgt), tool.Typfmtv(&tgt))
 		err = bbc.CopyTo(nil, svv, tgt)
@@ -921,8 +921,8 @@ func TestFromFuncConverter(t *testing.T) {
 	var b1 = B{&C{7, true}, false}
 
 	var boolTgt bool
-	var intTgt int = 1
-	var stringTgt string = "world"
+	var intTgt = 1
+	var stringTgt = "world"
 
 	lazyInitRoutines()
 

@@ -115,7 +115,7 @@ const (
 	ftf170 CopyMergeStrategy = iota + 170
 
 	// InvalidStrategy for algorithm purpose
-	InvalidStrategy CopyMergeStrategy = CopyMergeStrategy(MaxInt)
+	InvalidStrategy = CopyMergeStrategy(MaxInt)
 )
 
 // Limit values of implementation-specific int type.
