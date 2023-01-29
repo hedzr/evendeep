@@ -20,11 +20,11 @@ import (
 //
 // See our TestRdecode() in ref_test.go
 //
-//    var b = 11
-//    var i interface{} = &b
-//    var v = reflect.ValueOf(&i)
-//    var n = Rdecode(v)
-//    println(n.Type())    // = int
+//	var b = 11
+//	var i interface{} = &b
+//	var v = reflect.ValueOf(&i)
+//	var n = Rdecode(v)
+//	println(n.Type())    // = int
 //
 // `prev` returns the previous Value before we arrived at the
 // final `ret` Value.
@@ -37,6 +37,8 @@ import (
 func Rdecode(reflectValue reflect.Value) (ret, prev reflect.Value) {
 	return Rskip(reflectValue, reflect.Ptr, reflect.Interface)
 }
+
+// Rdecodesimple is a shortcut to Rdecode without `prev` returned.
 func Rdecodesimple(reflectValue reflect.Value) (ret reflect.Value) {
 	ret, _ = Rdecode(reflectValue)
 	return

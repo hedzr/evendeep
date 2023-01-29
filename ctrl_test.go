@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hedzr/evendeep/internal/tool"
-	"github.com/hedzr/evendeep/typ"
 	"io"
 	"math"
 	"reflect"
@@ -15,11 +13,15 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
+
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
-	"gopkg.in/hedzr/errors.v3"
 )
 
 const (
@@ -30,7 +32,6 @@ const (
 )
 
 func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
-
 	invalidObj := func() interface{} {
 		var x *evendeep.X0
 		return x
@@ -81,7 +82,6 @@ func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
 		evendeep.DeepCopy(&src, &tgt)
 		t.Logf("tgt: %+v", tgt)
 	})
-
 }
 
 type ccs struct {
@@ -165,10 +165,13 @@ func TestDeepCopyableSource(t *testing.T) {
 			}
 			t.Fatalf("not equal. %v", err)
 		}
-	})
+	}) // NewTasskks creates a
 }
 
 func TestSimple(t *testing.T) {
+
+	// var dInt = 9
+	// var dStr = worldString
 
 	for _, tc := range []evendeep.TestCase{
 		evendeep.NewTestCase(
@@ -372,7 +375,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 			nil,
 		),
 		evendeep.NewTestCase(
-			"int64 -> []uint",
+			"int64 -> *[]uint",
 			int64(8), &sui, &[]uint{9, 8},
 			opts,
 			nil,

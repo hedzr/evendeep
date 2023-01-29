@@ -926,11 +926,13 @@ func TestFromFuncConverter(t *testing.T) {
 
 	lazyInitRoutines()
 
-	for ix, fncase := range []struct {
+	for ix, fnCase := range []struct {
 		fn     interface{}
 		target interface{}
 		expect interface{}
 	}{
+		{func() ([]int, error) { return []int{2, 3}, nil }, &[]int{1}, []int{1, 2, 3}},
+
 		// {func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
 
 		{func() A { return a0 },
@@ -957,9 +959,9 @@ func TestFromFuncConverter(t *testing.T) {
 		{func() int { return 3 }, &intTgt, 3},
 		{func() (int, error) { return 5, nil }, &intTgt, 5},
 	} {
-		if fncase.fn != nil { //nolint:gocritic //nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
-			fnv := reflect.ValueOf(&fncase.fn)
-			tgtv := reflect.ValueOf(&fncase.target)
+		if fnCase.fn != nil { //nolint:gocritic //nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
+			fnv := reflect.ValueOf(&fnCase.fn)
+			tgtv := reflect.ValueOf(&fnCase.target)
 			ff, tt := tool.Rdecodesimple(fnv), tool.Rdecodesimple(tgtv)
 			dbglog.Log("---- CASE %d. %v -> %v", ix, tool.Typfmtv(&ff), tool.Typfmtv(&tt))
 
@@ -969,8 +971,8 @@ func TestFromFuncConverter(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("has error: %v", err)
-			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fncase.expect) == false {
-				t.Fatalf("unexpect result: expect %v but got %v", fncase.expect, ret)
+			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) == false {
+				t.Fatalf("unexpect result: expect %v but got %v", fnCase.expect, ret)
 			}
 		}
 	}
