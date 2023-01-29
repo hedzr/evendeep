@@ -720,7 +720,7 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 					dbglog.Log("   result: got %v (%v)", tool.Valfmt(&result), tool.Typfmtv(&result))
 					dbglog.Log("      tgt: contains %v (%v) | tgtptr: canset: %v", tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tgtptr.CanSet())
 
-					if tk := tgtptr.Kind(); tk == reflect.Pointer {
+					if tk := tgtptr.Kind(); tk == reflect.Ptr {
 						tgtptr.Elem().Set(result)
 					} else if tk == reflect.Slice || tk == reflect.Interface {
 						tgtptr.Set(result)
