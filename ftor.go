@@ -4,11 +4,12 @@ package evendeep
 //
 
 import (
+	"github.com/hedzr/log"
+
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
-	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"
 
@@ -74,7 +75,9 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 			return
 		}
 		goto badReturn
-	} else if tool.IsZero(from) {
+	}
+
+	if tool.IsZero(from) {
 		if params.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty) {
 			return
 		}
@@ -83,7 +86,9 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 			return
 		}
 		goto badReturn
-	} else {
+	}
+
+	{
 		paramsChild := newParams(withOwners(c, params, &from, &to, nil, nil))
 		defer paramsChild.revoke()
 
@@ -91,25 +96,32 @@ func copyInterface(c *cpController, params *Params, from, to reflect.Value) (err
 		toind, toptr := tool.Rdecode(to) // c.skip(to, reflect.Interface, reflect.Pointer)
 
 		dbglog.Log("from.type: %v, decode to: %v", from.Type().Kind(), paramsChild.srcDecoded.Kind())
-		dbglog.Log("  to.type: %v, decode to: %v (ptr: %v) | CanSet: %v, CanAddr: %v", to.Type().Kind(), toind.Kind(), toptr.Kind(), toind.CanSet(), toind.CanAddr())
+		dbglog.Log("  to.type: %v, decode to: %v (ptr: %v) | CanSet: %v/%v, CanAddr: %v", to.Type().Kind(), toind.Kind(), toptr.Kind(), toind.CanSet(), toptr.CanSet(), toind.CanAddr())
 
-		if !tool.KindIs(toind.Kind(), reflect.Map, reflect.Slice, reflect.Chan) && !toind.CanSet() {
-			log.Panicf("[copyInterface] toind.CanSet() is false!")
+		if !tool.KindIs(toind.Kind(), reflect.Map, reflect.Slice, reflect.Chan) {
+			if !toind.CanSet() && !toptr.CanSet() {
+				// log.Panicf("[copyInterface] toind.CanSet() is false!")
+
+				// valid ptr pointed to an invalid source object,
+				// valid ptr pointed to an invalid target object:
+				err = errors.New("[copyInterface] target pointer cannot be set, toind.Kind: %v, toptr.Kind: %v", toind.Kind(), toptr.Kind())
+				return
+			}
 		}
 
 		// var merging = c.flags.isAnyFlagsOK(SliceMerge, MapMerge) || params.isAnyFlagsOK(SliceMerge, MapMerge)
 		//nolint:gocritic // no need to switch to 'switch' clause
 		if paramsChild.inMergeMode() || !c.makeNewClone {
 			err = c.copyTo(paramsChild, *paramsChild.srcDecoded, toptr)
-		} else if to.CanSet() {
+			return
+		}
+		if to.CanSet() {
 			copyValue := reflect.New(paramsChild.srcDecoded.Type()).Elem()
 			if err = c.copyTo(paramsChild, *paramsChild.srcDecoded, copyValue); err == nil {
 				to.Set(copyValue)
 			}
-		} else {
-			goto badReturn
+			return
 		}
-		return
 	}
 
 badReturn:
@@ -707,26 +719,38 @@ func copySliceInternal(c *cpController, params *Params, from, to, tgt, tgtptr re
 				if result, e := fn(c, params, from, tgt); e == nil {
 					dbglog.Log("   result: got %v (%v)", tool.Valfmt(&result), tool.Typfmtv(&result))
 					dbglog.Log("      tgt: contains %v (%v) | tgtptr: canset: %v", tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tgtptr.CanSet())
-					// tgt=ns
-					// t := c.want2(to, reflect.Slice, reflect.Interface)
-					// t.Set(tgt)
-					//   //tgtptr.Elem().Set(result)
-					if tgtptr.CanSet() {
-						if tk := tgtptr.Type().Elem().Kind(); tk == reflect.Slice {
-							tgtptr.Elem().Set(result)
-						} else {
-							tgtptr.Set(result)
-						}
-					} else if tk := tgtptr.Kind(); tk == reflect.Slice {
-						tgt.Set(result)
-						ec.Attach(errors.New("cannot make copy for a slice, the target slice is cannot be set"))
+
+					if tk := tgtptr.Kind(); tk == reflect.Pointer {
+						tgtptr.Elem().Set(result)
+					} else if tk == reflect.Slice || tk == reflect.Interface {
+						tgtptr.Set(result)
 					} else {
+						dbglog.Log("    error: cannot make copy for a slice, the target ptr is cannot be set: tgtptr.typ = %v", tool.Typfmtv(&tgtptr))
 						ec.Attach(errors.New("cannot make copy for a slice, the target ptr is cannot be set: tgtptr.typ = %v", tool.Typfmtv(&tgtptr)))
 					}
+
+					// if tgtptr.CanSet() && !tool.IsZero(tgt) {
+					// 	if ee, tk := tgtptr.Elem(), tgtptr.Elem().Type().Kind(); tk == reflect.Slice && ee.CanSet() {
+					// 		ee.Set(result)
+					// 		// } else if tk1 := tgtptr.Type().Elem().Kind(); tk1 == reflect.Slice {
+					// 		// 	tgtptr.Elem().Set(result)
+					// 	} else {
+					// 		tgtptr.Set(result)
+					// 	}
+					// } else if tk := tgtptr.Kind(); tk == reflect.Slice {
+					// 	tgt.Set(result)
+					// 	ec.Attach(errors.New("cannot make copy for a slice, the target slice is cannot be set"))
+					// } else if tk == reflect.Pointer {
+					// 	tgtptr.Elem().Set(result)
+					// } else {
+					// 	ec.Attach(errors.New("cannot make copy for a slice, the target ptr is cannot be set: tgtptr.typ = %v", tool.Typfmtv(&tgtptr)))
+					// }
 				} else {
+					dbglog.Log("    error: ec.Attach(e), e: %v", e)
 					ec.Attach(e)
 				}
 			} else {
+				dbglog.Log("    error: cannot make copy for a slice, unknown copy-merge-strategy %v", flag)
 				ec.Attach(errors.New("cannot make copy for a slice, unknown copy-merge-strategy %v", flag))
 			}
 
