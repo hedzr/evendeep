@@ -45,6 +45,12 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.2.51
+  - improved code style, format, ...
+  - review most of testcases
+  - improved/fixed edge conditions
+  - added `duff,WithStripPointerAtFirst(b)`, `diff.WithSliceNoOrder(b)` options
+
 - v0.2.50
   - first public release here.
 
