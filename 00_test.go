@@ -656,7 +656,10 @@ func runtestcasesverifier(t *testing.T) Verifier {
 		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)\n   err: %v",
 			bv, tool.Typfmtv(&bb), aa.Type(), av, tool.Typfmtv(&aa), bb.Type(), e)
 
-		dif, equal := diff.New(expect, dst, diff.WithSliceOrderedComparison(false))
+		dif, equal := diff.New(expect, dst,
+			diff.WithSliceOrderedComparison(false),
+			diff.WithStripPointerAtFirst(true),
+		)
 		if !equal {
 			fmt.Println(dif)
 			err = errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif).WithErrors(e)

@@ -16,11 +16,11 @@ import (
 // A Diff includes added, removed, and modified records, you can
 // PrettyPrint them for displaying.
 //
-//    delta, equal := evendeep.DeepDiff([]int{3, 0}, []int{9, 3, 0})
-//    t.Logf("delta: %v", delta)
-//    //        added: [2] = <zero>
-//    //        modified: [0] = 9 (int) (Old: 3)
-//    //        modified: [1] = 3 (int) (Old: <zero>)
+//	delta, equal := evendeep.DeepDiff([]int{3, 0}, []int{9, 3, 0})
+//	t.Logf("delta: %v", delta)
+//	//        added: [2] = <zero>
+//	//        modified: [0] = 9 (int) (Old: 3)
+//	//        modified: [1] = 3 (int) (Old: <zero>)
 func New(lhs, rhs typ.Any, opts ...Opt) (inf Diff, equal bool) {
 	info1 := newInfo()
 	for _, opt := range opts {
@@ -72,6 +72,18 @@ func WithComparer(comparer ...Comparer) Opt {
 	}
 }
 
+func WithSliceNoOrder(b bool) Opt {
+	return func(i *info) {
+		i.sliceNoOrder = b
+	}
+}
+
+func WithStripPointerAtFirst(b bool) Opt {
+	return func(i *info) {
+		i.stripPtr1st = b
+	}
+}
+
 // Diff includes added, removed and modified records of the two values
 type Diff interface {
 	ForAdded(fn func(key string, val typ.Any))
@@ -106,6 +118,7 @@ type info struct {
 	visited       map[visit]bool
 	ignoredFields map[string]bool
 	sliceNoOrder  bool
+	stripPtr1st   bool
 	compares      []Comparer
 }
 
@@ -223,6 +236,9 @@ func (d *info) mkkey(path Path, parts ...PathPart) (key string) {
 
 func (d *info) diff(lhs, rhs typ.Any) bool {
 	lv, rv := reflect.ValueOf(lhs), reflect.ValueOf(rhs)
+	if d.stripPtr1st {
+		lv, rv = tool.Rdecodesimple(lv), tool.Rdecodesimple(rv)
+	}
 	var path Path
 	return d.diffv(lv, rv, path)
 }
