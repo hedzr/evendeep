@@ -6,6 +6,10 @@ tools/bgo/go.work
 go.work
 .local/
 
+Makefile
+.env
+.env.local*
+
 *.S
 small
 ./small*
