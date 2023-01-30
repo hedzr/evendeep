@@ -1,0 +1,22 @@
+{
+  "go.coverOnSave": true,
+  "go.coverageDecorator": {
+      "type": "gutter",
+      // "coveredHighlightColor": "rgba(0,128,128,1.0)",
+      // "uncoveredHighlightColor": "rgba(128,15,15,0.95)",
+      "coveredGutterStyle": "blockgreen",
+      "uncoveredGutterStyle": "slashred"
+  },
+  "go.coverOnSingleTest": true,
+
+
+    // first item for Windows, next item for macOS
+    // because I use sync settings for multiple OS
+    "editor.fontFamily": "'Cascadia Code PL', 'CascadiaCodePL', Consolas",
+    // setting font ligatures as https://github.com/microsoft/cascadia-code#font-features
+    "editor.fontLigatures": "'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'zero', 'onum'",
+    // this is optional, it makes the weight of default font become lighter.
+    // Otherwise if we set font to 'Cascadia Code PL SemiLight' as it would be the same but it could'nt work with font ligatures.
+    "editor.fontWeight": "350",
+
+}
