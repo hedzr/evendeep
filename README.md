@@ -45,6 +45,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.2.56
+  - changed: `InvalidStrategy` is -1 now since we got untyped int overflow error in auto-gen code by stringer
+
 - v0.2.53
   - improved code style, format, ...
   - to fore-prevent low-performance and large-memory usage when retrieve expanded fields from a very large struct, use `cms.ByOrdinal` instead default `cms.ByName`
