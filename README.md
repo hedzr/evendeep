@@ -55,6 +55,7 @@ This library is designed for making everything customizable.
         field1 *ComplexStruct `copy:",flat"`
     }
     ```
+  - `evendeep` supports to go1.11 currently
 
 - v0.2.51
   - improved code style, format, ...
