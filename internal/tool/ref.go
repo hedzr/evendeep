@@ -181,7 +181,7 @@ func Typfmtptr(t *reflect.Type) string { //nolint:gocritic //ptrToRefParam: cons
 	return fmt.Sprintf("%v (%v)", *t, (*t).Kind())
 }
 
-// Valfmtptr will step into a ptr value at first, then Valfmt
+// Valfmtptr will step into a ptr value at first, then Valfmt.
 func Valfmtptr(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
@@ -234,18 +234,18 @@ func Iserrortype(typ reflect.Type) bool {
 
 var errtyp = reflect.TypeOf((*error)(nil)).Elem()
 
-var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem()
-var StringType = reflect.TypeOf((*string)(nil)).Elem()
-var Niltyp = reflect.TypeOf((*string)(nil))
+var stringerType = reflect.TypeOf((*interface{ String() string })(nil)).Elem() //nolint:gochecknoglobals //i know that
+var StringType = reflect.TypeOf((*string)(nil)).Elem()                         //nolint:gochecknoglobals //i know that
+var Niltyp = reflect.TypeOf((*string)(nil))                                    //nolint:gochecknoglobals //i know that
 
 // IsZero for go1.12+, the difference is it never panic on unavailable kinds.
-// see also reflect.IsZero
+// see also reflect.IsZero.
 func IsZero(v reflect.Value) (ret bool) {
 	return IsZerov(&v)
 }
 
 // IsZerov for go1.12+, the difference is it never panic on unavailable kinds.
-// see also reflect.IsZero
+// see also reflect.IsZero.
 func IsZerov(v *reflect.Value) (ret bool) {
 	if v != nil {
 		switch k := v.Kind(); k { //nolint:exhaustive //others unlisted cases can be ignored
@@ -296,13 +296,13 @@ func ArrayIsZerov(v *reflect.Value) bool {
 }
 
 // IsNil for go1.12+, the difference is it never panic on unavailable kinds.
-// see also reflect.IsNil
+// see also reflect.IsNil.
 func IsNil(v reflect.Value) bool {
 	return IsNilv(&v)
 }
 
 // IsNilv for go1.12+, the difference is it never panic on unavailable kinds.
-// see also reflect.IsNil
+// see also reflect.IsNil.
 func IsNilv(v *reflect.Value) bool {
 	if v != nil {
 		switch k := v.Kind(); k { //nolint:exhaustive //no need
@@ -350,7 +350,7 @@ func IsExported(f *reflect.StructField) bool {
 	return f.PkgPath == ""
 }
 
-// CanConvertHelper _
+// CanConvertHelper is a shorthand of CanConvert.
 func CanConvertHelper(v reflect.Value, t reflect.Type) bool {
 	return CanConvert(&v, t)
 }

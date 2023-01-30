@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"reflect"
 	"strconv"
@@ -15,14 +16,14 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 )
 
-// rForBool transform bool -> string
+// rForBool transform bool -> string.
 func rForBool(v reflect.Value) (ret reflect.Value) {
 	vs := strconv.FormatBool(v.Bool())
 	ret = reflect.ValueOf(vs)
 	return
 }
 
-// rToBool transform string (or anything) -> bool
+// rToBool transform string (or anything) -> bool.
 func rToBool(v reflect.Value) (ret reflect.Value) {
 	var b bool
 
@@ -65,7 +66,7 @@ func internalToBool(s string) (b bool) {
 	return
 }
 
-// rForInteger transform integer -> string
+// rForInteger transform integer -> string.
 func rForInteger(v reflect.Value) (ret reflect.Value) {
 	int64typ := reflect.TypeOf((*int64)(nil)).Elem()
 	if !v.IsValid() {
@@ -78,7 +79,7 @@ func rForInteger(v reflect.Value) (ret reflect.Value) {
 		}
 	}
 
-	vs := strconv.FormatInt(v.Int(), 10) //nolint:gomnd //no need
+	vs := strconv.FormatInt(v.Int(), 10)
 	ret = reflect.ValueOf(vs)
 	return
 }
@@ -123,7 +124,7 @@ func rToInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 	return
 }
 
-// rForUInteger transform uint64 -> string
+// rForUInteger transform uint64 -> string.
 func rForUInteger(v reflect.Value) (ret reflect.Value) {
 	uint64typ := reflect.TypeOf((*uint64)(nil)).Elem()
 	if !v.IsValid() {
@@ -136,7 +137,7 @@ func rForUInteger(v reflect.Value) (ret reflect.Value) {
 		}
 	}
 
-	vs := strconv.FormatUint(v.Uint(), 10) //nolint:gomnd //no need
+	vs := strconv.FormatUint(v.Uint(), 10)
 	ret = reflect.ValueOf(vs)
 	return
 }
@@ -179,7 +180,7 @@ func rToUInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, 
 	return
 }
 
-// rForUIntegerHex transform uintptr/... -> string
+// rForUIntegerHex transform uintptr/... -> string.
 func rForUIntegerHex(u uintptr) (ret reflect.Value) {
 	vs := syscalls.UintptrToString(u)
 	ret = reflect.ValueOf(vs)
@@ -188,7 +189,7 @@ func rForUIntegerHex(u uintptr) (ret reflect.Value) {
 
 func rToUIntegerHex(s reflect.Value, desiredType reflect.Type) (ret reflect.Value) {
 	vs := syscalls.UintptrFromString(s.String())
-	fmt.Printf("vs : %v, k: %v\n", vs, desiredType.Kind())
+	log.Printf("vs : %v, k: %v\n", vs, desiredType.Kind())
 	switch k := desiredType.Kind(); k { //nolint:exhaustive //no need
 	case reflect.Uintptr:
 		ret = reflect.ValueOf(vs)
@@ -199,8 +200,7 @@ func rToUIntegerHex(s reflect.Value, desiredType reflect.Type) (ret reflect.Valu
 	return
 }
 
-//nolint:deadcode,gocritic //future code
-func getPointerAsUintptr(v reflect.Value) uintptr {
+func getPointerAsUintptr(v reflect.Value) uintptr { //nolint:unused // intergrality
 	var p uintptr
 	if v.Kind() == reflect.Ptr && v.Elem().Kind() == reflect.Struct {
 		p = v.Pointer()
@@ -208,7 +208,7 @@ func getPointerAsUintptr(v reflect.Value) uintptr {
 	return p
 }
 
-// rForFloat transform float -> string
+// rForFloat transform float -> string.
 func rForFloat(v reflect.Value) (ret reflect.Value) {
 	float64typ := reflect.TypeOf((*float64)(nil)).Elem()
 	if !v.IsValid() {
@@ -221,7 +221,7 @@ func rForFloat(v reflect.Value) (ret reflect.Value) {
 		}
 	}
 
-	vs := strconv.FormatFloat(v.Float(), 'g', -1, 64) //nolint:gomnd //no need
+	vs := strconv.FormatFloat(v.Float(), 'g', -1, 64)
 	ret = reflect.ValueOf(vs)
 	return
 }
@@ -240,33 +240,33 @@ func rToFloat(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err
 			var fval float64
 			fval, err = strconv.ParseFloat(str, bitSize)
 			if err == nil {
+				return toFloat(fval, desiredType), nil
+			}
+
+			var ival int64
+			ival, err = strconv.ParseInt(str, 10, bitSize)
+			if err == nil {
+				return toFloat(float64(ival), desiredType), nil
+			}
+
+			var uval uint64
+			uval, err = strconv.ParseUint(str, 10, bitSize)
+			if err == nil {
+				return toFloat(float64(uval), desiredType), nil
+			}
+
+			var cval complex128
+			cval, err = cl.ParseComplex(str)
+			if err == nil {
+				fval = real(cval)
 				ret = toFloat(fval, desiredType)
-			} else {
-				var ival int64
-				ival, err = strconv.ParseInt(str, 10, bitSize) //nolint:gomnd //no need
-				if err == nil {
-					ret = toFloat(float64(ival), desiredType)
-				} else {
-					var uval uint64
-					uval, err = strconv.ParseUint(str, 10, bitSize) //nolint:gomnd //no need
-					if err == nil {
-						ret = toFloat(float64(uval), desiredType)
-					} else {
-						var cval complex128
-						cval, err = cl.ParseComplex(str)
-						if err == nil {
-							fval = real(cval)
-							ret = toFloat(fval, desiredType)
-						}
-					}
-				}
 			}
 			return
 		})
 	return
 }
 
-// rForComplex transform complex -> string
+// rForComplex transform complex -> string.
 func rForComplex(v reflect.Value) (ret reflect.Value) {
 	complex128typ := reflect.TypeOf((*complex128)(nil)).Elem()
 	if !v.IsValid() {
@@ -328,29 +328,31 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 ) (ret reflect.Value, err error) {
 	if !v.IsValid() || tool.IsNil(v) || tool.IsZero(v) {
 		ret = reflect.Zero(desiredType)
+		return
 	}
 
 	if tool.CanConvert(&v, desiredType) {
 		ret = v.Convert(desiredType)
-	} else {
-		val := v.String()
-		bitSize := 64
-		switch k := desiredType.Kind(); k { //nolint:exhaustive //no need
-		case reflect.Int, reflect.Uint:
-			bitSize = uintSize
-		case reflect.Int32, reflect.Uint32, reflect.Float32:
-			bitSize = 32
-		case reflect.Int16, reflect.Uint16:
-			bitSize = 16
-		case reflect.Int8, reflect.Uint8:
-			bitSize = 8
-		case reflect.Complex128:
-			bitSize = 128
-			// case reflect.Float64, reflect.Complex64:
-			//	bitSize = 64
-		}
-		ret, err = converter(val, base, bitSize)
+		return
 	}
+
+	val := v.String()
+	bitSize := 64
+	switch k := desiredType.Kind(); k { //nolint:exhaustive //no need
+	case reflect.Int, reflect.Uint:
+		bitSize = uintSize
+	case reflect.Int32, reflect.Uint32, reflect.Float32:
+		bitSize = 32
+	case reflect.Int16, reflect.Uint16:
+		bitSize = 16
+	case reflect.Int8, reflect.Uint8:
+		bitSize = 8
+	case reflect.Complex128:
+		bitSize = 128
+		// case reflect.Float64, reflect.Complex64:
+		//	bitSize = 64
+	}
+	ret, err = converter(val, base, bitSize)
 	return
 }
 
@@ -425,7 +427,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 	return
 }
 
-//nolint:unused,deadcode //reserved
+//nolint:unused,deadcode,lll //reserved
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
@@ -453,7 +455,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 	return
 }
 
-//nolint:unused,deadcode //reserved
+//nolint:unused,deadcode,lll //reserved
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
@@ -480,7 +482,7 @@ func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 	return
 }
 
-//nolint:unused,deadcode //reserved
+//nolint:unused,deadcode,lll //reserved
 func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	ec := errors.New("cannot transform item into map")
 	defer ec.Defer(&err)
@@ -529,7 +531,8 @@ func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.
 		target.SetMapIndex(key, srcVal.Convert(dTyp))
 	} else {
 		dstval := target.MapIndex(key)
-		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v", tool.Valfmt(&key), tool.Valfmt(&srcVal), tool.Valfmt(&dstval))
+		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v",
+			tool.Valfmt(&key), tool.Valfmt(&srcVal), tool.Valfmt(&dstval))
 	}
 	return
 }
@@ -550,14 +553,14 @@ func nameToMapKey(name string, mapType reflect.Type) (key reflect.Value, err err
 	return
 }
 
-//nolint:unused,deadcode //reserved
+//nolint:unused,deadcode,lll //reserved
 func rToStruct(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	// result (source) -> struct (target)
 
 	return
 }
 
-//nolint:unused,deadcode //reserved
+//nolint:unused,deadcode,lll //reserved
 func rToFunc(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	return
 }

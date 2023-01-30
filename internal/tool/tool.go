@@ -4,6 +4,7 @@ package tool
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -85,7 +86,7 @@ func inspectStructV(val reflect.Value, level int) {
 		if valueField.IsValid() && !IsZero(valueField) && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
-		fmt.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",
+		log.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",
 			padding, i, count, typeField.Name, v, address, typeField.Type, valueField.Kind())
 
 		if valueField.Kind() == reflect.Struct {
@@ -94,12 +95,12 @@ func inspectStructV(val reflect.Value, level int) {
 	}
 }
 
-// InspectStruct dumps wach field in a struct with its reflect information
+// InspectStruct dumps wach field in a struct with its reflect information.
 func InspectStruct(v interface{}) {
 	inspectStructV(reflect.ValueOf(v), 0)
 }
 
-// MinInt _
+// MinInt returns min-value of a and b.
 func MinInt(a, b int) int {
 	if a < b {
 		return a
@@ -107,7 +108,7 @@ func MinInt(a, b int) int {
 	return b
 }
 
-// Contains _
+// Contains checks if name is in names.
 func Contains(names []string, name string) bool {
 	for _, n := range names {
 		if strings.EqualFold(n, name) {
@@ -117,7 +118,7 @@ func Contains(names []string, name string) bool {
 	return false
 }
 
-// ContainsPartialsOnly _
+// ContainsPartialsOnly checks if testedString has a part of in partialNames list.
 func ContainsPartialsOnly(partialNames []string, testedString string) (contains bool) {
 	for _, n := range partialNames {
 		if strings.Contains(testedString, n) {
@@ -127,7 +128,7 @@ func ContainsPartialsOnly(partialNames []string, testedString string) (contains 
 	return
 }
 
-// PartialContainsShort _
+// PartialContainsShort checks if one of names has partialNeedle as a part.
 func PartialContainsShort(names []string, partialNeedle string) (contains bool) {
 	for _, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -137,7 +138,7 @@ func PartialContainsShort(names []string, partialNeedle string) (contains bool) 
 	return
 }
 
-// PartialContains _
+// PartialContains checks if one of names has partialNeedle as a part.
 func PartialContains(names []string, partialNeedle string) (index int, matched string, contains bool) {
 	for ix, n := range names {
 		if strings.Contains(n, partialNeedle) {
@@ -147,7 +148,7 @@ func PartialContains(names []string, partialNeedle string) (index int, matched s
 	return -1, "", false
 }
 
-// ReverseAnySlice reverse any slice/array
+// ReverseAnySlice reverse any slice/array.
 func ReverseAnySlice(s interface{}) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
@@ -156,7 +157,7 @@ func ReverseAnySlice(s interface{}) {
 	}
 }
 
-// FindInSlice _
+// FindInSlice finds a value elv is in array ns.
 func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
@@ -170,7 +171,7 @@ func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
 	return
 }
 
-// EqualClassical _
+// EqualClassical tests lhs and rhs is equal.
 func EqualClassical(lhs, rhs reflect.Value) bool {
 	lv, rv := lhs.IsValid(), rhs.IsValid()
 	if !lv {

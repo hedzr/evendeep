@@ -14,22 +14,21 @@ import (
 //
 // Use New:
 //
-//     src, tgt := 123, 0
-//     err = evendeep.New().CopyTo(src, &tgt)
+//	src, tgt := 123, 0
+//	err = evendeep.New().CopyTo(src, &tgt)
 //
 // Use package functions (With-opts might cumulate):
 //
-//     evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
-//     tgt = evendeep.MakeClone(src)
+//	evendeep.Copy(src, &tgt) // or synonym: evendeep.DeepCopy(src, &tgt)
+//	tgt = evendeep.MakeClone(src)
 //
 // Use DefaultCopyController (With-opts might cumulate):
 //
-//     evendeep.DefaultCopyController.CopyTo(src, &tgt)
+//	evendeep.DefaultCopyController.CopyTo(src, &tgt)
 //
 // The most conventional way is:
 //
-//     err := evendeep.New().CopyTo(src, &tgt)
-//
+//	err := evendeep.New().CopyTo(src, &tgt)
 func New(opts ...Opt) DeepCopier {
 	var c = newDeepCopier()
 	for _, opt := range opts {
@@ -100,12 +99,13 @@ type DeepCopyable interface {
 	DeepCopy() interface{}
 }
 
-// DeepCopier _
+// DeepCopier interface.
 type DeepCopier interface {
-	// CopyTo _
+	// CopyTo function.
 	CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error)
 }
 
+//nolint:gochecknoglobals //i know that
 var (
 	// DefaultCopyController provides standard deepcopy feature.
 	// copy and merge slice or map to an existed target.
@@ -114,8 +114,6 @@ var (
 	// defaultCloneController provides standard clone feature.
 	// simply clone itself to a new fresh object to make a deep clone object.
 	defaultCloneController *cpController // by newCloner()
-
-	// onceCpController sync.Once
 )
 
 // NewFlatDeepCopier gets a new instance of DeepCopier (the underlying

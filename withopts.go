@@ -2,12 +2,13 @@ package evendeep
 
 import (
 	"encoding/json"
+
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/log/dir"
 )
 
-// Opt _
+// Opt options functor.
 type Opt func(c *cpController)
 
 // WithValueConverters gives a set of ValueConverter.
@@ -34,8 +35,8 @@ func WithTryApplyConverterAtFirst(b bool) Opt {
 	}
 }
 
-// WithTryApplyConverterAtFirstOpt is shortcut of WithTryApplyConverterAtFirst(true)
-var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true)
+// WithTryApplyConverterAtFirstOpt is shortcut of WithTryApplyConverterAtFirst(true).
+var WithTryApplyConverterAtFirstOpt = WithTryApplyConverterAtFirst(true) //nolint:gochecknoglobals //i know that
 
 // WithSourceValueExtractor specify a source field value extractor,
 // which will be applied on each field being copied to target.
@@ -136,7 +137,7 @@ func WithCopyStyle() Opt {
 	}
 }
 
-// WithStrategies appends more flags into *cpController
+// WithStrategies appends more flags into *cpController.
 func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		if c.flags == nil {
@@ -157,23 +158,23 @@ func WithCleanStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	}
 }
 
-// WithByNameStrategyOpt is synonym of cms.ByName by calling WithCleanStrategies
-var WithByNameStrategyOpt = WithCleanStrategies(cms.ByName)
+// WithByNameStrategyOpt is synonym of cms.ByName by calling WithCleanStrategies.
+var WithByNameStrategyOpt = WithCleanStrategies(cms.ByName) //nolint:gochecknoglobals //i know that
 
-// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithCleanStrategies
-var WithByOrdinalStrategyOpt = WithCleanStrategies(cms.ByOrdinal)
+// WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithCleanStrategies.
+var WithByOrdinalStrategyOpt = WithCleanStrategies(cms.ByOrdinal) //nolint:gochecknoglobals //i know that
 
-// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithCleanStrategies
-var WithCopyStrategyOpt = WithCleanStrategies(cms.SliceCopy, cms.MapCopy)
+// WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithCleanStrategies.
+var WithCopyStrategyOpt = WithCleanStrategies(cms.SliceCopy, cms.MapCopy) //nolint:gochecknoglobals //i know that
 
-// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithCleanStrategies
-var WithMergeStrategyOpt = WithCleanStrategies(cms.SliceMerge, cms.MapMerge)
+// WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithCleanStrategies.
+var WithMergeStrategyOpt = WithCleanStrategies(cms.SliceMerge, cms.MapMerge) //nolint:gochecknoglobals //i know that
 
-// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithCleanStrategies
-var WithORMDiffOpt = WithCleanStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid)
+// WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithCleanStrategies.
+var WithORMDiffOpt = WithCleanStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid) //nolint:gochecknoglobals,lll //i know that
 
-// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling Clean
-var WithOmitEmptyOpt = WithCleanStrategies(cms.OmitIfEmpty)
+// WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling Clean.
+var WithOmitEmptyOpt = WithCleanStrategies(cms.OmitIfEmpty) //nolint:gochecknoglobals //i know that
 
 // WithStrategiesReset clears the exists flags in a *cpController.
 // So that you can append new ones (with WithStrategies(flags...)).
@@ -204,7 +205,7 @@ func WithStrategiesReset(flagsList ...cms.CopyMergeStrategy) Opt {
 // When autoExpandForInnerStruct is enabled, the iterator will go into
 // any embedded struct and traverse its fields with a flatten mode.
 //
-// For a instance, the iteration on struct:
+// For instance, the iteration on struct:
 //
 //	type A struct {
 //	   F1 string
@@ -227,8 +228,8 @@ func WithAutoExpandForInnerStruct(autoExpand bool) Opt {
 	}
 }
 
-// WithAutoExpandStructOpt is synonym of WithAutoExpandForInnerStruct(true)
-var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true)
+// WithAutoExpandStructOpt is synonym of WithAutoExpandForInnerStruct(true).
+var WithAutoExpandStructOpt = WithAutoExpandForInnerStruct(true) //nolint:gochecknoglobals //i know that
 
 // WithAutoNewForStructField does create new instance on ptr field of a struct.
 //
@@ -241,8 +242,8 @@ func WithAutoNewForStructField(autoNew bool) Opt {
 	}
 }
 
-// WithAutoNewForStructFieldOpt is synonym of WithAutoNewForStructField(true)
-var WithAutoNewForStructFieldOpt = WithAutoNewForStructField(true)
+// WithAutoNewForStructFieldOpt is synonym of WithAutoNewForStructField(true).
+var WithAutoNewForStructFieldOpt = WithAutoNewForStructField(true) //nolint:gochecknoglobals //i know that
 
 // WithCopyUnexportedField try to copy the unexported fields
 // with special way.
@@ -256,8 +257,8 @@ func WithCopyUnexportedField(b bool) Opt {
 	}
 }
 
-// WithCopyUnexportedFieldOpt is shortcut of WithCopyUnexportedField
-var WithCopyUnexportedFieldOpt = WithCopyUnexportedField(true)
+// WithCopyUnexportedFieldOpt is shortcut of WithCopyUnexportedField.
+var WithCopyUnexportedFieldOpt = WithCopyUnexportedField(true) //nolint:gochecknoglobals //i know that
 
 // WithCopyFunctionResultToTarget invoke source function member and
 // pass the result to the responsible target field.
@@ -271,8 +272,8 @@ func WithCopyFunctionResultToTarget(b bool) Opt {
 	}
 }
 
-// WithCopyFunctionResultToTargetOpt is shortcut of WithCopyFunctionResultToTarget
-var WithCopyFunctionResultToTargetOpt = WithCopyFunctionResultToTarget(true)
+// WithCopyFunctionResultToTargetOpt is shortcut of WithCopyFunctionResultToTarget.
+var WithCopyFunctionResultToTargetOpt = WithCopyFunctionResultToTarget(true) //nolint:gochecknoglobals //i know that
 
 // WithPassSourceToTargetFunction invoke target function member and
 // pass the source as its input parameters.
@@ -284,12 +285,12 @@ func WithPassSourceToTargetFunction(b bool) Opt {
 	}
 }
 
-// WithPassSourceToTargetFunctionOpt is shortcut of WithPassSourceToTargetFunction
-var WithPassSourceToTargetFunctionOpt = WithPassSourceToTargetFunction(true)
+// WithPassSourceToTargetFunctionOpt is shortcut of WithPassSourceToTargetFunction.
+var WithPassSourceToTargetFunctionOpt = WithPassSourceToTargetFunction(true) //nolint:gochecknoglobals //i know that
 
 // WithSyncAdvancing decides how to advance to next field especially
 // a source field had been ignored.
-// By default (false), the target field won't be advanced while the
+// By default, (false), the target field won't be advanced while the
 // source field had been ignored.
 // For sync-advanced flag is true, the target field step to next.
 //
@@ -300,8 +301,8 @@ func WithSyncAdvancing(syncAdvancing bool) Opt {
 	}
 }
 
-// WithSyncAdvancingOpt is synonym of WithAutoExpandForInnerStruct(true)
-var WithSyncAdvancingOpt = WithSyncAdvancing(true)
+// WithSyncAdvancingOpt is synonym of WithAutoExpandForInnerStruct(true).
+var WithSyncAdvancingOpt = WithSyncAdvancing(true) //nolint:gochecknoglobals //i know that
 
 // WithWipeTargetSliceFirst enables the option which assumes the target
 // Slice or Map will be wipe out at first before copying/merging from
@@ -312,8 +313,8 @@ func WithWipeTargetSliceFirst(wipe bool) Opt {
 	}
 }
 
-// WithWipeTargetSliceFirstOpt is synonym of WithWipeTargetSliceFirst(true)
-var WithWipeTargetSliceFirstOpt = WithWipeTargetSliceFirst(true)
+// WithWipeTargetSliceFirstOpt is synonym of WithWipeTargetSliceFirst(true).
+var WithWipeTargetSliceFirstOpt = WithWipeTargetSliceFirst(true) //nolint:gochecknoglobals //i know that
 
 // WithIgnoreNames does specify the ignored field names list.
 //
@@ -397,5 +398,5 @@ func RegisterDefaultStringMarshaller(m TextMarshaller) {
 	textMarshaller = m
 }
 
-// TextMarshaller for string marshalling
+// TextMarshaller for string marshalling.
 type TextMarshaller func(v interface{}) ([]byte, error)

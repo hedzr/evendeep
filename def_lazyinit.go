@@ -5,15 +5,15 @@ import (
 	"sync"
 )
 
-var onceLazyInitRoutines sync.Once
-var copyToRoutines map[reflect.Kind]copyfn
-var otherLazyRoutines []func()
+var onceLazyInitRoutines sync.Once         //nolint:gochecknoglobals //i know that
+var copyToRoutines map[reflect.Kind]copyfn //nolint:gochecknoglobals //i know that
+var otherLazyRoutines []func()             //nolint:gochecknoglobals //i know that
 
 type copyfn func(c *cpController, params *Params, from, to reflect.Value) (err error)
 
 func lazyInitRoutines() {
 	onceLazyInitRoutines.Do(func() {
-		copyToRoutines = map[reflect.Kind]copyfn{
+		copyToRoutines = map[reflect.Kind]copyfn{ //nolint:exhaustive //also kind har human-right
 			reflect.Ptr:           copyPointer,
 			reflect.Uintptr:       copyUintptr,
 			reflect.UnsafePointer: copyUnsafePointer,
@@ -66,5 +66,5 @@ func lazyInitRoutines() {
 	})
 }
 
-func registerInitRoutines(fn func())     { otherRoutines = append(otherRoutines, fn) }         //nolint:unused,deadcode //usable
-func registerLazyInitRoutines(fn func()) { otherLazyRoutines = append(otherLazyRoutines, fn) } //nolint:unused,deadcode //usable
+func registerInitRoutines(fn func())     { otherRoutines = append(otherRoutines, fn) }         //nolint:lll,unused,deadcode //usable
+func registerLazyInitRoutines(fn func()) { otherLazyRoutines = append(otherLazyRoutines, fn) } //nolint:lll,unused,deadcode //usable

@@ -2,7 +2,6 @@ package grpctool
 
 import (
 	"time"
-	// "golang.org/x/sys/windows"
 )
 
 // // toTime converts an 8-byte Windows Filetime to time.Time.
@@ -16,7 +15,6 @@ import (
 
 // Int64ToTime converts utcTimeNanoSeconds (int64) to time.Time.
 // utcTimeNanoSeconds is a value in nanoseconds.
-//
 func Int64ToTime(utcTimeNanoSeconds int64) (tm time.Time) {
 	return time.Unix(0, utcTimeNanoSeconds)
 }

@@ -33,7 +33,7 @@ func New(lhs, rhs typ.Any, opts ...Opt) (inf Diff, equal bool) {
 	return
 }
 
-// Opt the option for New()
+// Opt the options functor for New().
 type Opt func(*info)
 
 // WithIgnoredFields specifies the struct field whom should be ignored
@@ -61,7 +61,7 @@ func WithSliceOrderedComparison(b bool) Opt {
 	}
 }
 
-// WithComparer registers your customized Comparer into internal structure
+// WithComparer registers your customized Comparer into internal structure.
 func WithComparer(comparer ...Comparer) Opt {
 	return func(i *info) {
 		for _, c := range comparer {
@@ -84,7 +84,7 @@ func WithStripPointerAtFirst(b bool) Opt {
 	}
 }
 
-// Diff includes added, removed and modified records of the two values
+// Diff includes added, removed and modified records of the two values.
 type Diff interface {
 	ForAdded(fn func(key string, val typ.Any))
 	ForRemoved(fn func(key string, val typ.Any))
@@ -288,8 +288,10 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 	return
 }
 
-func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
-	if lv.CanAddr() && rv.CanAddr() && tool.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
+	kind reflect.Kind) (equal, processed bool) {
+	if lv.CanAddr() && rv.CanAddr() &&
+		tool.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
 		addr2 := unsafe.Pointer(rv.UnsafeAddr())
 		if uintptr(addr1) > uintptr(addr2) {
@@ -328,7 +330,8 @@ func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind 
 	return
 }
 
-func (d *info) testcomparer(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal, processed bool) {
+func (d *info) testcomparer(lv, rv reflect.Value, typ1 reflect.Type,
+	path Path) (equal, processed bool) { //nolint:nonamedreturns //i do
 	var c Comparer
 	if c, processed = d.findComparer(typ1); processed {
 		equal = c.Equal(d, lv, rv, path)
@@ -346,7 +349,7 @@ func (d *info) findComparer(typ1 reflect.Type) (c Comparer, ok bool) {
 }
 
 func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal bool) {
-	switch kind { // nolint:exhaustive //no
+	switch kind { //nolint:exhaustive //no
 	case reflect.Array:
 		equal = d.diffArray(lv, rv, path)
 

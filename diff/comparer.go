@@ -6,13 +6,13 @@ import (
 	"github.com/hedzr/evendeep/typ"
 )
 
-// Comparer _
+// Comparer interface.
 type Comparer interface {
 	Match(typ reflect.Type) bool
 	Equal(ctx Context, lhs, rhs reflect.Value, path Path) (equal bool)
 }
 
-// Context _
+// Context interface.
 type Context interface {
 	PutAdded(k string, v typ.Any)
 	PutRemoved(k string, v typ.Any)

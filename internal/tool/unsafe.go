@@ -17,6 +17,7 @@ const (
 	ptrSize = unsafe.Sizeof((*byte)(nil))
 )
 
+//nolint:gochecknoglobals //i do
 var (
 	// offsetPtr, offsetScalar, and offsetFlag are the offsets for the
 	// internal reflect.Value fields.  These values are valid before golang
@@ -40,9 +41,9 @@ var (
 	// These values are valid before golang commit 90a7c3c86944 which
 	// changed their positions.  Code in the init function updates these
 	// flags as necessary.
-	flagKindWidth = uintptr(5)                 // nolint:gomnd //no need
-	flagKindShift = uintptr(flagKindWidth - 1) // nolint:unconvert //no need
-	flagRO        = uintptr(1 << 0)            // nolint:unused //no need
+	flagKindWidth = uintptr(5)                 //nolint:gomnd //i do
+	flagKindShift = uintptr(flagKindWidth - 1) //nolint:unconvert //i do
+	flagRO        = uintptr(1 << 0)            //nolint:unused //i do
 	flagIndir     = uintptr(1 << 1)
 )
 

@@ -3,5 +3,5 @@
 
 package typ
 
-// Any type for go1.17 and older
+// Any type for go1.17 and older.
 type Any interface{}

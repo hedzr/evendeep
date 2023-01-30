@@ -9,19 +9,19 @@ import (
 
 func UintptrToString(p uintptr) string {
 	u := uintptrToUint(p)
-	return "0x" + strconv.FormatUint(u, 16) //nolint:gomnd //no need
+	return "0x" + strconv.FormatUint(u, 16)
 }
 
 func UintptrFromString(s string) uintptr {
 	if s[0:2] == "0x" {
-		u, e := strconv.ParseUint(s[2:], 16, 64) //nolint:gomnd //no need
+		u, e := strconv.ParseUint(s[2:], 16, 64)
 		if e != nil {
 			return uintptr(0)
 		}
 		return uintptr(u)
 	}
 
-	u, e := strconv.ParseUint(s, 16, 64) //nolint:gomnd //no need
+	u, e := strconv.ParseUint(s, 16, 64)
 	if e != nil {
 		return uintptr(0)
 	}
@@ -39,9 +39,9 @@ func uintptrToUint(u uintptr) uint64 {
 	default:
 		panic(fmt.Sprintf("unknown uintptr size: %v", size))
 	}
-} //nolint:typecheck //no
+}
 
-//nolint:deadcode //future code
+//nolint:deadcode,unused //future code
 func toBytes1(p uintptr) []byte {
 	size := unsafe.Sizeof(p)
 	b := make([]byte, size)
@@ -56,7 +56,7 @@ func toBytes1(p uintptr) []byte {
 	return b
 }
 
-//nolint:deadcode //future code
+//nolint:deadcode,unused //future code
 func toBytes2(u *uintptr) []byte {
 	const sizeOfUintPtr = unsafe.Sizeof(uintptr(0))
 	return (*[sizeOfUintPtr]byte)(unsafe.Pointer(u))[:]
