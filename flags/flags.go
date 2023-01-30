@@ -2,18 +2,18 @@ package flags
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/flags/cms"
 	"io"
-	"sort"
-
 	"reflect"
+	"sort"
 	"strings"
+
+	"github.com/hedzr/evendeep/flags/cms"
 )
 
 // Flags is an efficient manager for a group of CopyMergeStrategy items.
 type Flags map[cms.CopyMergeStrategy]bool
 
-// New creates a new instance for Flags
+// New creates a new instance for Flags.
 func New(ftf ...cms.CopyMergeStrategy) Flags {
 	return newFlags(ftf...)
 }
@@ -90,7 +90,7 @@ func (flags Flags) StringEx() string {
 	return sbfinal.String()
 }
 
-func (flags *Flags) Format(s fmt.State, verb rune) {
+func (flags Flags) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
@@ -120,7 +120,7 @@ func (flags Flags) IsFlagOK(ftf cms.CopyMergeStrategy) bool {
 	return false
 }
 
-func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMergeStrategy) {
+func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMergeStrategy) { //nolint:lll,unused //i know that
 	var ok, val bool
 	result = cms.InvalidStrategy
 
@@ -141,27 +141,29 @@ func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMe
 		if !ok {
 			result = ftf
 		}
-	} else {
-		leader := cms.InvalidStrategy
-		found := false
-		for f := range mKnownFieldTagFlagsConflict[ftf] {
-			if _, ok = mKnownFieldTagFlagsConflictLeaders[f]; ok {
-				leader = f
-			}
-			if val, ok = flags[f]; ok && val {
-				result = f
-				found = true
-				break
-			}
+		return
+	}
+
+	leader := cms.InvalidStrategy
+	found := false
+	for f := range mKnownFieldTagFlagsConflict[ftf] {
+		if _, ok = mKnownFieldTagFlagsConflictLeaders[f]; ok {
+			leader = f
 		}
-		if !found {
-			result = leader
+		if val, ok = flags[f]; ok && val {
+			result = f
+			found = true
+			break
 		}
+	}
+	if !found {
+		result = leader
 	}
 	return
 }
 
-func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
+func (flags Flags) leader(ff cms.CopyMergeStrategy,
+	vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
 	leader = cms.InvalidStrategy
 	if _, ok1 := mKnownFieldTagFlagsConflictLeaders[ff]; ok1 {
 		leader = ff
@@ -180,7 +182,7 @@ func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy
 // group (such as map-copy and map-merge), and, any of the group is
 // not exists (either map-copy and map-merge), IsGroupedFlagOK will
 // report true just like map-copy was in Flags.
-func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) {
+func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) { //nolint:gocognit //i know that
 	if flags != nil {
 		for _, ff := range ftf {
 			if _, ok = flags[ff]; ok {
@@ -251,21 +253,7 @@ func toggleTheRadio(f cms.CopyMergeStrategy, flags Flags) {
 	}
 }
 
-// Parse _
-// use "copy" if tagName is empty.
-func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule NameConvertRule) {
-	lazyInitFieldTagsFlags()
-
-	if flags == nil {
-		flags = New()
-	}
-
-	if tagName == "" {
-		tagName = "copy"
-	}
-
-	tags := s.Get(tagName)
-
+func aCheck(flags Flags, tags string) (targetNameRule NameConvertRule) {
 	for i, wh := range strings.Split(tags, ",") {
 		if i == 0 && wh != "-" {
 			targetNameRule = NameConvertRule(wh)
@@ -283,6 +271,40 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 
 		toggleTheRadio(ftf, flags)
 	}
+	return
+}
+
+// Parse _
+// use "copy" if tagName is empty.
+func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule NameConvertRule) {
+	lazyInitFieldTagsFlags()
+
+	flags = New()
+
+	if tagName == "" {
+		tagName = "copy"
+	}
+
+	tags := s.Get(tagName)
+	targetNameRule = aCheck(flags, tags)
+
+	// for i, wh := range strings.Split(tags, ",") {
+	// 	if i == 0 && wh != "-" {
+	// 		targetNameRule = NameConvertRule(wh)
+	// 		continue
+	// 	}
+
+	// 	ftf := cms.Default.Parse(wh)
+	// 	if ftf == cms.InvalidStrategy {
+	// 		if wh == "ignore" {
+	// 			flags[cms.Ignore] = true
+	// 		}
+	// 	} else {
+	// 		flags[ftf] = true
+	// 	}
+
+	// 	toggleTheRadio(ftf, flags)
+	// }
 
 	for k := range mKnownFieldTagFlagsConflictLeaders {
 		var ok bool
@@ -303,7 +325,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 	return
 }
 
-// NameConvertRule _
+// NameConvertRule wraps the rule with string representations into a struct.
 type NameConvertRule string
 type nameConvertRule struct {
 	Valid     bool

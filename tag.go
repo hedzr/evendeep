@@ -1,10 +1,11 @@
 package evendeep
 
 import (
-	"github.com/hedzr/evendeep/flags"
-	"github.com/hedzr/evendeep/flags/cms"
 	"reflect"
 	"strings"
+
+	"github.com/hedzr/evendeep/flags"
+	"github.com/hedzr/evendeep/flags/cms"
 )
 
 // parseFieldTags gets the struct field tag string by 'tagKeyName', and
@@ -17,15 +18,15 @@ func parseFieldTags(tag reflect.StructTag, tagName string) *fieldTags {
 
 // fieldTags collect the flags and others which are parsed from a struct field tags definition.
 //
-//     type sample struct {
-//         SomeName string `copy:"someName,omitempty"`
-//         IgnoredName string `copy:"-"`
-//     }
+//	type sample struct {
+//	    SomeName string `copy:"someName,omitempty"`
+//	    IgnoredName string `copy:"-"`
+//	}
 type fieldTags struct {
 	flags flags.Flags `copy:"zeroIfEq"`
 
-	converter     *ValueConverter   `yaml:"-,omitempty"`
-	copier        *ValueCopier      `yaml:"-,omitempty"`
+	converter     *ValueConverter   `yaml:"-,omitempty"` //nolint:unused //future
+	copier        *ValueCopier      `yaml:"-,omitempty"` //nolint:unused //future
 	nameConverter nameConverterFunc `yaml:"-,omitempty"`
 
 	// nameConvertRule:
@@ -54,6 +55,9 @@ func (f *fieldTags) isFlagExists(ftf cms.CopyMergeStrategy) bool {
 	}
 	return f.flags[ftf]
 }
+
+func (f *fieldTags) isFlagIgnored() bool { return f.isFlagExists(cms.Ignore) }
+func (f *fieldTags) isFlagFlat() bool    { return f.isFlagExists(cms.Flat) }
 
 func (f *fieldTags) Parse(s reflect.StructTag, tagName string) {
 	f.flags, f.nameConvertRule = flags.Parse(s, tagName)

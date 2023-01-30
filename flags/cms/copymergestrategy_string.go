@@ -28,22 +28,23 @@ func _() {
 	_ = x[SliceMerge-54]
 	_ = x[MapCopy-72]
 	_ = x[MapMerge-73]
-	_ = x[UnexportedToo-92]
-	_ = x[ByOrdinal-93]
-	_ = x[ByName-94]
-	_ = x[MaxStrategy-95]
-	_ = x[ftf100-124]
-	_ = x[ftf110-135]
-	_ = x[ftf120-146]
-	_ = x[ftf130-157]
-	_ = x[ftf140-168]
-	_ = x[ftf150-179]
-	_ = x[ftf160-190]
-	_ = x[ftf170-201]
+	_ = x[Flat-83]
+	_ = x[UnexportedToo-93]
+	_ = x[ByOrdinal-94]
+	_ = x[ByName-95]
+	_ = x[MaxStrategy-96]
+	_ = x[ftf100-125]
+	_ = x[ftf110-136]
+	_ = x[ftf120-147]
+	_ = x[ftf130-158]
+	_ = x[ftf140-169]
+	_ = x[ftf150-180]
+	_ = x[ftf160-191]
+	_ = x[ftf170-202]
 	_ = x[InvalidStrategy-9223372036854775807]
 }
 
-const _CopyMergeStrategy_name = "std-mustcleareqkeepneqclearinvalidclearmissednoomitomitemptyomitnilomitzeronoomittgtomitemptytgtomitniltgtomitzerotgtslicecopyslicecopyappendslicemergemapcopymapmergeprivatebyordinalbynameMaxStrategyftf100ftf110ftf120ftf130ftf140ftf150ftf160ftf170InvalidStrategy"
+const _CopyMergeStrategy_name = "std-mustcleareqkeepneqclearinvalidclearmissednoomitomitemptyomitnilomitzeronoomittgtomitemptytgtomitniltgtomitzerotgtslicecopyslicecopyappendslicemergemapcopymapmergeflatprivatebyordinalbynameMaxStrategyftf100ftf110ftf120ftf130ftf140ftf150ftf160ftf170InvalidStrategy"
 
 var _CopyMergeStrategy_map = map[CopyMergeStrategy]string{
 	0:                   _CopyMergeStrategy_name[0:3],
@@ -66,19 +67,20 @@ var _CopyMergeStrategy_map = map[CopyMergeStrategy]string{
 	54:                  _CopyMergeStrategy_name[141:151],
 	72:                  _CopyMergeStrategy_name[151:158],
 	73:                  _CopyMergeStrategy_name[158:166],
-	92:                  _CopyMergeStrategy_name[166:173],
-	93:                  _CopyMergeStrategy_name[173:182],
-	94:                  _CopyMergeStrategy_name[182:188],
-	95:                  _CopyMergeStrategy_name[188:199],
-	124:                 _CopyMergeStrategy_name[199:205],
-	135:                 _CopyMergeStrategy_name[205:211],
-	146:                 _CopyMergeStrategy_name[211:217],
-	157:                 _CopyMergeStrategy_name[217:223],
-	168:                 _CopyMergeStrategy_name[223:229],
-	179:                 _CopyMergeStrategy_name[229:235],
-	190:                 _CopyMergeStrategy_name[235:241],
-	201:                 _CopyMergeStrategy_name[241:247],
-	9223372036854775807: _CopyMergeStrategy_name[247:262],
+	83:                  _CopyMergeStrategy_name[166:170],
+	93:                  _CopyMergeStrategy_name[170:177],
+	94:                  _CopyMergeStrategy_name[177:186],
+	95:                  _CopyMergeStrategy_name[186:192],
+	96:                  _CopyMergeStrategy_name[192:203],
+	125:                 _CopyMergeStrategy_name[203:209],
+	136:                 _CopyMergeStrategy_name[209:215],
+	147:                 _CopyMergeStrategy_name[215:221],
+	158:                 _CopyMergeStrategy_name[221:227],
+	169:                 _CopyMergeStrategy_name[227:233],
+	180:                 _CopyMergeStrategy_name[233:239],
+	191:                 _CopyMergeStrategy_name[239:245],
+	202:                 _CopyMergeStrategy_name[245:251],
+	9223372036854775807: _CopyMergeStrategy_name[251:266],
 }
 
 func (i CopyMergeStrategy) String() string {

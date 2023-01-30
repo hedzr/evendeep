@@ -7,7 +7,12 @@ import (
 )
 
 func subtest1(t *testing.T) {
-	flags := newFlags().WithFlags(cms.ByName, cms.SliceCopyAppend, cms.OmitIfEmpty, cms.OmitIfTargetEmpty, cms.MapMerge, cms.Ignore)
+	flags := newFlags().WithFlags(
+		cms.ByName,
+		cms.SliceCopyAppend,
+		cms.OmitIfEmpty, cms.OmitIfTargetEmpty,
+		cms.MapMerge,
+		cms.Ignore)
 
 	t.Logf("flags: %v", flags)
 

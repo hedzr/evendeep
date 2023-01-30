@@ -10,23 +10,32 @@ import (
 )
 
 func TestFieldTags_Parse(t *testing.T) {
-
 	t.Run("test fieldTags parse", subtestParse)
 	t.Run("test fieldTags flags tests", subtestFlagTests)
-
 }
 
 type AFT struct {
+	flat01 *int `copy:",flat"`
+
 	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck //test only
 	converter *ValueConverter //nolint:unused,structcheck //test only
 	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test only
+
+	ignored01 int `copy:"-"`
 }
 
 func prepareAFT() (a AFT, expects []flags.Flags) {
 	expects = []flags.Flags{
+		// flat01
+		{cms.Flat: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
 		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
 		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
 		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+
+		// ignored01
+		{cms.Ignore: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
 		{cms.ByOrdinal: true, cms.ByName: true},
 	}
 
@@ -45,7 +54,7 @@ func subtestParse(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
 		ft := parseFieldTags(fld.Tag, "")
-		if !ft.isFlagExists(cms.Ignore) {
+		if !ft.isFlagIgnored() {
 			t.Logf("%q flags: %v [without ignore]", fld.Tag, ft)
 		} else {
 			t.Logf("%q flags: %v [ignore]", fld.Tag, ft)

@@ -12,7 +12,7 @@ import (
 	"unsafe"
 )
 
-// Params is params package
+// Params is params package.
 type Params struct {
 	srcOwner   *reflect.Value // srcOwner of source slice or struct, or any others
 	dstOwner   *reflect.Value // dstOwner of destination slice or struct, or any others
@@ -67,20 +67,20 @@ func newParams(opts ...paramsOpt) *Params {
 	return p
 }
 
-func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:deadcode //future code
+func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:unused //future code
 	return func(p *Params) {
 		p.flags = flags.New(flagsList...)
 	}
 }
 
-func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:deadcode //future code
+func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:unused //future code
 	return func(p *Params) {
 		p.controller = c
 		ownerParams.addChildParams(p)
 	}
 }
 
-func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt {
+func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt { //nolint:lll,gocognit //future
 	return func(p *Params) {
 		p.srcOwner = ownerSource
 		p.dstOwner = ownerTarget
@@ -203,7 +203,7 @@ func (params *Params) inMergeMode() bool {
 		params.flags.IsAnyFlagsOK(cms.SliceMerge, cms.MapMerge)
 }
 
-// processUnexportedField try to set newval into target if it's an unexported field
+// processUnexportedField try to set newval into target if it's an unexported field.
 func (params *Params) processUnexportedField(target, newval reflect.Value) (processed bool) {
 	if params == nil || params.controller == nil || params.accessor == nil {
 		return
@@ -211,7 +211,8 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	if fld := params.accessor.StructField(); fld != nil && params.controller.copyUnexportedFields {
 		// in a struct
 		if !tool.IsExported(fld) {
-			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)", fld.Name, tool.Typfmt(fld.Type), tool.Valfmt(&target), tool.Valfmt(&newval))
+			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)",
+				fld.Name, tool.Typfmt(fld.Type), tool.Valfmt(&target), tool.Valfmt(&newval))
 			cl.SetUnexportedField(target, newval)
 			processed = true
 		}
@@ -268,7 +269,7 @@ func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 	// }
 }
 
-// addChildParams does link this params into parent params
+// addChildParams does link this params into parent params.
 func (params *Params) addChildParams(ppChild *Params) {
 	if params == nil || ppChild == nil {
 		return
@@ -299,7 +300,7 @@ func (params *Params) addChildParams(ppChild *Params) {
 	ppChild.owner = params
 }
 
-// revoke does revoke itself from parent params if necessary
+// revoke does revoke itself from parent params if necessary.
 func (params *Params) revoke() {
 	if pp := params.owner; pp != nil {
 		if pp.accessor != nil && pp.accessor.StructField() != nil {
@@ -342,7 +343,7 @@ func (params *Params) parseFieldTags(tag reflect.StructTag) (flagsInTag *fieldTa
 		tagName = params.controller.tagKeyName
 	}
 	flagsInTag = parseFieldTags(tag, tagName)
-	isIgnored = flagsInTag.isFlagExists(cms.Ignore)
+	isIgnored = flagsInTag.isFlagIgnored()
 	return
 }
 
@@ -369,7 +370,7 @@ func (params *Params) isFlagExists(ftf cms.CopyMergeStrategy) (ret bool) {
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
-func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
+func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) { //nolint:unused //future
 	if params == nil {
 		return flags.New().IsGroupedFlagOK(ftf...)
 	}
@@ -392,9 +393,9 @@ func (params *Params) isGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 // or not, even if Params.fieldTags is empty or unset. And too, we run
 // the same logical on these sources:
 //
-//   1. params.controller.flags
-//   2. params.flags
-//   3. params.accessor.fieldTags.flags if present
+//  1. params.controller.flags
+//  2. params.flags
+//  3. params.accessor.fieldTags.flags if present
 //
 // When Params.fieldTags is valid, the actual testing will be forwarded
 // to Params.fieldTags.flags.isGroupedFlagOK().
@@ -430,7 +431,7 @@ func (params *Params) isAnyFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
 	return
 }
 
-func (params *Params) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) {
+func (params *Params) isAllFlagsOK(ftf ...cms.CopyMergeStrategy) (ret bool) { //nolint:unused //future
 	if params == nil {
 		return
 	}

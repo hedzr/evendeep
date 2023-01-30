@@ -22,6 +22,13 @@ import (
 func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err error) {
 	// from is a pointer
 
+	if from.Type() == to.Type() {
+		if params.isFlagExists(cms.Flat) {
+			to.Set(from)
+			return
+		}
+	}
+
 	src := tool.Rindirect(from)
 	tgt := tool.Rindirect(to)
 

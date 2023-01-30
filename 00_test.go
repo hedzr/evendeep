@@ -20,6 +20,7 @@ import (
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"
@@ -241,6 +242,10 @@ func TestParamsBasics3(t *testing.T) {
 		var z *fieldTags // nolint:gosimple
 		z = fldTags
 
+		z.isFlagExists(cms.Flat)
+
+		z.isFlagExists(cms.Ignore)
+
 		z.isFlagExists(cms.SliceCopy)
 		p2.isFlagExists(cms.SliceCopy)
 		p2.isFlagExists(cms.SliceCopyAppend)
@@ -279,27 +284,55 @@ func TestParamsBasics3(t *testing.T) {
 		p4.isGroupedFlagOK(cms.SliceCopy)
 		p4.isGroupedFlagOK(cms.SliceCopyAppend)
 		p4.isGroupedFlagOK(cms.SliceMerge)
-
 	})
 }
 
-func TestDeferCatchers(t *testing.T) {
+func TestPtrCopy(t *testing.T) {
+	type AAA struct {
+		P1 *int `copy:",flat"`
+	}
+	var a, b = 1, 2
+	var pa, pb = &AAA{&a}, &AAA{&b}
+	Copy(pa, pb)
+	t.Logf("pb.P1: %v", *pb.P1)
+	if *pb.P1 != a {
+		t.Fail()
+	}
+}
 
+func TestDeferCatchers(t *testing.T) {
 	type AAA struct {
 		X1 string `copy:"-"`
 		X2 string `copy:",-"`
+		X3 bool
 		Y  int
+		Y1 int
 	}
 	type BBB struct {
-		X1 string
-		X2 string
-		Y  int
+		X1 string // backup field to receive the copying field `X3` from source `AAA`
+		X2 string // backup field to receive the copying field `Y` from source `AAA`
+		X3 string `copy:"-"` // backup field to receive the copying field `Y1` from source `AAA`
+		Y  string
+		Y1 int
+	} // the 'ignore' Tag inside target field cannot block copying on itself
+
+	postCatcher := func(runner func()) {
+		defer func() {
+			if e1 := recover(); e1 != nil {
+				t.Logf(`caught by postCatcher, e: %v`, e1)
+			}
+		}()
+		runner()
 	}
 
-	t.Run("dbgFrontOfStruct", func(t *testing.T) {
+	// func TestFieldAccessorT_Normal_Copy(t *testing.T) {
+	// 	x1 := x1data()
+	// 	x2 := x2data()
+	// }
 
+	t.Run("dbgFrontOfStruct", func(t *testing.T) {
 		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
-		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
 		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
@@ -308,12 +341,18 @@ func TestDeferCatchers(t *testing.T) {
 		c := newCopier()
 
 		// p1 := newParams()
-		p1 := newParams(withOwnersSimple(c, nil))
+		p1 := newParams(
+			withOwnersSimple(c, nil),
+			withFlags(cms.ByName),
+		)
 
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
 
-		dbgFrontOfStruct(p2, "    ", func(msg string, args ...interface{}) { dbglog.Log(msg, args...) })
+		log.VerboseEnabled = true
+		dbgFrontOfStruct(nil, "    ", t.Logf) // just for coverage
+		dbgFrontOfStruct(p2, "    ", nil)     // just for coverage
+		dbgFrontOfStruct(p2, "    ", t.Logf)
 	})
 
 	slicePanic := func() {
@@ -323,55 +362,118 @@ func TestDeferCatchers(t *testing.T) {
 	}
 
 	t.Run("defer in copyStructInternal", func(t *testing.T) {
-
 		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
-		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
 		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
-		c.rethrow = false
+		for _, rethrow := range []bool{false, true} {
+			c.rethrow = rethrow
 
-		// p1 := newParams()
-		// p1 = newParams(withOwnersSimple(c, nil))
-		//
-		// p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
-		// defer p2.revoke()
-		//
-		// ec := errors.New("error container")
-
-		err := copyStructInternal(c, nil, svv, dvv,
-			func(paramsChild *Params, ec errors.Error, i, amount *int, padding string) (err error) {
-				paramsChild.nextTargetField()
-				slicePanic()
-				return
+			// p1 := newParams()
+			// p1 = newParams(withOwnersSimple(c, nil))
+			//
+			// p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
+			// defer p2.revoke()
+			//
+			// ec := errors.New("error container")
+			postCatcher(func() {
+				err := copyStructInternal(c, nil, svv, dvv,
+					func(paramsChild *Params, ec errors.Error, i, amount *int, padding string) (err error) {
+						paramsChild.nextTargetField()
+						slicePanic()
+						return
+					})
+				t.Log(err)
 			})
-		t.Log(err)
-
+		}
 	})
 
 	t.Run("defer rethrew in copyTo", func(t *testing.T) {
+		c := newCopier()
+		for _, rethrow := range []bool{false, true} {
+			c.rethrow = rethrow
 
+			src1 := &AAA{X1: "ok", X2: "well", Y: 1}
+			tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
+
+			src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
+			svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
+			// sf1, df1 := svv.Field(1), dvv.Field(1)
+			postCatcher(func() {
+				_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+					slicePanic()
+					return
+				})
+			})
+		}
+	})
+
+	t.Run("invalid src or dst", func(t *testing.T) {
 		c := newCopier()
 		c.rethrow = false
 
-		src1 := &AAA{X1: "ok", X2: "well", Y: 1}
-		tgt1 := &BBB{X1: "no", X2: "longer", Y: -1}
+		var src1 AAA
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
 		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
-		_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+		t.Logf("src: %v, %v", src.IsValid(), svv.IsValid())
+		t.Logf("dst: %v, %v", dst.IsValid(), dvv.IsValid())
 
+		// src is invalid
+		var svv1 reflect.Value
+		t.Logf("svv1: %v", svv1.IsValid())
+		_ = c.copyToInternal(nil, svv1, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			slicePanic()
 			return
 		})
 
+		// src is invalid with params has OmitIfEmpty flag
+		params := newParams(withFlags(cms.OmitIfEmpty, cms.ByName))
+		_ = c.copyToInternal(params, svv1, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+			slicePanic()
+			return
+		})
+
+		// dst is invalid
+		var dvv1 reflect.Value
+		t.Logf("dvv1: %v", dvv1.IsValid())
+		_ = c.copyToInternal(nil, svv, dvv1, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+			slicePanic()
+			return
+		})
+
+		// both src and dst are valid and params is also valid
+		_ = c.copyToInternal(params, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+			return
+		})
 	})
 
+	t.Run("copy src to dst with params", func(t *testing.T) {
+		lazyInitRoutines()
+
+		c := newCopier()
+		c.rethrow = false
+
+		src1 := &AAA{X1: "ok", X2: "well", X3: true, Y: 7, Y1: 13}
+		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
+
+		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
+		svv, dvv := tool.Rindirect(src), tool.Rindirect(dst)
+		// sf1, df1 := svv.Field(1), dvv.Field(1)
+
+		root := newParams(withOwners(c, nil, &svv, &dvv, &src, &dst))
+		if err := c.copyTo(root, svv, dvv); err != nil {
+			t.Fatalf("error: %v", err)
+		}
+		t.Logf("target BBB is: %+v", tgt1)
+	})
 }
 
 //
@@ -753,36 +855,37 @@ func (r *randomizer) NextStringSimple(n int) string {
 
 // Employee type for testing
 type Employee struct {
-	Name      string `copy:",std"`
-	Birthday  *time.Time
-	F11       float32
-	F12       float64
-	C11       complex64
-	C12       complex128
-	Feat      []byte
-	Sptr      *string
-	Nickname  *string
-	Age       int64
-	FakeAge   int
-	EmployeID int64
-	DoubleAge int32
-	SuperRule string
-	Notes     []string
-	RetryU    uint8
-	TimesU    uint16
-	FxReal    uint32
-	FxTime    int64
-	FxTimeU   uint64
-	UxA       uint
-	UxB       int
-	Retry     int8
-	Times     int16
-	Born      *int
-	BornU     *uint
-	flags     []byte //nolint:unused,structcheck //test
-	Bool1     bool
-	Bool2     bool
-	Ro        []int
+	Name       string `copy:",std"`
+	Birthday   *time.Time
+	F11        float32
+	F12        float64
+	C11        complex64
+	C12        complex128
+	Feat       []byte
+	Sptr       *string
+	Nickname   *string
+	Age        int64
+	FakeAge    int
+	EmployeID  int64
+	DoubleAge  int32
+	SuperRule  string
+	Notes      []string
+	RetryU     uint8
+	TimesU     uint16
+	FxReal     uint32
+	FxTime     int64
+	FxTimeU    uint64
+	UxA        uint
+	UxB        int
+	Retry      int8
+	Times      int16
+	Born       *int
+	BornU      *uint
+	flags      []byte //nolint:unused,structcheck //test
+	Bool1      bool
+	Bool2      bool
+	Ro         []int
+	Zignored01 typ.Any `copy:"-"`
 }
 
 // X0 type for testing
@@ -790,44 +893,47 @@ type X0 struct{}
 
 // X1 type for testing
 type X1 struct {
-	A uintptr
-	B map[string]interface{}
-	C bytes.Buffer
-	D []string
-	E []*X0
-	F chan struct{}
-	G chan bool
-	H chan int
-	I func()
-	J interface{}
-	K *X0
-	L unsafe.Pointer
-	M unsafe.Pointer
-	N []int
-	O [2]string
-	P [2]string
-	Q [2]string
+	A          uintptr
+	B          map[string]interface{}
+	C          bytes.Buffer
+	D          []string
+	E          []*X0
+	F          chan struct{}
+	G          chan bool
+	H          chan int
+	I          func()
+	J          interface{}
+	K          *X0
+	L          unsafe.Pointer
+	M          unsafe.Pointer
+	N          []int
+	O          [2]string
+	P          [2]string
+	Q          [2]string
+	Zignored01 typ.Any `copy:"-"`
 }
 
 // X2 type for testing
 type X2 struct {
-	A uintptr
-	B map[string]interface{}
-	C bytes.Buffer
-	D []string
-	E []*X0
-	F chan struct{}
-	G chan bool
-	H chan int
-	I func()
-	J interface{}
-	K *X0
-	L unsafe.Pointer
-	M unsafe.Pointer
-	N []int `copy:",slicemerge"`
-	O [2]string
-	P [2]string
-	Q [3]string `copy:",slicecopy"`
+	A          uintptr
+	B          map[string]interface{}
+	C          bytes.Buffer
+	D          []string
+	E          []*X0
+	F          chan struct{}
+	G          chan bool
+	H          chan int
+	I          func()
+	J          interface{}
+	K          *X0
+	L          unsafe.Pointer
+	M          unsafe.Pointer
+	N          []int `copy:",slicemerge"`
+	O          [2]string
+	P          [2]string
+	Q          [3]string `copy:",slicecopy"`
+	Zignored01 typ.Any   `copy:"-"`
+	Zignored02 typ.Any   `copy:"-"`
 }
 
 // Attr _
