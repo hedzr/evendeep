@@ -1,14 +1,23 @@
 {
   "go.coverOnSave": true,
   "go.coverageDecorator": {
-      "type": "gutter",
-      // "coveredHighlightColor": "rgba(0,128,128,1.0)",
-      // "uncoveredHighlightColor": "rgba(128,15,15,0.95)",
-      "coveredGutterStyle": "blockgreen",
-      "uncoveredGutterStyle": "slashred"
+      "type": "gutter", // highlight or gutter
+  
+      // "coveredHighlightColor": "rgba(0,0,0,0.0)",
+      // "uncoveredHighlightColor": "rgba(32,96,96,0.5)",
+      // "coveredBorderColor": "rgba(64,128,128,0.0)",
+      // "uncoveredBorderColor": "rgba(128,64,64,0.0)",
+  
+      // "coveredGutterStyle": "blockblue",
+      // "uncoveredGutterStyle": "slashyellow",
+      
+      "uncoveredGutterStyle": "slashred",
   },
-  "go.coverOnSingleTest": true,
+  // "go.coverOnSingleTest": true,
+  "go.coverageOptions": "showUncoveredCodeOnly",
 
+  "go.diagnostic.vulncheck": "Imports",
+  "go.formatTool": "gofumpt", //
 
     // first item for Windows, next item for macOS
     // because I use sync settings for multiple OS
