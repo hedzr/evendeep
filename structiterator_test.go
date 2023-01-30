@@ -2,18 +2,31 @@ package evendeep
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/typ"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 	"unsafe"
 
+	"github.com/hedzr/evendeep/internal/cl"
+	"github.com/hedzr/evendeep/typ"
+
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 )
+
+func TestFieldsTableT_getFields_special(t *testing.T) {
+	tr := fieldsTableT{}
+	s := struct {
+		vv int
+	}{vv: 1}
+	sv := reflect.ValueOf(s)
+	tr.getFields(&sv, sv.Type(), "vv", 0)
+
+	iv := reflect.ValueOf(123)
+	tr.getFields(&iv, iv.Type(), "an", 0)
+}
 
 func TestTableRecT_FieldName(t *testing.T) {
 	tr := tableRecT{
@@ -237,8 +250,21 @@ func TestSetToZero(t *testing.T) {
 }
 
 func TestIgnoredPackagePrefixesContains(t *testing.T) {
-	_ignoredpackageprefixes.contains("abc")
-	_ignoredpackageprefixes.contains("golang.org/grpc")
+	if _ignoredpackageprefixes.contains("abc") {
+		t.Fatal(`unwanted ignored package prefix found: 'abc'`)
+	}
+	if !_ignoredpackageprefixes.contains("golang.org/grpc") {
+		t.Fatal(`ignored package prefix cannot be found: golang.org/grpc`)
+	}
+}
+
+func TestFieldAccessorT_mapkey_special(t *testing.T) {
+	const byName = false
+	x2 := x2data()
+	v1 := reflect.ValueOf(&x2)
+	t1, _ := tool.Rdecode(v1)
+	it := newStructIterator(t1)
+	t.Logf("%v", it)
 }
 
 func TestFieldAccessorT_IsAnyFlagsOK(t *testing.T) {
@@ -258,17 +284,17 @@ func TestFieldAccessorT_FieldType_is_nil(t *testing.T) {
 	_ = a.NumField()
 }
 
-type Part struct {
+type zPart struct {
 	S string
 }
 
-func (s Part) String() string {
+func (s zPart) String() string {
 	return s.S
 }
 
 func TestFieldAccessorT_forMap(t *testing.T) {
 	const byName = false
-	x2 := map[Part]bool{
+	x2 := map[zPart]bool{
 		{"x"}: true, //nolint:gofmt
 	}
 	v1 := reflect.ValueOf(&x2)
@@ -285,14 +311,18 @@ func TestFieldAccessorT_Operations(t *testing.T) {
 	// x2 := new(X1)
 	// t2 := rdecodesimple(reflect.ValueOf(&x2))
 
-	const byName = false
-
-	it := newStructIterator(t1)
-	loopIt(t, it, byName, func(accessor accessor, field *reflect.StructField) {
-		if field.Name == "O" {
-			accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
-		}
-	})
+	for _, byName := range []bool{false, true} {
+		it := newStructIterator(t1)
+		loopIt(t, it, byName, func(accessor accessor, field *reflect.StructField) {
+			switch field.Name {
+			case "O":
+				accessor.Set(reflect.ValueOf([2]string{"zed", "bee"}))
+			case "Zignored01":
+				accessor.Set(reflect.ValueOf("bee"))
+			}
+		})
+		t.Logf("x1: %+v", x1)
+	}
 
 	// for i := 0; ; i++ {
 	// 	accessor, ok := it.Next(nil, byName)
@@ -312,7 +342,6 @@ func TestFieldAccessorT_Operations(t *testing.T) {
 }
 
 func TestStructIteratorT_Next_X1(t *testing.T) {
-
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := tool.Rdecode(v1)
@@ -327,7 +356,6 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 	t.Run("by struct iterator", testStructIteratorNextT1)
 
 	t.Run("get further: loop src & dst at same time", func(t *testing.T) {
-
 		targetIterator := newStructIterator(t1)
 
 		var sourcefields fieldsTableT
@@ -336,7 +364,7 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
-			if flags.isFlagExists(cms.Ignore) || !ok {
+			if flags.isFlagIgnored() || !ok {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -347,11 +375,9 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), accessor.StructFieldName(), tool.Valfmt(dstval), tool.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
-
 	})
 
 	t.Run("zero: loop src & dst at same time", func(t *testing.T) {
-
 		targetIterator := newStructIterator(t2, withStructPtrAutoExpand(true))
 
 		var sourcefields fieldsTableT
@@ -361,7 +387,7 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
-			if flags.isFlagExists(cms.Ignore) || !ok {
+			if flags.isFlagIgnored() || !ok {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -372,9 +398,7 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), tool.Valfmt(srcval), accessor.StructFieldName(), tool.Valfmt(dstval), tool.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
-
 	})
-
 }
 
 func loopIt(t *testing.T, it structIterable, byName bool, checkName func(accessor accessor, field *reflect.StructField)) {
@@ -445,16 +469,18 @@ func x1data() X1 {
 		H: make(chan int, 5),
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
-		N: nn[1:3],
-		O: a,
-		Q: a,
+		N:          nn[1:3],
+		O:          a,
+		Q:          a,
+		Zignored01: 111,
 	}
 	return x1
 }
 
 func x2data() Employee {
 	return Employee{
-		Name: "Bob",
+		Name:       "Bob",
+		Zignored01: 222,
 	}
 }
 

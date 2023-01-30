@@ -44,7 +44,7 @@ type cpController struct {
 	// When targetOriented is true or cms.ByName has been specified, Copier
 	// do traverse on a struct with target-oriented way. That is, copier will
 	// pick up a source field and the corresponding target field with same name,
-	// or a prefer one after name transformed.
+	// or prefer one after name transformed.
 	// See also Name Conversions.
 	targetOriented bool // loop for target struct fields? default is for source.
 }
@@ -68,7 +68,7 @@ type SourceValueExtractor func(targetName string) typ.Any
 // in reversal order.
 type TargetValueSetter func(value *reflect.Value, sourceNames ...string) (err error)
 
-// CopyTo _
+// CopyTo makes a deep clone of a source object or merges it into the target.
 func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
 	lazyInitRoutines()
 
@@ -113,30 +113,36 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 			}
 
 			// source is primitive type, or in a reserved package such as time, os, ...
-			dbglog.Log(" - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, tool.Typfmtv(&to))
+			dbglog.Log("   - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, tool.Typfmtv(&to))
 			err = copyDefaultHandler(c, params, from, to)
 			return
 		})
 	return
 }
 
-func (c *cpController) copyToInternal(
+func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is a integrited logic
 	params *Params, from, to reflect.Value,
 	cb copyfn,
 ) (err error) {
 	// Return is from value is invalid
 	if !from.IsValid() {
 		if params.isGroupedFlagOKDeeply(cms.OmitIfEmpty, cms.OmitIfNil, cms.OmitIfZero) {
-			return
+			return // fast fail here
 		}
 		// todo set target to zero
 		return
 	}
-
-	if c.testCloneables(params, from, to) {
+	if !to.IsValid() {
+		dbglog.Log(`target is invalid, cannot be set.`)
 		return
 	}
 
+	if c.testCloneable(params, from, to) {
+		dbglog.Log(`from -> to is NOT cloneable`)
+		return
+	}
+
+	//nolint:lll,nestif //keep it
 	if from.CanAddr() && to.CanAddr() && tool.KindIs(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(from.UnsafeAddr())
 		addr2 := unsafe.Pointer(to.UnsafeAddr())
@@ -153,13 +159,13 @@ func (c *cpController) copyToInternal(
 			}
 			if dest, ok := params.visited[params.visiting]; ok {
 				to.Set(dest.dst)
+				dbglog.Log(`The visited target found, set it from cache`)
 				return
 			}
 			params.visited[params.visiting] = visiteddestination{}
 		}
 	}
 
-	// nolint:gocritic //no
 	// fromType := c.indirectType(from.Type())
 	// toType := c.indirectType(to.Type())
 
@@ -175,7 +181,6 @@ func (c *cpController) copyToInternal(
 
 			// skip go-lib frames and defer-recover frame, back to the point throwing panic
 			n := log.CalcStackFrames(1) // skip defer-recover frame at first
-
 			if c.rethrow {
 				log.Skip(n).Panicf("%+v", err)
 			} else {
@@ -188,14 +193,14 @@ func (c *cpController) copyToInternal(
 	return
 }
 
-func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (processed bool) {
-	if from.CanInterface() {
+func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (processed bool) {
+	if from.CanInterface() { //nolint:nestif //keep it
 		var fromObj interface{}
 		if params != nil && params.srcOwner != nil {
 			f, t := *params.srcOwner, *params.dstOwner
 		retry:
 			fromObj = f.Interface()
-			if c.testCloneables1(params, fromObj, t) {
+			if c.testCloneable1(params, fromObj, t) {
 				return true
 			}
 			if k := f.Kind(); k == reflect.Ptr {
@@ -210,11 +215,11 @@ func (c *cpController) testCloneables(params *Params, from, to reflect.Value) (p
 	return
 }
 
-func (c *cpController) testCloneables1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) {
+func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) {
 	if dc, ok := fromObj.(Cloneable); ok { //nolint:gocritic // no need to rewrite to 'switch'
 		to.Set(reflect.ValueOf(dc.Clone()))
 		processed = true
-	} else if dc, ok := fromObj.(DeepCopyable); ok {
+	} else if dc, ok1 := fromObj.(DeepCopyable); ok1 {
 		to.Set(reflect.ValueOf(dc.DeepCopy()))
 		processed = true
 	}
@@ -239,7 +244,7 @@ func (c *cpController) withCopiers(cvt ...ValueCopier) *cpController { //nolint:
 	return c
 }
 
-func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController {
+func (c *cpController) withFlags(flags1 ...cms.CopyMergeStrategy) *cpController { //nolint:unused //future
 	if c.flags == nil {
 		c.flags = flags.New(flags1...)
 	} else {
