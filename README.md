@@ -39,11 +39,22 @@ This library is designed for making everything customizable.
 - deep series
   - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L20),
     or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110)
-  - deepclone:[ `MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
+  - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
   - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
   - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
 
 ## History
+
+- v0.2.53
+  - improved code style, format, ...
+  - to fore-prevent low-performance and large-memory usage when retrieve expanded fields from a very large struct, use `cms.ByOrdinal` instead default `cms.ByName`
+  - added new strategy `cms.Flat` and field tag to identify a pointer should be shallow copy to target field,
+    ```go
+    package main
+    type A struct {
+        field1 *ComplexStruct `copy:",flat"`
+    }
+    ```
 
 - v0.2.51
   - improved code style, format, ...
@@ -77,39 +88,39 @@ Here is a basic sample code:
 
 ```go
 func TestExample1(t *testing.T) {
-	timeZone, _ := time.LoadLocation("America/Phoenix")
-	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	src := eventdeep.Employee2{
-		Base: eventdeep.Base{
-			Name:      "Bob",
-			Birthday:  &tm,
-			Age:       24,
-			EmployeID: 7,
-		},
-		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
-		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &eventdeep.Attr{Attrs: []string{"hello", "world"}},
-		Valid:  true,
-	}
-	var dst eventdeep.User
+  timeZone, _ := time.LoadLocation("America/Phoenix")
+  tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+  src := eventdeep.Employee2{
+    Base: eventdeep.Base{
+      Name:      "Bob",
+      Birthday:  &tm,
+      Age:       24,
+      EmployeID: 7,
+    },
+    Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+    Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+    Attr:   &eventdeep.Attr{Attrs: []string{"hello", "world"}},
+    Valid:  true,
+  }
+  var dst eventdeep.User
 
   // direct way but no error report: eventdeep.DeepCopy(src, &dst)
   c := eventdeep.New()
-	if err := c.CopyTo(src, &dst); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(dst, eventdeep.User{
-		Name:      "Bob",
-		Birthday:  &tm,
-		Age:       24,
-		EmployeID: 7,
-		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
-		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
-		Valid:     true,
-	}) {
-		t.Fatalf("bad, got %v", dst)
-	}
+  if err := c.CopyTo(src, &dst); err != nil {
+    t.Fatal(err)
+  }
+  if !reflect.DeepEqual(dst, eventdeep.User{
+    Name:      "Bob",
+    Birthday:  &tm,
+    Age:       24,
+    EmployeID: 7,
+    Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+    Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+    Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
+    Valid:     true,
+  }) {
+    t.Fatalf("bad, got %v", dst)
+  }
 }
 ```
 
@@ -121,24 +132,24 @@ You need a target struct at first.
 
 ```go
 func TestStructWithSourceExtractor(t *testing.T) {
-	c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
-		"A": 12,
-	})
+  c := context.WithValue(context.TODO(), "Data", map[string]typ.Any{
+    "A": 12,
+  })
 
-	tgt := struct {
-		A int
-	}{}
+  tgt := struct {
+    A int
+  }{}
 
-	evendeep.DeepCopy(c, &tgt, evendeep.WithSourceValueExtractor(func(name string) typ.Any {
-		if m, ok := c.Value("Data").(map[string]typ.Any); ok {
-			return m[name]
-		}
-		return nil
-	}))
+  evendeep.DeepCopy(c, &tgt, evendeep.WithSourceValueExtractor(func(name string) typ.Any {
+    if m, ok := c.Value("Data").(map[string]typ.Any); ok {
+      return m[name]
+    }
+    return nil
+  }))
 
-	if tgt.A != 12 {
-		t.FailNow()
-	}
+  if tgt.A != 12 {
+    t.FailNow()
+  }
 }
 ```
 
@@ -148,35 +159,35 @@ As a contrary, you might specify a setter to handle the setting action on copyin
 
 ```go
 func TestStructWithTargetSetter(t *testing.T) {
-	type srcS struct {
-		A int
-		B bool
-		C string
-	}
+  type srcS struct {
+    A int
+    B bool
+    C string
+  }
 
-	src := &srcS{
-		A: 5,
-		B: true,
-		C: "helloString",
-	}
-	tgt := map[string]typ.Any{
-		"Z": "str",
-	}
+  src := &srcS{
+    A: 5,
+    B: true,
+    C: "helloString",
+  }
+  tgt := map[string]typ.Any{
+    "Z": "str",
+  }
 
-	err := evendeep.New().CopyTo(src, &tgt,
-		evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
-			if value != nil {
-				name := "Mo" + strings.Join(sourceNames, ".")
-				tgt[name] = value.Interface()
-			}
-			return // ErrShouldFallback to call the evendeep standard processing
-		}),
-	)
+  err := evendeep.New().CopyTo(src, &tgt,
+    evendeep.WithTargetValueSetter(func(value *reflect.Value, sourceNames ...string) (err error) {
+      if value != nil {
+        name := "Mo" + strings.Join(sourceNames, ".")
+        tgt[name] = value.Interface()
+      }
+      return // ErrShouldFallback to call the evendeep standard processing
+    }),
+  )
 
-	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != "helloString" || tgt["Z"] != "str" {
-		t.Errorf("err: %v, tgt: %v", err, tgt)
-		t.FailNow()
-	}
+  if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != "helloString" || tgt["Z"] != "str" {
+    t.Errorf("err: %v, tgt: %v", err, tgt)
+    t.FailNow()
+  }
 }
 ```
 
@@ -205,7 +216,7 @@ type of target or source, or both of them.
 
 ```go
 type MyType struct {
-	I int
+  I int
 }
 
 type MyTypeToStringConverter struct{}
@@ -214,34 +225,34 @@ type MyTypeToStringConverter struct{}
 // func (c *MyTypeToStringConverter) CopyTo(ctx *eventdeep.ValueConverterContext, source, target reflect.Value) (err error) { return }
 
 func (c *MyTypeToStringConverter) Transform(ctx *eventdeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-	if source.IsValid() && targetType.Kind() == reflect.String {
-		var str string
-		if str, err = eventdeep.FallbackToBuiltinStringMarshalling(source); err == nil {
-			target = reflect.ValueOf(str)
-		}
-	}
-	return
+  if source.IsValid() && targetType.Kind() == reflect.String {
+    var str string
+    if str, err = eventdeep.FallbackToBuiltinStringMarshalling(source); err == nil {
+      target = reflect.ValueOf(str)
+    }
+  }
+  return
 }
 
 func (c *MyTypeToStringConverter) Match(params *eventdeep.Params, source, target reflect.Type) (ctx *eventdeep.ValueConverterContext, yes bool) {
-	sn, sp := source.Name(), source.PkgPath()
-	sk, tk := source.Kind(), target.Kind()
-	if yes = sk == reflect.Struct && tk == reflect.String &&
-		sn == "MyType" && sp == "github.com/hedzr/eventdeep_test"; yes {
-		ctx = &eventdeep.ValueConverterContext{Params: params}
-	}
-	return
+  sn, sp := source.Name(), source.PkgPath()
+  sk, tk := source.Kind(), target.Kind()
+  if yes = sk == reflect.Struct && tk == reflect.String &&
+    sn == "MyType" && sp == "github.com/hedzr/eventdeep_test"; yes {
+    ctx = &eventdeep.ValueConverterContext{Params: params}
+  }
+  return
 }
 
 func TestExample2(t *testing.T) {
-	var myData = MyType{I: 9}
-	var dst string
-	eventdeep.DeepCopy(myData, &dst, eventdeep.WithValueConverters(&MyTypeToStringConverter{}))
-	if dst != `{
+  var myData = MyType{I: 9}
+  var dst string
+  eventdeep.DeepCopy(myData, &dst, eventdeep.WithValueConverters(&MyTypeToStringConverter{}))
+  if dst != `{
   "I": 9
 }` {
-		t.Fatalf("bad, got %v", dst)
-	}
+    t.Fatalf("bad, got %v", dst)
+  }
 }
 ```
 
@@ -250,16 +261,16 @@ calling `RegisterDefaultConverters` / `RegisterDefaultCopiers` into global regis
 
 ```go
   // a stub call for coverage
-	eventdeep.RegisterDefaultCopiers()
+  eventdeep.RegisterDefaultCopiers()
 
-	var dst1 string
-	eventdeep.RegisterDefaultConverters(&MyTypeToStringConverter{})
-	eventdeep.DeepCopy(myData, &dst1)
-	if dst1 != `{
+  var dst1 string
+  eventdeep.RegisterDefaultConverters(&MyTypeToStringConverter{})
+  eventdeep.DeepCopy(myData, &dst1)
+  if dst1 != `{
   "I": 9
 }` {
-		t.Fatalf("bad, got %v", dst)
-	}
+    t.Fatalf("bad, got %v", dst)
+  }
 ```
 
 #### Zero Target Fields If Equals To Source
@@ -273,22 +284,22 @@ The codes are:
 
 ```go
 func TestExample3(t *testing.T) {
-	timeZone, _ := time.LoadLocation("America/Phoenix")
-	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = eventdeep.User{ ... }
-	var newRecord eventdeep.User
-	var t0 = time.Unix(0, 0)
-	var expectRec = eventdeep.User{Name: "Barbara", Birthday: &t0, Attr: &eventdeep.Attr{}}
+  timeZone, _ := time.LoadLocation("America/Phoenix")
+  tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+  var originRec = eventdeep.User{ ... }
+  var newRecord eventdeep.User
+  var t0 = time.Unix(0, 0)
+  var expectRec = eventdeep.User{Name: "Barbara", Birthday: &t0, Attr: &eventdeep.Attr{}}
 
-	eventdeep.DeepCopy(originRec, &newRecord)
-	t.Logf("newRecord: %v", newRecord)
+  eventdeep.DeepCopy(originRec, &newRecord)
+  t.Logf("newRecord: %v", newRecord)
 
-	newRecord.Name = "Barbara"
-	eventdeep.DeepCopy(originRec, &newRecord, eventdeep.WithORMDiffOpt)
-	...
-	if !reflect.DeepEqual(newRecord, expectRec) {
-		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
-	}
+  newRecord.Name = "Barbara"
+  eventdeep.DeepCopy(originRec, &newRecord, eventdeep.WithORMDiffOpt)
+  ...
+  if !reflect.DeepEqual(newRecord, expectRec) {
+    t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
+  }
 }
 ```
 
@@ -299,37 +310,37 @@ field is empty (zero or nil). Use `eventdeep.WithOmitEmptyOpt` in the case.
 
 ```go
 func TestExample4(t *testing.T) {
-	timeZone, _ := time.LoadLocation("America/Phoenix")
-	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = eventdeep.User{
-		Name:      "Bob",
-		Birthday:  &tm,
-		Age:       24,
-		EmployeID: 7,
-		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
-		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
-		Valid:     true,
-	}
-	var dstRecord eventdeep.User
-	var t0 = time.Unix(0, 0)
-	var emptyRecord = eventdeep.User{Name: "Barbara", Birthday: &t0}
-	var expectRecord = eventdeep.User{Name: "Barbara", Birthday: &t0,
-		Image: []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:  &eventdeep.Attr{Attrs: []string{"hello", "world"}},
-		Valid: true,
-	}
+  timeZone, _ := time.LoadLocation("America/Phoenix")
+  tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
+  var originRec = eventdeep.User{
+    Name:      "Bob",
+    Birthday:  &tm,
+    Age:       24,
+    EmployeID: 7,
+    Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+    Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+    Attr:      &eventdeep.Attr{Attrs: []string{"hello", "world"}},
+    Valid:     true,
+  }
+  var dstRecord eventdeep.User
+  var t0 = time.Unix(0, 0)
+  var emptyRecord = eventdeep.User{Name: "Barbara", Birthday: &t0}
+  var expectRecord = eventdeep.User{Name: "Barbara", Birthday: &t0,
+    Image: []byte{95, 27, 43, 66, 0, 21, 210},
+    Attr:  &eventdeep.Attr{Attrs: []string{"hello", "world"}},
+    Valid: true,
+  }
 
-	// prepare a hard copy at first
-	eventdeep.DeepCopy(originRec, &dstRecord)
-	t.Logf("dstRecord: %v", dstRecord)
+  // prepare a hard copy at first
+  eventdeep.DeepCopy(originRec, &dstRecord)
+  t.Logf("dstRecord: %v", dstRecord)
 
-	// now update dstRecord with the non-empty fields.
-	eventdeep.DeepCopy(emptyRecord, &dstRecord, eventdeep.WithOmitEmptyOpt)
-	t.Logf("dstRecord: %v", dstRecord)
-	if !reflect.DeepEqual(dstRecord, expectRecord) {
-		t.Fatalf("bad, got %v\nexpect: %v", dstRecord, expectRecord)
-	}
+  // now update dstRecord with the non-empty fields.
+  eventdeep.DeepCopy(emptyRecord, &dstRecord, eventdeep.WithOmitEmptyOpt)
+  t.Logf("dstRecord: %v", dstRecord)
+  if !reflect.DeepEqual(dstRecord, expectRecord) {
+    t.Fatalf("bad, got %v\nexpect: %v", dstRecord, expectRecord)
+  }
 }
 ```
 
@@ -353,9 +364,9 @@ Sample struct is (use `copy` as key):
 
 ```go
 type AFT struct {
-	flags     flags.Flags `copy:",cleareq"`
-	converter *ValueConverter
-	wouldbe   int `copy:",must,keepneq,omitzero,mapmerge"`
+  flags     flags.Flags `copy:",cleareq"`
+  converter *ValueConverter
+  wouldbe   int `copy:",must,keepneq,omitzero,mapmerge"`
   ignored1 int `copy:"-"`
   ignored2 int `copy:",-"`
 }
@@ -390,27 +401,27 @@ The test gives a sample to show you how the name-conversion and member function 
 
 ```go
 func TestStructWithNameConversions(t *testing.T) {
-	type srcS struct {
-		A int    `copy:"A1"`
-		B bool   `copy:"B1,std"`
-		C string `copy:"C1,"`
-	}
+  type srcS struct {
+    A int    `copy:"A1"`
+    B bool   `copy:"B1,std"`
+    C string `copy:"C1,"`
+  }
 
-	type dstS struct {
-		A1 int
-		B1 bool
-		C1 string
-	}
+  type dstS struct {
+    A1 int
+    B1 bool
+    C1 string
+  }
 
-	src := &srcS{A: 6, B: true, C: "hello"}
-	var tgt = dstS{A1: 1}
+  src := &srcS{A: 6, B: true, C: "hello"}
+  var tgt = dstS{A1: 1}
 
-	// use ByName strategy,
-	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
+  // use ByName strategy,
+  err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
 
-	if tgt.A1 != 6 || !tgt.B1 || tgt.C1 != "hello" || err != nil {
-		t.Fatalf("BAD COPY, tgt: %+v", tgt)
-	}
+  if tgt.A1 != 6 || !tgt.B1 || tgt.C1 != "hello" || err != nil {
+    t.Fatalf("BAD COPY, tgt: %+v", tgt)
+  }
 }
 ```
 
@@ -507,16 +518,16 @@ For example, `evendeep` ships a `timeComparer`:
 type timeComparer struct{}
 
 func (c *timeComparer) Match(typ reflect.Type) bool {
-	return typ.String() == "time.Time"
+  return typ.String() == "time.Time"
 }
 
 func (c *timeComparer) Equal(ctx Context, lhs, rhs reflect.Value, path Path) (equal bool) {
-	aTime := lhs.Interface().(time.Time)
-	bTime := rhs.Interface().(time.Time)
-	if equal = aTime.Equal(bTime); !equal {
-		ctx.PutModified(ctx.PutPath(path), Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lhs)})
-	}
-	return
+  aTime := lhs.Interface().(time.Time)
+  bTime := rhs.Interface().(time.Time)
+  if equal = aTime.Equal(bTime); !equal {
+    ctx.PutModified(ctx.PutPath(path), Update{Old: aTime.String(), New: bTime.String(), Typ: typfmtlite(&lhs)})
+  }
+  return
 }
 ```
 
