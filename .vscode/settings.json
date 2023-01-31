@@ -1,17 +1,21 @@
 {
+  "go.buildTags": "-tags='hzstudio'",
+  // "go.buildFlags": ["-tags=hzstudio"],
+  "go.testTags": "hzstudio,unit,integration,verbose",
+
   "go.coverOnSave": true,
   "go.coverageDecorator": {
-      "type": "gutter", // highlight or gutter
-  
-      // "coveredHighlightColor": "rgba(0,0,0,0.0)",
-      // "uncoveredHighlightColor": "rgba(32,96,96,0.5)",
-      // "coveredBorderColor": "rgba(64,128,128,0.0)",
-      // "uncoveredBorderColor": "rgba(128,64,64,0.0)",
-  
-      // "coveredGutterStyle": "blockblue",
-      // "uncoveredGutterStyle": "slashyellow",
-      
-      "uncoveredGutterStyle": "slashred",
+    "type": "gutter", // highlight or gutter
+
+    // "coveredHighlightColor": "rgba(0,0,0,0.0)",
+    // "uncoveredHighlightColor": "rgba(32,96,96,0.5)",
+    // "coveredBorderColor": "rgba(64,128,128,0.0)",
+    // "uncoveredBorderColor": "rgba(128,64,64,0.0)",
+
+    // "coveredGutterStyle": "blockblue",
+    // "uncoveredGutterStyle": "slashyellow",
+
+    "uncoveredGutterStyle": "slashred"
   },
   // "go.coverOnSingleTest": true,
   "go.coverageOptions": "showUncoveredCodeOnly",
@@ -19,13 +23,12 @@
   "go.diagnostic.vulncheck": "Imports",
   "go.formatTool": "gofumpt", //
 
-    // first item for Windows, next item for macOS
-    // because I use sync settings for multiple OS
-    "editor.fontFamily": "'Cascadia Code PL', 'CascadiaCodePL', Consolas",
-    // setting font ligatures as https://github.com/microsoft/cascadia-code#font-features
-    "editor.fontLigatures": "'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'zero', 'onum'",
-    // this is optional, it makes the weight of default font become lighter.
-    // Otherwise if we set font to 'Cascadia Code PL SemiLight' as it would be the same but it could'nt work with font ligatures.
-    "editor.fontWeight": "350",
-
+  // first item for Windows, next item for macOS
+  // because I use sync settings for multiple OS
+  "editor.fontFamily": "'Cascadia Code PL', 'CascadiaCodePL', Consolas",
+  // setting font ligatures as https://github.com/microsoft/cascadia-code#font-features
+  "editor.fontLigatures": "'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'zero', 'onum'",
+  // this is optional, it makes the weight of default font become lighter.
+  // Otherwise if we set font to 'Cascadia Code PL SemiLight' as it would be the same but it could'nt work with font ligatures.
+  "editor.fontWeight": "350"
 }
