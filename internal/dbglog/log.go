@@ -3,7 +3,7 @@
 
 package dbglog
 
-var LogValid bool //nolint:gochecknoglobals //i know that
+const LogValid bool = false //nolint:gochecknoglobals //i know that
 
 func Log(format string, args ...interface{}) { //nolint:goprintffuncname //no
 
