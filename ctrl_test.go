@@ -13,15 +13,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/hedzr/evendeep/internal/tool"
-	"github.com/hedzr/evendeep/typ"
-
 	"gopkg.in/hedzr/errors.v3"
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 )
 
 const (

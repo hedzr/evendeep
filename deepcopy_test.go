@@ -2,7 +2,6 @@ package evendeep_test
 
 import (
 	"fmt"
-	"github.com/hedzr/evendeep/typ"
 	"reflect"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/typ"
 )
 
 type FF interface {

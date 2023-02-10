@@ -2,11 +2,12 @@ package tool_test
 
 import (
 	"bytes"
-	"github.com/hedzr/log"
 	"reflect"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/hedzr/log"
 
 	"github.com/hedzr/evendeep/internal/tool"
 )
