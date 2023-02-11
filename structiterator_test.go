@@ -8,6 +8,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/typ"
 
@@ -58,7 +59,6 @@ func TestSetToZero(t *testing.T) {
 	type Tmp struct {
 		A int16
 	}
-	fn := func() {}
 
 	run := func(v reflect.Value) {
 		// v := reflect.ValueOf(c)
@@ -155,7 +155,7 @@ func TestSetToZero(t *testing.T) {
 		v := reflect.ValueOf(c)
 		run(v)
 		if !DeepEqual(c.Src, c.Zero) {
-			t.Logf("-. For source '%v', expect '%v' but failed.", c.Src, c.Zero)
+			t.Logf("-. For source '%+v', expect '%v' but failed.", c.Src, c.Zero)
 			t.FailNow()
 		}
 	})
@@ -212,6 +212,8 @@ func TestSetToZero(t *testing.T) {
 		}
 	})
 
+	type Func func()
+	var fn Func = func() {}
 	for i, case_ := range []*struct {
 		Src  typ.Any
 		Zero typ.Any
@@ -229,16 +231,17 @@ func TestSetToZero(t *testing.T) {
 
 		{Tmp{A: 3}, Tmp{}},
 
-		{fn, fn},
+		{fn, Func(nil)},
 	} {
 		v := reflect.ValueOf(case_)
 		vind := tool.Rdecodesimple(v)
-		vf := vind.Field(0)
-		// vf = vf.Elem()
-		t.Logf("src: %v", tool.Valfmt(&vf))
+
+		vf := vind.Field(0) // vf = vf.Elem()
+		t.Logf("%d. src: %+v", i, tool.Valfmt(&vf))
 		setToZero(&vf)
-		if !DeepEqual(case_.Src, case_.Zero) {
-			t.Logf("%d. For source '%v', expect '%v' but failed.", i, case_.Src, case_.Zero)
+
+		if why, equal := diff.New(case_.Src, case_.Zero, diff.WithTreatEmptyStructPtrAsNilPtr(true)); !equal {
+			t.Logf("%d. FAILED: Setting to Zero for source '%v', expect '%v' but failed.\n   why: %v", i, case_.Src, case_.Zero, why)
 			t.FailNow()
 		}
 	}

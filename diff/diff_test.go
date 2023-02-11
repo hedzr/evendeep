@@ -142,12 +142,16 @@ func TestPrettyDiff(t *testing.T) {
 			diff.WithSliceOrderedComparison(false),
 		},
 		{
+			// about two slices with different size
+
 			testStruct{1, 2, []int{1}, [3]int{4, 5, 6}},
 			testStruct{1, 3, []int{1, 2}, [3]int{4, 5, 6}},
+			// "modified: .b = 3 (int) (Old: 2)\n",
 			"added: .C.[1] = 2\nmodified: .b = 3 (int) (Old: 2)\n",
 			// "added: .C[1] = 2\nmodified: .b = 3\n",
 			false,
-			diff.WithSliceOrderedComparison(false),
+			// diff.WithSliceOrderedComparison(false),
+			diff.WithCompareDifferentSizeArrays(false),
 		},
 		{
 			testStruct{1, 3, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, [3]int{4, 5, 6}},

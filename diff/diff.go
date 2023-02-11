@@ -29,118 +29,6 @@ func New(lhs, rhs typ.Any, opts ...Opt) (inf Diff, equal bool) {
 	return
 }
 
-// Opt the options functor for New().
-type Opt func(*info)
-
-// WithIgnoredFields specifies the struct field whom should be ignored
-// in comparing.
-func WithIgnoredFields(names ...string) Opt {
-	return func(i *info) {
-		for _, name := range names {
-			if name != "" {
-				i.ignoredFields[name] = true
-			}
-		}
-	}
-}
-
-// WithSliceOrderedComparison allows which one algorithm in comparing
-// two slice.
-//
-// 1. false (default), each element will be compared one by one.
-//
-// 2. true, the elements in slice will be compared without ordered
-// insensitive. In this case, [9, 5] and [5, 9] are equal.
-func WithSliceOrderedComparison(b bool) Opt {
-	return func(i *info) {
-		i.sliceNoOrder = b
-	}
-}
-
-// WithComparer registers your customized Comparer into internal structure.
-func WithComparer(comparer ...Comparer) Opt {
-	return func(i *info) {
-		for _, c := range comparer {
-			if c != nil {
-				i.compares = append(i.compares, c)
-			}
-		}
-	}
-}
-
-func WithSliceNoOrder(b bool) Opt {
-	return func(i *info) {
-		i.sliceNoOrder = b
-	}
-}
-
-// WithStripPointerAtFirst set the flag which allow finding the real
-// targets of the input objects.
-//
-// Typically, the two struct pointers will be compared with field
-// by field rather than comparing its pointer addresses.
-//
-// For example, when you diff.Diff(&b1, &b2, diff.WithStripPointerAtFirst(true)),
-// we compare the fields content of b1 and b2, we don't compare its
-// pointer addresses at this time.
-func WithStripPointerAtFirst(b bool) Opt {
-	return func(i *info) {
-		i.stripPtr1st = b
-	}
-}
-
-// WithTreatEmptyStructPtrAsNilPtr set the flag which allow a field
-// with nil pointer to a struct is treated as equal to the pointer
-// to this field to pointed to an empty struct.
-//
-// For example,
-//
-//	struct A{I int}
-//	struct B( A *A,}
-//	b1, b2 := B{}, B{ &A{}}
-//	diffs := diff.Diff(b1, b2, diff. diff.WithTreatEmptyStructPtrAsNilPtr(true))
-//	println(diffs)
-//
-// And the result is the two struct are equal. the nil pointer `b1.A`
-// and the empty struct pointer `b2.A` are treated as equivalent.
-func WithTreatEmptyStructPtrAsNilPtr(b bool) Opt {
-	return func(i *info) {
-		i.treatEmptyStructPtrAsNil = b
-	}
-}
-
-// WithCompareDifferentTypeStructs gives a way to compare two different
-// type structs with their fields one by one.
-//
-// By default, the unmatched fields will be ignored. But you can
-// disable the feature by calling WithIgnoreUnmatchedFields(false).
-func WithCompareDifferentTypeStructs(b bool) Opt {
-	return func(i *info) {
-		i.differentTypeStructs = b
-		i.ignoreUnmatchedFields = true
-	}
-}
-
-// WithIgnoreUnmatchedFields takes effect except in
-// WithCompareDifferentTypeStructs(true) mode. It allows those unmatched
-// fields don't stop the fields comparing processing.
-//
-// So, the two different type structs are equivalent even if some
-// fields are unmatched each others, so long as the matched fields
-// are equivalent.
-func WithIgnoreUnmatchedFields(b bool) Opt {
-	return func(i *info) {
-		i.ignoreUnmatchedFields = b
-	}
-}
-
-// WithCompareDifferentSizeArrays supports a feature to treat these two array is equivalent: `[2]string{"1","2"}` and `[3]string{"1","2",<empty>}`
-func WithCompareDifferentSizeArrays(b bool) Opt {
-	return func(i *info) {
-		i.differentSizeArrays = b
-	}
-}
-
 // Diff includes added, removed and modified records of the two values.
 type Diff interface {
 	ForAdded(fn func(key string, val typ.Any))
@@ -308,6 +196,9 @@ func (d *info) diff(lhs, rhs typ.Any) bool {
 	lv, rv := reflect.ValueOf(lhs), reflect.ValueOf(rhs)
 	if d.stripPtr1st {
 		lv, rv = tool.Rdecodesimple(lv), tool.Rdecodesimple(rv)
+	} else {
+		_, lv = tool.Rskip(lv, reflect.Interface)
+		_, rv = tool.Rskip(rv, reflect.Interface)
 	}
 	var path Path
 	return d.diffv(lv, rv, path)
@@ -401,16 +292,24 @@ func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind 
 		}
 		if ln || rn {
 			if kind == reflect.Slice || kind == reflect.Map {
-				le, re := tool.IsZero(lv), tool.IsZero(rv)
-				if equal = le == re; equal {
+				// le, re := tool.IsZero(lv), tool.IsZero(rv)
+				// if equal = le == re; equal {
+				// 	return true, true
+				// }
+
+				// By default, the nil array are equal to an empty array
+
+				// if d.treatEmptyStructPtrAsNil {
+				if (ln) && isEmptyObject(rv) {
+					return true, true
+				} else if (rn) && isEmptyObject(lv) {
 					return true, true
 				}
-			}
-			if kind == reflect.Struct && d.treatEmptyStructPtrAsNil {
+				// }
+			} else if kind == reflect.Struct && d.treatEmptyStructPtrAsNil {
 				if ln && isEmptyStruct(rv) {
 					return true, true
-				}
-				if rn && isEmptyStruct(lv) {
+				} else if rn && isEmptyStruct(lv) {
 					return true, true
 				}
 			}
@@ -464,11 +363,9 @@ func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind re
 		equal = d.diffv(lv.Elem(), rv.Elem(), path)
 
 	default:
-		if reflect.DeepEqual(lv.Interface(), rv.Interface()) {
-			equal = true
-		} else {
+		a, b := lv.Interface(), rv.Interface()
+		if equal = reflect.DeepEqual(a, b); !equal {
 			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
-			equal = false
 		}
 	}
 
@@ -480,17 +377,17 @@ func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 	equal = true
 	for i := 0; i < tool.MinInt(ll, rl); i++ {
 		localPath := path.appendAndNew(sliceIndex(i))
-		if eq := d.diffv(lv.Index(i), rv.Index(i), localPath); !eq {
+		aI, bI := lv.Index(i), rv.Index(i)
+		if eq := d.diffv(aI, bI, localPath); !eq {
+			dbglog.Log("    diffArray: [%d] not equal %v - %v", i, tool.Valfmt(&aI), tool.Valfmt(&bI))
 			equal = false
 		}
 	}
 	if ll > rl {
 		for i := rl; i < ll; i++ {
 			v := lv.Index(i)
-			if d.differentSizeArrays {
-				if tool.IsZero(v) {
-					continue
-				}
+			if d.differentSizeArrays && tool.IsZero(v) {
+				continue
 			}
 			localPath := path.appendAndNew(sliceIndex(i))
 			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&v))
@@ -499,10 +396,8 @@ func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 	} else if ll < rl {
 		for i := ll; i < rl; i++ {
 			v := rv.Index(i)
-			if d.differentSizeArrays {
-				if tool.IsZero(v) {
-					continue
-				}
+			if d.differentSizeArrays && tool.IsZero(v) {
+				continue
 			}
 			localPath := path.appendAndNew(sliceIndex(i))
 			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&v))
@@ -569,7 +464,7 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 
 func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal bool) {
 	equal = true
-	for i := 0; i < typ1.NumField() && equal; i++ {
+	for i := 0; i < typ1.NumField(); i++ {
 		index := []int{i}
 		field := typ1.FieldByIndex(index)
 		if vk := field.Tag.Get("diff"); vk == "ignore" || vk == "-" { // skip fields marked to be ignored
@@ -583,21 +478,20 @@ func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (e
 		bI := tool.UnsafeReflectValue(rv.FieldByIndex(index))
 		if d.treatEmptyStructPtrAsNil && field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
 			ln, rn := tool.IsNil(aI), tool.IsNil(bI)
-			if equal = ln && rn; !equal {
-				if equal = ln && isEmptyStruct(bI.Elem()); !equal {
-					equal = rn && isEmptyStruct(aI.Elem())
+			var eq bool
+			if eq = ln && rn; !equal {
+				if eq = ln && isEmptyStruct(bI.Elem()); !eq {
+					eq = rn && isEmptyStruct(aI.Elem())
 				}
 			}
-			if !equal {
-				d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&aI), New: tool.Valfmt(&bI), Typ: tool.Typfmtvlite(&aI)})
-			} else {
-				continue
-			}
-		}
-		if equal {
-			if eq := d.diffv(aI, bI, localPath); !eq {
+			if !eq {
 				equal = false
+				d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&aI), New: tool.Valfmt(&bI), Typ: tool.Typfmtvlite(&aI)})
 			}
+			continue
+		}
+		if eq := d.diffv(aI, bI, localPath); !eq {
+			equal = false
 		}
 	}
 	return

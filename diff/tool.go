@@ -36,6 +36,18 @@ func (n structField) String() string {
 
 //
 
+// isEmptyObject detects the emptiness of a slice or a map
+func isEmptyObject(v reflect.Value) (yes bool) {
+	if kind := v.Kind(); !tool.KindIs(kind, reflect.Invalid, reflect.Slice, reflect.Map, reflect.Array) {
+		return
+	}
+	if yes = tool.IsZero(v); yes {
+		return
+	}
+	yes = v.Len() == 0
+	return
+}
+
 func isEmptyStruct(v reflect.Value) (yes bool) {
 	if kind := v.Kind(); kind != reflect.Struct {
 		return
