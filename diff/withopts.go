@@ -21,7 +21,7 @@ func WithIgnoredFields(names ...string) Opt {
 // 1. false (default), each element will be compared one by one.
 //
 // 2. true, the elements in slice will be compared without ordered
-// insensitive. In this case, [9, 5] and [5, 9] are equal.
+// insensitive. In this case, [9, 5] and [5, 9] are identity.
 func WithSliceOrderedComparison(b bool) Opt {
 	return func(i *info) {
 		i.sliceNoOrder = b
@@ -39,11 +39,11 @@ func WithComparer(comparer ...Comparer) Opt {
 	}
 }
 
-func WithSliceNoOrder(b bool) Opt {
-	return func(i *info) {
-		i.sliceNoOrder = b
-	}
-}
+// func WithSliceNoOrder(b bool) Opt {
+// 	return func(i *info) {
+// 		i.sliceNoOrder = b
+// 	}
+// }
 
 // WithStripPointerAtFirst set the flag which allow finding the real
 // targets of the input objects.
@@ -58,6 +58,10 @@ func WithSliceNoOrder(b bool) Opt {
 // The another implicit thing is, this feature also strips `interface{}`/`any`
 // variable out of to its underlying typed object: a `var lhs any = int64(0)`
 // will be decoded as `var lhsReal int64 = 0`.
+//
+// Even if without stripPointerAtFirst enabled, any input parameters which
+// are `diff`ing will be striped to underlying dattype if it's wrapped by
+// `interface{}`.
 func WithStripPointerAtFirst(b bool) Opt {
 	return func(i *info) {
 		i.stripPtr1st = b
@@ -77,7 +81,7 @@ func WithStripPointerAtFirst(b bool) Opt {
 //	println(diffs)
 //
 // And the result is the two struct are equal. the nil pointer `b1.A`
-// and the empty struct pointer `b2.A` are treated as equivalent.
+// and the empty struct pointer `b2.A` are treated as identity.
 func WithTreatEmptyStructPtrAsNilPtr(b bool) Opt {
 	return func(i *info) {
 		i.treatEmptyStructPtrAsNil = b
@@ -109,7 +113,9 @@ func WithIgnoreUnmatchedFields(b bool) Opt {
 	}
 }
 
-// WithCompareDifferentSizeArrays supports a feature to treat these two array is equivalent: `[2]string{"1","2"}` and `[3]string{"1","2",<empty>}`
+// WithCompareDifferentSizeArrays supports a feature to treat these
+// two array is equivalent: `[2]string{"1","2"}` and
+// `[3]string{"1","2",<empty>}`.
 func WithCompareDifferentSizeArrays(b bool) Opt {
 	return func(i *info) {
 		i.differentSizeArrays = b

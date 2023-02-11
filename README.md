@@ -43,7 +43,26 @@ This library is designed for making everything customizable.
   - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
   - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
 
+- Compatibilities
+  - Run for Go Modules enabled (go1.11+)
+
 ## History
+
+- v0.3.1
+  - changed: `dbglog.LogValid` is constant now
+  - improved code style
+  - DeepCopy:
+    - passing nil parameters can return safely without panic any more
+  - DeepDiff:
+    - imp/fea: `diff.WithStripPointerAtFirst` - locate the final objects and compare them
+    - imp/fea: `diff.WithTreatEmptyStructPtrAsNilPtr` - when comparing two pointers in struct field loop, assume nil and pointer to an empty struct is identical
+    - imp/fea: `diff.WithCompareDifferentTypeStructs` - you can compare two struct with different type, their fields could be `diff` by its name
+    - imp/fea: `diff.WithIgnoreUnmatchedFields` - this is default option for `diff.WithCompareDifferentTypeStructs(true)` mode, the field names unmatched couldn't take effects to comparing result
+    - imp/fea: `diff.WithCompareDifferentSizeArrays` - `[2]string{"1","2"}` and `[3]string{"1","2",<empty>}` can be assumed as identity
+    - By default,
+      - they're assumed as identity: nil and zero array/map.
+      - they're not identical: nil ptr to struct, and ptr to empty struct (can be overridden by `WithTreatEmptyStructPtrAsNilPtr`).
+      - the slice elements' order is sensitive, except you're `diff` with `WithSliceOrderedComparison(true)`.
 
 - v0.2.56
   - changed: `InvalidStrategy` is -1 now since we got untyped int overflow error in auto-gen code by stringer
