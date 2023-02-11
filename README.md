@@ -17,7 +17,7 @@ This library is designed for making everything customizable.
   converters/transformers
 - unexported values (optional), ...
 - circular references immunization
-- full customizable
+- fully customizable
   - user-defined value/type converters/transformers
   - user-defined field to field name converting rule via struct Tag
 - easily apply different strategies
@@ -36,7 +36,7 @@ This library is designed for making everything customizable.
   - User-defined setter for struct or map target (if mapkey is string)
   - ...
 
-- deep series
+- The deep series
   - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L20),
     or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110)
   - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
@@ -64,31 +64,7 @@ This library is designed for making everything customizable.
       - they're not identical: nil ptr to struct, and ptr to empty struct (can be overridden by `WithTreatEmptyStructPtrAsNilPtr`).
       - the slice elements' order is sensitive, except you're `diff` with `WithSliceOrderedComparison(true)`.
 
-- v0.2.56
-  - changed: `InvalidStrategy` is -1 now since we got untyped int overflow error in auto-gen code by stringer
-
-- v0.2.53
-  - improved code style, format, ...
-  - to fore-prevent low-performance and large-memory usage when retrieve expanded fields from a very large struct, use `cms.ByOrdinal` instead default `cms.ByName`
-  - added new strategy `cms.Flat` and field tag to identify a pointer should be shallow copy to target field,
-    ```go
-    package main
-    type A struct {
-        field1 *ComplexStruct `copy:",flat"`
-    }
-    ```
-  - `evendeep` supports to go1.11 currently
-
-- v0.2.51
-  - improved code style, format, ...
-  - review most of testcases
-  - improved/fixed edge conditions
-  - added `duff,WithStripPointerAtFirst(b)`, `diff.WithSliceNoOrder(b)` options
-
-- v0.2.50
-  - first public release here.
-
-[譚詠麟 -《飛馬》(2001 Live) - YouTube](https://www.youtube.com/watch?v=I16b8-9x-lc)
+- More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
 ## Usages
 
@@ -96,7 +72,7 @@ This library is designed for making everything customizable.
 
 `eventdeep.New`, `eventdeep.MakeClone` and `eventdeep.DeepCopy` are main entries.
 
-By default, `DeepCopy()` will copy and merge source into destination object. That means, a map or a slice will be merged
+By default, `DeepCopy()` will copy and **merge** source into destination object. That means, a map or a slice will be merged
 deeply, same to a struct.
 
 [`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110) gives a most even scalable interface
@@ -214,7 +190,7 @@ func TestStructWithTargetSetter(t *testing.T) {
 }
 ```
 
-NOTE that the feature supports only copying on/between struct and/or map.
+NOTE that the feature is only fit for copying on/between struct and/or map.
 
 If you really wanna customize the setter for primitives or others, concern to implement a ValueCopier or ValueConverter.
 
