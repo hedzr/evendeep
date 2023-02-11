@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"reflect"
 	"unsafe"
+
+	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/internal/tool"
 )
 
 type visit struct {
@@ -32,6 +35,26 @@ func (n structField) String() string {
 }
 
 //
+
+func isEmptyStruct(v reflect.Value) (yes bool) {
+	if kind := v.Kind(); kind != reflect.Struct {
+		return
+	}
+	yes = tool.IsZero(v)
+	return
+}
+
+func isEmptyStructDeeply(v reflect.Value) (yes bool) {
+	if kind := v.Kind(); kind != reflect.Struct {
+		return
+	}
+	ve := reflect.New(v.Type()).Elem()
+	inf := newInfo(WithTreatEmptyStructPtrAsNilPtr(true))
+	dbglog.Log(" isEmptyStructDeeply(v): %+v", tool.Valfmt(&v))
+	dbglog.Log("          the empty obj: %+v", tool.Valfmt(&ve))
+	yes = inf.diff(v, ve)
+	return
+}
 
 //
 

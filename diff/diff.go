@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/natsort"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
@@ -22,12 +23,7 @@ import (
 //	//        modified: [0] = 9 (int) (Old: 3)
 //	//        modified: [1] = 3 (int) (Old: <zero>)
 func New(lhs, rhs typ.Any, opts ...Opt) (inf Diff, equal bool) {
-	info1 := newInfo()
-	for _, opt := range opts {
-		if opt != nil {
-			opt(info1)
-		}
-	}
+	info1 := newInfo(opts...)
 	equal = info1.diff(lhs, rhs)
 	inf = info1
 	return
@@ -78,9 +74,70 @@ func WithSliceNoOrder(b bool) Opt {
 	}
 }
 
+// WithStripPointerAtFirst set the flag which allow finding the real
+// targets of the input objects.
+//
+// Typically, the two struct pointers will be compared with field
+// by field rather than comparing its pointer addresses.
+//
+// For example, when you diff.Diff(&b1, &b2, diff.WithStripPointerAtFirst(true)),
+// we compare the fields content of b1 and b2, we don't compare its
+// pointer addresses at this time.
 func WithStripPointerAtFirst(b bool) Opt {
 	return func(i *info) {
 		i.stripPtr1st = b
+	}
+}
+
+// WithTreatEmptyStructPtrAsNilPtr set the flag which allow a field
+// with nil pointer to a struct is treated as equal to the pointer
+// to this field to pointed to an empty struct.
+//
+// For example,
+//
+//	struct A{I int}
+//	struct B( A *A,}
+//	b1, b2 := B{}, B{ &A{}}
+//	diffs := diff.Diff(b1, b2, diff. diff.WithTreatEmptyStructPtrAsNilPtr(true))
+//	println(diffs)
+//
+// And the result is the two struct are equal. the nil pointer `b1.A`
+// and the empty struct pointer `b2.A` are treated as equivalent.
+func WithTreatEmptyStructPtrAsNilPtr(b bool) Opt {
+	return func(i *info) {
+		i.treatEmptyStructPtrAsNil = b
+	}
+}
+
+// WithCompareDifferentTypeStructs gives a way to compare two different
+// type structs with their fields one by one.
+//
+// By default, the unmatched fields will be ignored. But you can
+// disable the feature by calling WithIgnoreUnmatchedFields(false).
+func WithCompareDifferentTypeStructs(b bool) Opt {
+	return func(i *info) {
+		i.differentTypeStructs = b
+		i.ignoreUnmatchedFields = true
+	}
+}
+
+// WithIgnoreUnmatchedFields takes effect except in
+// WithCompareDifferentTypeStructs(true) mode. It allows those unmatched
+// fields don't stop the fields comparing processing.
+//
+// So, the two different type structs are equivalent even if some
+// fields are unmatched each others, so long as the matched fields
+// are equivalent.
+func WithIgnoreUnmatchedFields(b bool) Opt {
+	return func(i *info) {
+		i.ignoreUnmatchedFields = b
+	}
+}
+
+// WithCompareDifferentSizeArrays supports a feature to treat these two array is equivalent: `[2]string{"1","2"}` and `[3]string{"1","2",<empty>}`
+func WithCompareDifferentSizeArrays(b bool) Opt {
+	return func(i *info) {
+		i.differentSizeArrays = b
 	}
 }
 
@@ -94,32 +151,45 @@ type Diff interface {
 	String() string
 }
 
-func newInfo() *info {
-	return &info{
-		added:         make(map[string]typ.Any),
-		removed:       make(map[string]typ.Any),
-		modified:      make(map[string]Update),
-		pathTable:     make(map[string]Path),
-		visited:       make(map[visit]bool),
-		ignoredFields: make(map[string]bool),
-		sliceNoOrder:  false,
+func newInfo(opts ...Opt) *info {
+	inf := &info{
+		added:                    make(map[string]typ.Any),
+		removed:                  make(map[string]typ.Any),
+		modified:                 make(map[string]Update),
+		pathTable:                make(map[string]Path),
+		visited:                  make(map[visit]bool),
+		ignoredFields:            make(map[string]bool),
+		sliceNoOrder:             false,
+		stripPtr1st:              false,
+		treatEmptyStructPtrAsNil: false,
+		differentTypeStructs:     false,
 		compares: []Comparer{
 			&timeComparer{},
 			&bytesBufferComparer{},
 		},
 	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(inf)
+		}
+	}
+	return inf
 }
 
 type info struct {
-	added         map[string]typ.Any
-	removed       map[string]typ.Any
-	modified      map[string]Update
-	pathTable     map[string]Path
-	visited       map[visit]bool
-	ignoredFields map[string]bool
-	sliceNoOrder  bool
-	stripPtr1st   bool
-	compares      []Comparer
+	added                    map[string]typ.Any
+	removed                  map[string]typ.Any
+	modified                 map[string]Update
+	pathTable                map[string]Path
+	visited                  map[visit]bool
+	ignoredFields            map[string]bool
+	sliceNoOrder             bool
+	stripPtr1st              bool
+	treatEmptyStructPtrAsNil bool
+	differentTypeStructs     bool
+	ignoreUnmatchedFields    bool
+	differentSizeArrays      bool
+	compares                 []Comparer
 }
 
 // - Comparer
@@ -248,19 +318,29 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 
 	lvv, rvv := lv.IsValid(), rv.IsValid()
 	if equal, processed = d.testinvalid(lv, rv, lvv, rvv, path); processed {
+		dbglog.Log("  - Invalid object found: l = %v, r = %v, path = %v", tool.Valfmt(&lv), tool.Valfmtptr(&rv), path)
 		return
 	}
 
 	lvt, rvt := lv.Type(), rv.Type()
 	if lvt != rvt {
+		dbglog.Log("  - Unmatched type found: l = %v, r = %v, path = %v", tool.Typfmt(lvt), tool.Typfmt(rvt), path)
+		if d.differentTypeStructs && lv.Kind() == reflect.Struct && rv.Kind() == reflect.Struct {
+			return d.compareStructFields(lv, rv, path)
+		}
+		if d.differentSizeArrays && lv.Kind() == reflect.Array && rv.Kind() == reflect.Array {
+			return d.compareArrayDifferSizes(lv, rv, path)
+		}
 		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&rv)})
 		return
 	}
 
 	var kind = lv.Kind()
+
 	if equal, processed = d.testvisited(lv, rv, lvt, path, kind); processed {
 		return
 	}
+
 	if equal, processed = d.testnil(lv, rv, lvt, path, kind); processed {
 		return
 	}
@@ -315,13 +395,24 @@ func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
 func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
 	switch kind { //nolint:exhaustive //no need
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
-		ln, rn := tool.IsNil(lv), tool.IsNil(lv)
+		ln, rn := tool.IsNil(lv), tool.IsNil(rv)
 		if ln && rn {
 			return true, true
 		}
 		if ln || rn {
-			if (kind == reflect.Slice || kind == reflect.Map) && lv.Len() == rv.Len() {
-				return true, true
+			if kind == reflect.Slice || kind == reflect.Map {
+				le, re := tool.IsZero(lv), tool.IsZero(rv)
+				if equal = le == re; equal {
+					return true, true
+				}
+			}
+			if kind == reflect.Struct && d.treatEmptyStructPtrAsNil {
+				if ln && isEmptyStruct(rv) {
+					return true, true
+				}
+				if rn && isEmptyStruct(lv) {
+					return true, true
+				}
 			}
 			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
 			return false, true
@@ -395,15 +486,25 @@ func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 	}
 	if ll > rl {
 		for i := rl; i < ll; i++ {
-			localPath := path.appendAndNew(sliceIndex(i))
 			v := lv.Index(i)
+			if d.differentSizeArrays {
+				if tool.IsZero(v) {
+					continue
+				}
+			}
+			localPath := path.appendAndNew(sliceIndex(i))
 			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&v))
 			equal = false
 		}
 	} else if ll < rl {
 		for i := ll; i < rl; i++ {
-			localPath := path.appendAndNew(sliceIndex(i))
 			v := rv.Index(i)
+			if d.differentSizeArrays {
+				if tool.IsZero(v) {
+					continue
+				}
+			}
+			localPath := path.appendAndNew(sliceIndex(i))
 			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&v))
 			equal = false
 		}
@@ -468,7 +569,7 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 
 func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal bool) {
 	equal = true
-	for i := 0; i < typ1.NumField(); i++ {
+	for i := 0; i < typ1.NumField() && equal; i++ {
 		index := []int{i}
 		field := typ1.FieldByIndex(index)
 		if vk := field.Tag.Get("diff"); vk == "ignore" || vk == "-" { // skip fields marked to be ignored
@@ -480,8 +581,49 @@ func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (e
 		localPath := path.appendAndNew(structField(field.Name))
 		aI := tool.UnsafeReflectValue(lv.FieldByIndex(index))
 		bI := tool.UnsafeReflectValue(rv.FieldByIndex(index))
-		if eq := d.diffv(aI, bI, localPath); !eq {
-			equal = false
+		if d.treatEmptyStructPtrAsNil && field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+			ln, rn := tool.IsNil(aI), tool.IsNil(bI)
+			if equal = ln && rn; !equal {
+				if equal = ln && isEmptyStruct(bI.Elem()); !equal {
+					equal = rn && isEmptyStruct(aI.Elem())
+				}
+			}
+			if !equal {
+				d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&aI), New: tool.Valfmt(&bI), Typ: tool.Typfmtvlite(&aI)})
+			} else {
+				continue
+			}
+		}
+		if equal {
+			if eq := d.diffv(aI, bI, localPath); !eq {
+				equal = false
+			}
+		}
+	}
+	return
+}
+
+func (d *info) compareArrayDifferSizes(lv, rv reflect.Value, path Path) (equal bool) {
+	return d.diffArray(lv, rv, path)
+}
+
+func (d *info) compareStructFields(lv, rv reflect.Value, path Path) (equal bool) {
+	for i, lt, rt := 0, lv.Type(), rv.Type(); i < lv.NumField(); i++ {
+		// fldval := lv.Field(i)
+		fldtyp := lt.Field(i)
+		fldname := fldtyp.Name
+		if _, ok := rt.FieldByName(fldname); ok {
+			l := lv.Field(i)
+			r := rv.FieldByName(fldname)
+			localPath := path.appendAndNew(structField(fldname))
+			equal = d.diffv(l, r, localPath)
+			if !equal {
+				if equal = !l.IsValid() && !r.IsValid(); !equal {
+					return
+				} // if both l and r are invalid, assumes its equivalence
+			}
+		} else if !d.ignoreUnmatchedFields {
+			return false
 		}
 	}
 	return
