@@ -10,13 +10,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hedzr/log"
+
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/syscalls"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
-	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"
 )

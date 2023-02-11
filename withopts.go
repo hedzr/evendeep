@@ -3,9 +3,10 @@ package evendeep
 import (
 	"encoding/json"
 
+	"github.com/hedzr/log/dir"
+
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/log/dir"
 )
 
 // Opt options functor.
@@ -138,6 +139,12 @@ func WithCopyStyle() Opt {
 }
 
 // WithStrategies appends more flags into *cpController.
+//
+// For example:
+//
+//	WithStrategies(cms.OmitIfZero, cms.OmitIfNil, cms.OmitIfEmpty, cms.NoOmit)
+//	WithStrategies(cms.ClearIfMissed, cms.ClearIfInvalid)
+//	WithStrategies(cms.KeepIfNotEq, cms.ClearIfEq)
 func WithStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 	return func(c *cpController) {
 		if c.flags == nil {
@@ -159,21 +166,39 @@ func WithCleanStrategies(flagsList ...cms.CopyMergeStrategy) Opt {
 }
 
 // WithByNameStrategyOpt is synonym of cms.ByName by calling WithCleanStrategies.
+//
+// If you're using WithByNameStrategyOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithByNameStrategyOpt = WithCleanStrategies(cms.ByName) //nolint:gochecknoglobals //i know that
 
 // WithByOrdinalStrategyOpt is synonym of cms.ByOrdinal by calling WithCleanStrategies.
+//
+// If you're using WithByOrdinalStrategyOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithByOrdinalStrategyOpt = WithCleanStrategies(cms.ByOrdinal) //nolint:gochecknoglobals //i know that
 
 // WithCopyStrategyOpt is synonym of cms.SliceCopy + cms.MapCopy by calling WithCleanStrategies.
+//
+// If you're using WithCopyStrategyOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithCopyStrategyOpt = WithCleanStrategies(cms.SliceCopy, cms.MapCopy) //nolint:gochecknoglobals //i know that
 
 // WithMergeStrategyOpt is synonym of cms.SliceMerge + cms.MapMerge by calling WithCleanStrategies.
+//
+// If you're using WithMergeStrategyOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithMergeStrategyOpt = WithCleanStrategies(cms.SliceMerge, cms.MapMerge) //nolint:gochecknoglobals //i know that
 
 // WithORMDiffOpt is synonym of cms.ClearIfEq + cms.KeepIfNotEq + cms.ClearIfInvalid by calling WithCleanStrategies.
+//
+// If you're using WithORMDiffOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithORMDiffOpt = WithCleanStrategies(cms.ClearIfEq, cms.KeepIfNotEq, cms.ClearIfInvalid) //nolint:gochecknoglobals,lll //i know that
 
 // WithOmitEmptyOpt is synonym of cms.OmitIfEmpty by calling Clean.
+//
+// If you're using WithOmitEmptyOpt and WithStrategies(...) at same time, please notes it
+// will clear any existent flags before setting.
 var WithOmitEmptyOpt = WithCleanStrategies(cms.OmitIfEmpty) //nolint:gochecknoglobals //i know that
 
 // WithStrategiesReset clears the exists flags in a *cpController.

@@ -14,6 +14,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/hedzr/log"
+
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
@@ -21,7 +23,6 @@ import (
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
-	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"
 )

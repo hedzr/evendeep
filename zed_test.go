@@ -102,8 +102,7 @@ func TestInspectStruct(t *testing.T) {
 	tool.InspectStruct(em)
 }
 
-func TestDeepCopyExternal(t *testing.T) {
-
+func TestDeepCopyFromOutside(t *testing.T) {
 	// defer dbglog.newCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
@@ -123,14 +122,11 @@ func TestDeepCopyExternal(t *testing.T) {
 	}
 
 	t.Run("DeepCopy()", func(t *testing.T) {
-
 		var ret interface{}
 		x2ind := evendeep.X2{N: nn[1:3]}
 		x2 := &x2ind
 
 		ret = evendeep.DeepCopy(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, x2ind, ret, "DeepCopy x1 -> x2", true)
-
 	})
-
 }
