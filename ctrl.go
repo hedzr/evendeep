@@ -1,12 +1,13 @@
 package evendeep
 
 import (
+	"github.com/hedzr/log"
+
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
-	"github.com/hedzr/log"
 
 	"gopkg.in/hedzr/errors.v3"
 
@@ -70,6 +71,10 @@ type TargetValueSetter func(value *reflect.Value, sourceNames ...string) (err er
 
 // CopyTo makes a deep clone of a source object or merges it into the target.
 func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
+	if fromObjOrPtr == nil || toObjPtr == nil {
+		return
+	}
+
 	lazyInitRoutines()
 
 	for _, opt := range opts {
