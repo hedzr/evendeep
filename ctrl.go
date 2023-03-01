@@ -125,7 +125,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	return
 }
 
-func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is a integrited logic
+func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integrated logic
 	params *Params, from, to reflect.Value,
 	cb copyfn,
 ) (err error) {
