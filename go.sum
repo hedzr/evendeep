@@ -1,4 +1,4 @@
-github.com/hedzr/log v1.6.3 h1:qCdnDUpeQ+E9vmfDKk+IHjA0QipnWNds2mr4hh6iGxA=
-github.com/hedzr/log v1.6.3/go.mod h1:goMXeVWLSKZYxNs+10viGe2O1fbzBNnnLpdx0MoCRkA=
-gopkg.in/hedzr/errors.v3 v3.1.1 h1:2p1fo4poIOYmBcfN9j6vkXKlJUKTXrxQLj4JWTrQo9I=
-gopkg.in/hedzr/errors.v3 v3.1.1/go.mod h1:UwtyepqtGTIAmdZGSc7wxXT5Gfd/BjcfRMhPpxwkJM4=
+github.com/hedzr/log v1.6.5 h1:igpikhhKn+wNtCzwPLLrOU7i+zQ4l6mw3aXyNxYtAHk=
+github.com/hedzr/log v1.6.5/go.mod h1:95e0Py7gJdHO0CRulrfnetuuYgj6AZuIQqUxE8NigqE=
+gopkg.in/hedzr/errors.v3 v3.1.3 h1:VyeGVCXl0H5cTKHNeg7UqontG/hbpVRuNHXkQosvt8U=
+gopkg.in/hedzr/errors.v3 v3.1.3/go.mod h1:UwtyepqtGTIAmdZGSc7wxXT5Gfd/BjcfRMhPpxwkJM4=
