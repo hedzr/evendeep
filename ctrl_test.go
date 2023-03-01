@@ -31,7 +31,7 @@ const (
 )
 
 func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
-	invalidObj := func() interface{} {
+	invalidObj := func() typ.Any {
 		var x *evendeep.X0
 		return x
 	}
@@ -48,7 +48,7 @@ func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
 		t.Logf("tgt: %+v", tgt)
 	})
 
-	nilmap := func() interface{} {
+	nilmap := func() typ.Any {
 		var mm []map[string]struct{}
 		return mm
 	}
@@ -65,7 +65,7 @@ func TestDeepCopyForInvalidSourceOrTarget(t *testing.T) {
 		t.Logf("tgt: %+v", tgt)
 	})
 
-	nilslice := func() interface{} {
+	nilslice := func() typ.Any {
 		var mm []map[string]struct{}
 		return mm
 	}
@@ -258,7 +258,7 @@ func TestTypeConvert(t *testing.T) {
 	var i64 int64 = 10
 	var f64 = 9.1
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"int -> int64",
 			8, i64, int64(8),
@@ -293,7 +293,7 @@ func TestTypeConvert(t *testing.T) {
 			"complex -> int - ErrCannotConvertTo test",
 			complex64(8.1+3i), &i5, int(8),
 			nil,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if errors.IsDescended(evendeep.ErrCannotConvertTo, e) {
 					return
 				}
@@ -304,7 +304,7 @@ func TestTypeConvert(t *testing.T) {
 			"int -> intptr",
 			8, &i9, 8,
 			nil,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if d, ok := dst.(*int); ok && e == nil {
 					if *d == src {
 						return
@@ -313,7 +313,13 @@ func TestTypeConvert(t *testing.T) {
 				return errors.DataLoss
 			},
 		),
-	)
+	}
+
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestTypeConvert2Slice(t *testing.T) {
@@ -336,7 +342,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 		evendeep.WithStrategies(cms.SliceMerge),
 	}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"[]int -> []int64",
 			[]int{8}, &si64, &[]int64{9, 8},
@@ -407,7 +413,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 			"complex -> int - ErrCannotConvertTo test",
 			complex64(8.1+3i), &i5, int(8),
 			opts,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if errors.IsDescended(evendeep.ErrCannotConvertTo, e) {
 					return
 				}
@@ -418,7 +424,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 			"int -> intptr",
 			8, &i9, 8,
 			opts,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if d, ok := dst.(*int); ok && e == nil {
 					if *d == src {
 						return
@@ -427,8 +433,13 @@ func TestTypeConvert2Slice(t *testing.T) {
 				return errors.DataLoss
 			},
 		),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestTypeConvert3Func(t *testing.T) {
@@ -451,12 +462,12 @@ func TestTypeConvert3Func(t *testing.T) {
 		return i, nil
 	}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"[]int -> func(int)(int,error)",
 			[]int{8}, &b1, nil,
 			opts,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if i1 != 16 {
 					err = errors.BadRequest
 				}
@@ -467,14 +478,20 @@ func TestTypeConvert3Func(t *testing.T) {
 			"int -> func(int)(int,error)",
 			8, &b2, nil,
 			opts,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if !errors.Is(e, errors.BadRequest) {
 					err = errors.BadRequest
 				}
 				return
 			},
 		),
-	)
+	}
+
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestErrorCodeIs(t *testing.T) {
@@ -536,7 +553,7 @@ func TestStructStdlib(t *testing.T) {
 			"stdlib - bytes.Buffer 2 - target is nil",
 			bb1, &bbn, &bb1,
 			nil,
-			func(src, dst, expect interface{}, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) {
 				if err = e; e != nil {
 					return
 				}
@@ -556,6 +573,7 @@ func TestStructStdlib(t *testing.T) {
 }
 
 func TestStructSimple(t *testing.T) {
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
@@ -578,7 +596,7 @@ func TestStructSimple(t *testing.T) {
 		A: uintptr(unsafe.Pointer(&x0)),
 		// D: []string{},
 		// E: []*evendeep.X0{},
-		H: x1.H,
+		H: make(chan int, 5),
 		K: &x0,
 		M: unsafe.Pointer(&x0),
 		// E: []*X0{&x0},
@@ -602,7 +620,7 @@ func TestStructSimple(t *testing.T) {
 	t.Logf("   src: %+v", x1)
 	t.Logf("   tgt: %+v", evendeep.X2{N: nn[1:3]})
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"struct - 1",
 			x1, &evendeep.X2{N: nn[1:3]}, expect1,
@@ -612,7 +630,7 @@ func TestStructSimple(t *testing.T) {
 				evendeep.WithAutoNewForStructFieldOpt,
 			},
 			nil,
-			// func(src, dst, expect interface{}) (err error) {
+			// func(src, dst, expect typ.Any) (err error) {
 			//	dif, equal := diff.New(expect, dst)
 			//	if !equal {
 			//		fmt.Println(dif)
@@ -630,8 +648,13 @@ func TestStructSimple(t *testing.T) {
 			},
 			nil,
 		),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestStructEmbedded(t *testing.T) {
@@ -673,7 +696,7 @@ func TestStructEmbedded(t *testing.T) {
 		Valid:     true,
 	}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"struct - 1",
 			src, &tgt,
@@ -683,7 +706,7 @@ func TestStructEmbedded(t *testing.T) {
 				evendeep.WithAutoExpandStructOpt,
 			},
 			nil,
-			// func(src, dst, expect interface{}) (err error) {
+			// func(src, dst, expect typ.Any) (err error) {
 			//	dif, equal := diff.New(expect, dst)
 			//	if !equal {
 			//		fmt.Println(dif)
@@ -691,8 +714,13 @@ func TestStructEmbedded(t *testing.T) {
 			//	return
 			// },
 		),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestStructToSliceOrMap(t *testing.T) {
@@ -720,7 +748,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 	var slice1 []evendeep.User
 	var slice2 []*evendeep.User
 
-	var map1 = make(map[string]interface{})
+	var map1 = make(map[string]typ.Any)
 
 	expect1 := evendeep.User{
 		Name:      "Bob",
@@ -733,7 +761,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 		Valid:     true,
 	}
 
-	expect3 := map[string]interface{}{
+	expect3 := map[string]typ.Any{
 		"Name":      "Bob",
 		"Birthday":  tm,
 		"Age":       24,
@@ -767,7 +795,7 @@ func TestStructToSliceOrMap(t *testing.T) {
   "Deleted": false
 }`
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"struct -> slice []obj",
 			src, &slice1, &[]evendeep.User{expect1},
@@ -807,7 +835,13 @@ func TestStructToSliceOrMap(t *testing.T) {
 			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt, evendeep.WithAutoNewForStructFieldOpt},
 			nil,
 		),
-	)
+	}
+
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestStructWithSourceExtractor(t *testing.T) {
@@ -822,12 +856,13 @@ func TestStructWithSourceExtractor(t *testing.T) {
 		A int
 	}{}
 
-	err := evendeep.New().CopyTo(c, &tgt, evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
-		if m, ok := c.Value(key).(MyValue); ok {
-			return m[targetName]
-		}
-		return nil
-	}))
+	err := evendeep.New().CopyTo(c, &tgt,
+		evendeep.WithSourceValueExtractor(func(targetName string) typ.Any {
+			if m, ok := c.Value(key).(MyValue); ok {
+				return m[targetName]
+			}
+			return nil
+		}))
 
 	if tgt.A != 12 || err != nil {
 		t.FailNow()
@@ -1067,7 +1102,7 @@ func TestSliceSimple(t *testing.T) {
 	tgt := []float32{3.1, 4.5, 9.67}
 	itgt := []int{13, 5}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"slice (float64 -> float32)",
 			[]float64{9.123, 5.2}, &tgt, &[]float32{3.1, 4.5, 9.67, 9.123, 5.2},
@@ -1080,8 +1115,13 @@ func TestSliceSimple(t *testing.T) {
 			[]evendeep.Opt{evendeep.WithMergeStrategyOpt},
 			nil,
 		),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestSliceTypeConvert(t *testing.T) {
@@ -1096,7 +1136,7 @@ func TestSliceTypeConvert(t *testing.T) {
 	// itgt2 := []int{17}
 	// ftgt2 := []float64{17}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"slice (uint64 -> string)",
 			[]uint64{9, 5}, &stgt,
@@ -1148,8 +1188,13 @@ func TestSliceTypeConvert(t *testing.T) {
 		//	[]evendeep.Opt{evendeep.WithMergeStrategy},
 		//	nil,
 		// ),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestMapSimple(t *testing.T) {
@@ -1158,7 +1203,7 @@ func TestMapSimple(t *testing.T) {
 	tgt := map[int]float32{1: 3.1, 2: 4.5, 3: 9.67}
 	exp := map[int]float32{1: 3.1, 2: 4.5, 3: 7.18, 7: 0}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"map (map[int64]float64 -> map[int]float32)",
 			src, &tgt, &exp,
@@ -1171,8 +1216,13 @@ func TestMapSimple(t *testing.T) {
 		//	[]evendeep.Opt{evendeep.WithMergeStrategy},
 		//	nil,
 		// ),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestMapAndStruct(t *testing.T) {
@@ -1274,7 +1324,7 @@ func TestMapAndStruct(t *testing.T) {
 		3: &expect3,
 	}
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"map (map[int64]Employee2 -> map[int]User)",
 			srcmap, &tgtmap, &expmap,
@@ -1291,8 +1341,13 @@ func TestMapAndStruct(t *testing.T) {
 		//	[]evendeep.Opt{evendeep.WithMergeStrategy},
 		//	nil,
 		// ),
-	)
+	}
 
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func TestMapToString(t *testing.T) {
@@ -1362,7 +1417,7 @@ func TestMapToString(t *testing.T) {
   "Valid": true
 }`
 
-	evendeep.RunTestCases(t,
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"map -> string [json]",
 			map1, &str1, &expect1,
@@ -1387,7 +1442,13 @@ func TestMapToString(t *testing.T) {
 			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt},
 			nil,
 		),
-	)
+	}
+
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+			break
+		}
+	}
 }
 
 func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) {

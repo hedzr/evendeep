@@ -223,7 +223,6 @@ func TestOmitEmptySourceField(t *testing.T) {
 }
 
 func TestDeepCopyGenerally(t *testing.T) {
-
 	// defer dbglog.NewCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}

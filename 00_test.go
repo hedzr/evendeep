@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"math/big"
-	mrand "math/rand"
 	"reflect"
 	"runtime"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -350,7 +347,7 @@ func TestDeferCatchers(t *testing.T) {
 		p2 := newParams(withOwners(p1.controller, p1, &sf1, &df1, nil, nil))
 		defer p2.revoke()
 
-		log.VerboseEnabled = true
+		// buildtags.VerboseEnabled = true
 		dbgFrontOfStruct(nil, "    ", t.Logf) // just for coverage
 		dbgFrontOfStruct(p2, "    ", nil)     // just for coverage
 		dbgFrontOfStruct(p2, "    ", t.Logf)
@@ -535,7 +532,7 @@ func TestValueValid(t *testing.T) {
 
 //
 
-func HelperAssertYes(t *testing.T, b bool, expect, got interface{}) { //nolint:thelper
+func HelperAssertYes(t *testing.T, b bool, expect, got typ.Any) { //nolint:thelper
 	if !b {
 		t.Fatalf("expecting %v but got %v", expect, got)
 	}
@@ -636,15 +633,15 @@ func NewForTest() DeepCopier {
 //
 
 // Verifier _
-type Verifier func(src, dst, expect interface{}, e error) (err error)
+type Verifier func(src, dst, expect typ.Any, e error) (err error)
 
 // TestCase _
 type TestCase struct {
-	description string      // description of what test is checking
-	src, dst    interface{} //
-	expect      interface{} // expected output
-	opts        []Opt
-	verifier    Verifier
+	Description string  // description of what test is checking
+	Src, Dst    typ.Any //
+	Expect      typ.Any // expected output
+	Opts        []Opt
+	Verifier    Verifier
 }
 
 // NewTestCases _
@@ -655,13 +652,14 @@ func NewTestCases(c ...TestCase) []TestCase {
 // NewTestCase _
 func NewTestCase(
 	description string, // description of what test is checking
-	src, dst interface{}, //
-	expect interface{}, // expected output
+	src, dst typ.Any, //
+	expect typ.Any, // expected output
 	opts []Opt,
 	verifier Verifier,
 ) TestCase {
 	return TestCase{
-		description, src, dst, expect, opts, verifier,
+		Description: description, Src: src, Dst: dst,
+		Expect: expect, Opts: opts, Verifier: verifier,
 	}
 }
 
@@ -670,88 +668,72 @@ type ExtrasOpt func(tc *TestCase)
 
 // RunTestCasesWith _
 func RunTestCasesWith(tc *TestCase) (desc string, helperSubtest func(t *testing.T)) {
-	desc = tc.description
+	desc = tc.Description
 	helperSubtest = func(t *testing.T) { //nolint:thelper
-		c := NewFlatDeepCopier(tc.opts...)
+		c := NewFlatDeepCopier(tc.Opts...)
 
-		err := c.CopyTo(&tc.src, &tc.dst)
+		err := c.CopyTo(&tc.Src, &tc.Dst)
 
-		verifier := tc.verifier
+		verifier := tc.Verifier
 		if verifier == nil {
-			verifier = runtestcasesverifier(t)
+			verifier = DoTestCasesVerifier(t)
 		}
 
 		// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
-		if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
+		if err = verifier(tc.Src, tc.Dst, tc.Expect, err); err == nil {
 			return
 		}
 
-		t.Fatalf("%s FAILED, %+v", tc.description, err)
+		t.Fatalf("%s FAILED, %+v", tc.Description, err)
 	}
 	return
 }
 
-// RunTestCases _
-func RunTestCases(t *testing.T, cases ...TestCase) {
-	for ix, tc := range cases {
-		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
+// DefaultDeepCopyTestRunner _
+func DefaultDeepCopyTestRunner(ix int, tc TestCase, opts ...Opt) func(t *testing.T) {
+	return func(t *testing.T) {
+		c := NewFlatDeepCopier(append(opts, tc.Opts...)...)
 
-			c := NewFlatDeepCopier(tc.opts...)
+		dbglog.Log("- Case %3d: %v", ix, tc.Description)
+		err := c.CopyTo(&tc.Src, &tc.Dst)
 
-			dbglog.Log("- Case %3d: %v", ix, tc.description)
-			err := c.CopyTo(&tc.src, &tc.dst)
-
-			verifier := tc.verifier
-			if verifier == nil {
-				verifier = runtestcasesverifier(t)
-			}
-
-			// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
-			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
-				log.Printf("%3d. test passed", ix)
-				return
-			}
-
-			log.Errorf("%3d. Error: %v", ix, err)
-			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
-		}) {
-			break
+		verifier := tc.Verifier
+		if verifier == nil {
+			verifier = DoTestCasesVerifier(t)
 		}
 
+		// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
+		if err = verifier(tc.Src, tc.Dst, tc.Expect, err); err == nil {
+			log.Printf("%3d. test passed", ix)
+			return
+		}
+
+		log.Errorf("%3d. Error: %v", ix, err)
+		t.Fatalf("%3d. %s FAILED, %+v", ix, tc.Description, err)
 	}
 }
 
-// RunTestCasesWithOpts _
-func RunTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
+// runTestCases _
+func runTestCases(t *testing.T, cases ...TestCase) {
 	for ix, tc := range cases {
-		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.description), func(t *testing.T) {
-
-			c := NewFlatDeepCopier(append(opts, tc.opts...)...)
-
-			err := c.CopyTo(&tc.src, &tc.dst)
-
-			verifier := tc.verifier
-			if verifier == nil {
-				verifier = runtestcasesverifier(t)
-			}
-
-			// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
-			if err = verifier(tc.src, tc.dst, tc.expect, err); err == nil {
-				log.Printf("%3d. test passed", ix)
-				return
-			}
-
-			log.Errorf("%3d. Error: %v", ix, err)
-			t.Fatalf("%3d. %s FAILED, %+v", ix, tc.description, err)
-		}) {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description),
+			DefaultDeepCopyTestRunner(ix, tc)) {
 			break
 		}
-
 	}
 }
 
-func runtestcasesverifier(t *testing.T) Verifier {
-	return func(src, dst, expect interface{}, e error) (err error) {
+// runTestCasesWithOpts _
+func runTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
+	for ix, tc := range cases {
+		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), DefaultDeepCopyTestRunner(ix, tc, opts...)) {
+			break
+		}
+	}
+}
+
+func DoTestCasesVerifier(t *testing.T) Verifier {
+	return func(src, dst, expect typ.Any, e error) (err error) {
 		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
 		aa, _ := tool.Rdecode(a)
 		bb, _ := tool.Rdecode(b)
@@ -782,71 +764,6 @@ func runtestcasesverifier(t *testing.T) Verifier {
 //
 
 //
-
-type randomizer struct {
-	lastErr error //nolint:unused,structcheck //usable
-}
-
-// var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-const (
-	// Alphabets gets the a to z and A to Z
-	Alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	// Digits gets 0 to 9
-	Digits = "0123456789"
-	// AlphabetNumerics gets Alphabets and Digits
-	AlphabetNumerics = Alphabets + Digits
-	// Symbols gets the ascii symbols
-	Symbols = "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
-	// ASCII gets the ascii characters
-	ASCII = AlphabetNumerics + Symbols
-)
-
-var hundred = big.NewInt(100)                                            //nolint:unused,deadcode,varcheck //test
-var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
-var mu sync.Mutex
-var Randtool = &randomizer{}
-
-func (r *randomizer) Next() int {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Int()
-}
-func (r *randomizer) NextIn(max int) int {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Intn(max)
-}
-func (r *randomizer) inRange(min, max int) int {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Intn(max-min) + min
-}
-func (r *randomizer) NextInRange(min, max int) int { return r.inRange(min, max) }
-func (r *randomizer) NextInt63n(n int64) int64 {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Int63n(n)
-}
-func (r *randomizer) NextIntn(n int) int {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Intn(n)
-}
-func (r *randomizer) NextFloat64() float64 {
-	mu.Lock()
-	defer mu.Unlock()
-	return seededRand.Float64()
-}
-
-// NextStringSimple returns a random string with specified length 'n', just in A..Z
-func (r *randomizer) NextStringSimple(n int) string {
-	b := make([]byte, n)
-	for i := 0; i < n; i++ {
-		n := seededRand.Intn(90-65) + 65
-		b[i] = byte(n) // 'a' .. 'z'
-	}
-	return string(b)
-}
 
 //
 
@@ -895,7 +812,7 @@ type X0 struct{}
 // X1 type for testing
 type X1 struct {
 	A          uintptr
-	B          map[string]interface{}
+	B          map[string]typ.Any
 	C          bytes.Buffer
 	D          []string
 	E          []*X0
@@ -903,7 +820,7 @@ type X1 struct {
 	G          chan bool
 	H          chan int
 	I          func()
-	J          interface{}
+	J          typ.Any
 	K          *X0
 	L          unsafe.Pointer
 	M          unsafe.Pointer
@@ -917,7 +834,7 @@ type X1 struct {
 // X2 type for testing
 type X2 struct {
 	A          uintptr
-	B          map[string]interface{}
+	B          map[string]typ.Any
 	C          bytes.Buffer
 	D          []string
 	E          []*X0

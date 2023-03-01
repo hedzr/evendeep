@@ -24,7 +24,7 @@ func testDeepEqual(printer func(msg string, args ...interface{}), got, expect ty
 }
 
 func TestTestDeepEqual(t *testing.T) {
-	// defer newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 	var mm = []map[string]bool{
 		nil, nil,
 	}
@@ -58,7 +58,7 @@ func TestCopyChan(t *testing.T) {
 }
 
 func TestCopyUnsafePointer(t *testing.T) {
-	// defer newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	// c := newDeepCopier()
 	// params := newParams(withOwnersSimple(c, nil))
@@ -70,7 +70,7 @@ func TestCopyUnsafePointer(t *testing.T) {
 }
 
 func TestCopySlice_differModes(t *testing.T) {
-	// defer newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	c := newCloner()
 	params := newParams(withOwnersSimple(c, nil))
@@ -157,7 +157,7 @@ func TestCopySlice_differModes(t *testing.T) {
 }
 
 func TestCopySlice_mergeMode(t *testing.T) {
-	// defer newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	c := newCopier().withFlags(cms.SliceMerge, cms.MapMerge)
 	params := newParams(withOwnersSimple(c, nil))
@@ -190,7 +190,7 @@ func TestCopySlice_mergeMode(t *testing.T) {
 }
 
 func TestCopyArray(t *testing.T) {
-	// defer newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	c := newCopier().withFlags()
 	params := newParams(withOwnersSimple(c, nil))

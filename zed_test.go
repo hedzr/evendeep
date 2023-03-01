@@ -9,6 +9,7 @@ import (
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 )
 
 func TestBytesBuffer(t *testing.T) {
@@ -103,7 +104,7 @@ func TestInspectStruct(t *testing.T) {
 }
 
 func TestDeepCopyFromOutside(t *testing.T) {
-	// defer dbglog.newCaptureLog(t).Release()
+	// defer dbglog.NewCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
 	var a [2]string
@@ -122,7 +123,7 @@ func TestDeepCopyFromOutside(t *testing.T) {
 	}
 
 	t.Run("DeepCopy()", func(t *testing.T) {
-		var ret interface{}
+		var ret typ.Any
 		x2ind := evendeep.X2{N: nn[1:3]}
 		x2 := &x2ind
 
