@@ -362,6 +362,9 @@ func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind re
 	case reflect.Interface:
 		equal = d.diffv(lv.Elem(), rv.Elem(), path)
 
+	case reflect.Chan:
+		equal = lv.Type() == rv.Type() && lv.Cap() == rv.Cap()
+
 	default:
 		a, b := lv.Interface(), rv.Interface()
 		if equal = reflect.DeepEqual(a, b); !equal {
