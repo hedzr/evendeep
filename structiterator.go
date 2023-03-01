@@ -82,7 +82,9 @@ func (table *fieldsTableT) getAllFields(structValue reflect.Value, autoexpandstr
 
 	table.fastIndices = make(map[string]*tableRecT)
 	for _, ni := range table.tableRecordsT {
-		log.VDebugf("        - ni: %v", ni.ShortFieldName())
+		if internal.VerboseStructIterating {
+			dbglog.Log("        - ni: %v", ni.ShortFieldName())
+		}
 		table.fastIndices[ni.ShortFieldName()] = ni
 	}
 
@@ -125,8 +127,11 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 		tr = table.tableRec(svind, &sf, i, fi, fieldName)
 
 		if isStruct && table.autoExpandStruct && !isReservedPackage {
-			dbglog.Log(" field %d: %v (%v) (%v) || %v", i, sf.Name,
-				tool.Typfmt(sftyp), tool.Typfmt(sftypind), tr.FieldValue())
+			if internal.VerboseStructIterating {
+				// only printed on `-tags="structiterating,verbose"
+				dbglog.Log(" field %d: %v (%v) (%v) || %v", i, sf.Name,
+					tool.Typfmt(sftyp), tool.Typfmt(sftypind), tr.FieldValue())
+			}
 
 			if !tr.ShouldIgnore() {
 				// struct, or pointer to struct has been found and we will get into it
@@ -140,7 +145,7 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 				}
 				continue
 			}
-		} else {
+		} else if internal.VerboseStructIterating {
 			dbglog.Log(" field %d: %v (%v) (%v) || %v", i, sf.Name,
 				tool.Typfmt(sftyp), tool.Typfmt(sftypind), tool.Valfmtptr(tr.FieldValue()))
 		}
