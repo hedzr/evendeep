@@ -48,6 +48,11 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.0
+  - fixed autonew when copying to nil member
+  - improved diff on chan
+  - better logging (verbose) with colors
+
 - v0.3.1
   - changed: `dbglog.LogValid` is constant now
   - improved code style
