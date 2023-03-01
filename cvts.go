@@ -8,6 +8,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hedzr/log"
@@ -47,7 +48,7 @@ func RegisterDefaultCopiers(ss ...ValueCopier) {
 func initConverters() {
 	dbglog.Log("initializing default converters and copiers ...")
 	defValueConverters = ValueConverters{ // Transform()
-		&fromStringConverter{},
+		&fromStringConverter{}, // the final choice here
 		&toStringConverter{},
 
 		// &toFuncConverter{},
@@ -59,10 +60,11 @@ func initConverters() {
 		&fromTimeConverter{},
 
 		&fromBytesBufferConverter{},
+		&fromSyncPkgConverter{},
 		&fromMapConverter{},
 	}
 	defValueCopiers = ValueCopiers{ // CopyTo()
-		&fromStringConverter{},
+		&fromStringConverter{}, // the final choice here
 		&toStringConverter{},
 
 		&toFuncConverter{},
@@ -74,6 +76,7 @@ func initConverters() {
 		&fromTimeConverter{},
 
 		&fromBytesBufferConverter{},
+		&fromSyncPkgConverter{},
 		&fromMapConverter{},
 	}
 
@@ -920,6 +923,34 @@ func (c *fromMapConverter) Match(params *Params, source, target reflect.Type) (c
 
 //
 
+// fromSyncPkgConverter provides default actions for all entities
+// in sync package, such as sync.Pool, sync.RWMutex, and so on.
+//
+// By default, these entities should NOT be copied from one to another
+// one. So our default actions are empty.
+type fromSyncPkgConverter struct{ fromConverterBase }
+
+//nolint:lll //keep it
+func (c *fromSyncPkgConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+	// st.PkgPath() . st.Name()
+	if yes = source.Kind() == reflect.Struct && strings.HasPrefix(source.String(), "sync."); yes {
+		ctx = &ValueConverterContext{params}
+		dbglog.Log("    src: %v, tgt: %v | Matched", source, target)
+	} else {
+		// dbglog.Log("    src: %v, tgt: %v", source, target)
+	}
+	return
+}
+func (c *fromSyncPkgConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	return
+}
+
+func (c *fromSyncPkgConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	return
+}
+
+//
+
 type fromBytesBufferConverter struct{ fromConverterBase }
 
 func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
@@ -977,7 +1008,7 @@ func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.
 		ctx = &ValueConverterContext{params}
 		dbglog.Log("    src: %v, tgt: %v | Matched", source, target)
 	} else {
-		dbglog.Log("    src: %v, tgt: %v", source, target)
+		// dbglog.Log("    src: %v, tgt: %v", source, target)
 	}
 	return
 }
