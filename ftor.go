@@ -5,11 +5,13 @@ package evendeep
 
 import (
 	"github.com/hedzr/log"
+	"github.com/hedzr/log/color"
 
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 
 	"gopkg.in/hedzr/errors.v3"
 
@@ -161,12 +163,9 @@ func copyStructInternal( //nolint:gocognit //keep it
 	var (
 		i, amount   int
 		padding     string
-		ec          = errors.New("copyStruct errors")
+		ec          = errors.New("copyStructInternal errors")
 		paramsChild = newParams(withOwners(c, params, &from, &to, nil, nil))
 	)
-
-	defer paramsChild.revoke()
-	defer ec.Defer(&err)
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -195,9 +194,12 @@ func copyStructInternal( //nolint:gocognit //keep it
 			// if c.rethrow {
 			//	log.Panicf("%+v", ec)
 			// } else {
-			log.Errorf("%+v", ec)
+			log.Errorf("copyStructInternal will return error: %+v", ec)
 			// }
 		}
+
+		ec.Defer(&err)
+		paramsChild.revoke()
 	}()
 
 	if dbglog.LogValid {
@@ -241,8 +243,10 @@ func copyStructInternal( //nolint:gocognit //keep it
 			if paramsChild.dstDecoded.CanSet() {
 				paramsChild.dstDecoded.Set(target)
 			} else {
-				err = ErrCannotSet.FormatWith(tool.Valfmt(paramsChild.srcDecoded),
-					tool.Typfmtv(paramsChild.srcDecoded), tool.Valfmt(paramsChild.dstDecoded),
+				err = ErrCannotSet.FormatWith(
+					tool.Valfmt(paramsChild.srcDecoded),
+					tool.Typfmtv(paramsChild.srcDecoded),
+					tool.Valfmt(paramsChild.dstDecoded),
 					tool.Typfmtv(paramsChild.dstDecoded))
 			}
 		}
@@ -393,7 +397,7 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 	for *i, *amount = 0, len(sst.TableRecords()); *i < *amount; *i++ {
 		if params.sourceFieldShouldBeIgnored() {
-			log.VDebugf("%d. %s : IGNORED", *i, sst.CurrRecord().FieldName())
+			dbglog.Log("%d. %s : IGNORED", *i, sst.CurrRecord().FieldName())
 			if c.advanceTargetFieldPointerEvenIfSourceIgnored {
 				_ = params.nextTargetFieldLite()
 			} else {
@@ -414,15 +418,39 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 		srcval, dstval := sourceField.FieldValue(), params.accessor.FieldValue()
 
-		log.VDebugf("%d. %s (%v) -> %s (%v) | (%v) -> (%v)", *i,
-			sourceField.FieldName(), tool.Typfmtv(srcval), params.accessor.StructFieldName(),
-			tool.Typfmt(*params.accessor.FieldType()), tool.Valfmt(srcval), tool.Valfmt(dstval))
+		// log.VDebugf will be tuned and stripped off in normal build.
+		dbglog.Colored(color.LightGreen, "%d. %s (%v) -> %s (%v) | (%v) -> (%v)", *i,
+			sourceField.FieldName(), tool.Typfmtv(srcval),
+			params.accessor.StructFieldName(),
+			tool.Typfmt(*params.accessor.FieldType()),
+			tool.Valfmt(srcval), tool.Valfmt(dstval))
+
+		// The following if clause will be stripped off completely
+		// in normal build.
+		// It's only available when using `-tags=verbose`.
+		// The first condition 'log.VerboseEnabled' do circuit to
+		// be optimized by compiler.
+		if log.VerboseEnabled && !ec.IsEmpty() {
+			log.VDebugf("    EC NOT EMPTY: %+v", ec.Error())
+		}
 
 		if srcval != nil && dstval != nil && srcval.IsValid() {
-			typ := params.accessor.FieldType()
+			typ := params.accessor.FieldType() // target type
+			if k := (*typ).Kind(); typ != nil && !tool.KindIs(k, reflect.Chan, reflect.Func, reflect.Interface, reflect.UnsafePointer, reflect.Ptr, reflect.Slice) {
+				if tool.IsNil(*dstval) || !(*dstval).IsValid() {
+					if !tool.IsNil(*srcval) {
+						dbglog.Log("      create new: dstval = nil/invalid, type: %v (%v -> nil/inalid)", tool.Typfmt(*typ), tool.Valfmt(srcval))
+						_, elem := newFromTypeEspSlice(*typ)
+						dstval.Set(elem)
+						dbglog.Log("      create new: dstval created: %v", tool.Typfmtv(dstval))
+					}
+				}
+			}
 			if err = invokeStructFieldTransformer(c, params, srcval, dstval, typ, padding); err != nil {
 				ec.Attach(err)
-				log.Errorf("error: %v", err)
+				log.Errorf("     %d. %s error: %v", err)
+			} else {
+				dbglog.Log("    %d. %s copied. from-to: %v -> %v", *i, sourceField.FieldName(), tool.Valfmt(srcval), tool.Valfmt(dstval))
 			}
 			continue
 		}
@@ -541,7 +569,18 @@ func invokeStructFieldTransformer(
 	}
 
 	if fv && dv {
+		dbglog.Log(`      c.copyTo: ff -> df`)
 		err = c.copyTo(params, *ff, *df) // or, use internal standard implementation version
+		dbglog.Log(`      c.copyTo.end: ff -> df. err = %v, df = %v`, err, tool.Valfmt(df))
+		if log.VerboseEnabled {
+			if df.CanInterface() {
+				switch k := df.Kind(); k {
+				case reflect.Map, reflect.Slice:
+					var v typ.Any = df.Interface()
+					dbglog.Log(`      c.copyTo.end: df = %v`, v)
+				}
+			}
+		}
 		return
 	}
 
@@ -1082,7 +1121,8 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 		return
 	}
 
-	if tool.IsNil(tgt) && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
+	tgtNil := tool.IsNil(tgt)
+	if tgtNil && params.isGroupedFlagOKDeeply(cms.OmitIfTargetZero, cms.OmitIfTargetEmpty) {
 		return
 	}
 
@@ -1092,22 +1132,22 @@ func copyMap(c *cpController, params *Params, from, to reflect.Value) (err error
 	for _, flag := range []cms.CopyMergeStrategy{cms.MapMerge, cms.MapCopy} {
 		if params.isGroupedFlagOKDeeply(flag) {
 			if fn, ok := getMapOperations()[flag]; ok {
-				ec.Attach(fn(c, params, from, tgt))
+				ec.Attach(fn(c, params, from, tgt, tgtptr))
 			} else {
 				ec.Attach(errors.New("unknown strategy for map: %v", flag))
 			}
-			break
+			break // once any of copy-merge strategy matched, stop iterating now
 		}
 	}
 	return
 }
 
-type fnMapOperation func(c *cpController, params *Params, src, tgt reflect.Value) (err error)
+type fnMapOperation func(c *cpController, params *Params, src, tgt, tgtptr reflect.Value) (err error)
 type mapMapOperations map[cms.CopyMergeStrategy]fnMapOperation
 
 func getMapOperations() (mMapOperations mapMapOperations) {
 	mMapOperations = mapMapOperations{ //nolint:exhaustive //i have right
-		cms.MapCopy: func(c *cpController, params *Params, src, tgt reflect.Value) (err error) {
+		cms.MapCopy: func(c *cpController, params *Params, src, tgt, tgtptr reflect.Value) (err error) {
 			tgt.Set(reflect.MakeMap(src.Type()))
 
 			ec := errors.New("map copy errors")
@@ -1137,14 +1177,14 @@ func getMapOperations() (mMapOperations mapMapOperations) {
 			}
 			return
 		},
-		cms.MapMerge: func(c *cpController, params *Params, src, tgt reflect.Value) (err error) {
+		cms.MapMerge: func(c *cpController, params *Params, src, tgt, tgtptr reflect.Value) (err error) {
 			ec := errors.New("map merge errors")
 			defer ec.Defer(&err)
 
 			for _, key := range src.MapKeys() {
 				// dbglog.Log("------------ [MapMerge] mergeOneKeyInMap: key = %q (%v) ------------------",
 				// 	tool.Valfmt(&key), tool.Typfmtv(&key))
-				ec.Attach(mergeOneKeyInMap(c, params, src, tgt, key))
+				ec.Attach(mergeOneKeyInMap(c, params, src, tgt, tgtptr, key))
 			}
 			return
 		},
@@ -1166,7 +1206,7 @@ func mapMergePreSetter(c *cpController, ck, cv reflect.Value) (processed bool, e
 	return
 }
 
-func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Value) (err error) {
+func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, tgtptr, key reflect.Value) (err error) {
 	var processed bool
 
 	var ck reflect.Value
@@ -1186,16 +1226,30 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 			return
 		}
 		defer func() {
-			tgt.SetMapIndex(ck, cv)
-			dbglog.Log("  SetMapIndex: %v -> [%v] %v", ck.Interface(), cv.Type(), cv.Interface())
+			// dbglog.Log("      SetMapIndex: %v -> [%v] %v", ck.Interface(), tool.Typfmtv(&cv), tool.Valfmt(&cv))
+			ve := tgt.Type().Elem()
+			if cv.Type() == ve {
+				tgt.SetMapIndex(ck, cv)
+				dbglog.Log("      <MAP> map.item set to cv: %v -> %v", tool.Valfmt(&ck), tool.Valfmt(&cv))
+			} else if tgtval.Type() == ve {
+				tgt.SetMapIndex(ck, tgtval)
+				dbglog.Log("       <MAP> map.item set to tgtval: %v -> %v", tool.Valfmt(&ck), tool.Valfmt(&tgtval))
+			} else if tgtval.Elem().Type() == ve {
+				ve1 := tgtval.Elem()
+				tgt.SetMapIndex(ck, ve1)
+				dbglog.Log("      <MAP> map.item set to tgtval.elem: %v -> %v", tool.Valfmt(&ck), tool.Valfmt(&ve1))
+				dbglog.Log("      <MAP> map: %v", tool.Valfmt(&tgt))
+			} else {
+				log.Warnf("cannot setMapIndex for key %v since val type mismatched: %v.", tool.Valfmt(&ck), tool.Typfmtv(&tgtval))
+			}
 		}()
 		if err = c.copyTo(params, originalValue, tgtval); err != nil {
 			return
 		}
-		dbglog.Log("         <MAP> updated: set map[%v] to %v", tool.Valfmtptr(&ck), tool.Valfmt(&tgtval))
+		dbglog.Log("      <MAP> original item value: %v -> %v", tool.Valfmtptr(&ck), tool.Valfmt(&cv))
 		return
 	}
-	dbglog.Log("         <VAL> duplicated/gotten: %v", tool.Valfmtptr(&tgtval))
+	dbglog.Log("      <VAL> duplicated/gotten: %v", tool.Valfmtptr(&tgtval))
 
 	eltyp := tgt.Type().Elem() // get map value type
 	eltypind, _ := tool.Rskiptype(eltyp, reflect.Ptr)
@@ -1239,22 +1293,48 @@ func mergeOneKeyInMap(c *cpController, params *Params, src, tgt, key reflect.Val
 	return
 }
 
-func newFromType(typ reflect.Type) (val, valelem reflect.Value) {
-	if k := typ.Kind(); k == reflect.Map { //nolint:gocritic //keep it
-		val = reflect.MakeMap(typ)
-		valelem = val
+// func pointerOf(rValue reflect.Value) (p reflect.Value, ok bool) {
+// 	if k := rValue.Kind(); k == reflect.Pointer || k == reflect.Slice || k == reflect.Func {
+// 		ok = true
+// 		ptr := rValue.Pointer()
+// 		p = reflect.New(rValue.Type())
+// 		p.SetPointer(unsafe.Pointer(ptr))
+// 		return
+// 	}
+//
+// 	if rValue.CanAddr() {
+// 		ok = true
+// 		ptr := rValue.Addr().Pointer()
+// 		p = reflect.New(rValue.Type())
+// 		p.Elem().SetPointer(unsafe.Pointer(ptr))
+// 	}
+//
+// 	return
+// }
+
+func newFromType(typ reflect.Type) (valptr, val reflect.Value) {
+	if k := typ.Kind(); k == reflect.Ptr {
+		vp := reflect.New(typ)
+		v := vp.Elem()
+		ptr, _ := newFromType(typ.Elem())
+		v.Set(ptr)
+		valptr, val = vp, v // .Elem()
+		dbglog.Log("creating new object for type %v: %+v", tool.Typfmt(typ), tool.Valfmt(&valptr))
 	} else if k == reflect.Slice {
-		val = reflect.MakeSlice(typ, 0, 0)
-		valelem = val
+		valptr = reflect.MakeSlice(typ, 0, 0)
+		val = valptr
+	} else if k == reflect.Map { //nolint:gocritic //keep it
+		valptr = reflect.MakeMap(typ)
+		val = valptr
 	} else if k == reflect.Chan {
-		val = reflect.MakeChan(typ, 0)
-		valelem = val
+		valptr = reflect.MakeChan(typ, 0)
+		val = valptr
 	} else if k == reflect.Func {
-		val = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value { return args })
-		valelem = val
+		valptr = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value { return args })
+		val = valptr
 	} else {
-		val = reflect.New(typ)
-		valelem = val.Elem()
+		valptr = reflect.New(typ)
+		val = valptr.Elem()
 	}
 	return
 }
@@ -1264,9 +1344,9 @@ func newFromType(typ reflect.Type) (val, valelem reflect.Value) {
 // to a new slice, so that we can set the whole slice via this
 // pointer later.
 func newFromTypeEspSlice(typ reflect.Type) (val, valelem reflect.Value) {
-	if k := typ.Kind(); k == reflect.Map { //nolint:gocritic //keep it
-		val = reflect.MakeMap(typ)
-		valelem = val
+	if k := typ.Kind(); k == reflect.Ptr {
+		valelem, _ = newFromTypeEspSlice(typ.Elem())
+		val = valelem.Addr()
 	} else if k == reflect.Slice {
 		var tp = tool.PointerTo(typ)
 		val = reflect.New(tp).Elem()
@@ -1274,15 +1354,8 @@ func newFromTypeEspSlice(typ reflect.Type) (val, valelem reflect.Value) {
 		// val.Set(valval.Addr())
 		val.Set(reflect.New(typ))
 		valelem = val
-	} else if k == reflect.Chan {
-		val = reflect.MakeChan(typ, 0)
-		valelem = val
-	} else if k == reflect.Func {
-		val = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value { return args })
-		valelem = val
 	} else {
-		val = reflect.New(typ)
-		valelem = val.Elem()
+		val, valelem = newFromType(typ)
 	}
 	return
 }
@@ -1293,22 +1366,22 @@ func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue re
 	vk := val.Kind()
 	if vk == reflect.Ptr { //nolint:nestif //keep it
 		if tool.IsNil(val) {
-			typ := m.Type().Elem() // make new instance of type pointed by pointer
-			val, _ = newFromType(typ)
-			m.SetMapIndex(key, val) // and set the new pointer into map
-			ptr = true              //
-			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			typOfValueOfMap := m.Type().Elem()    // make new instance of type pointed by pointer
+			val, _ = newFromType(typOfValueOfMap) //
+			m.SetMapIndex(key, val)               // and set the new pointer into map
+			ptr = true                            //
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typOfValueOfMap), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
 		}
 	} else if !val.IsValid() {
-		typ := m.Type().Elem()
-		if typ.Kind() != reflect.Interface {
+		typOfValueOfMap := m.Type().Elem()
+		if typOfValueOfMap.Kind() != reflect.Interface {
 			var valelem reflect.Value
-			val, valelem = newFromType(typ)
-			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
+			val, valelem = newFromType(typOfValueOfMap)
+			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typOfValueOfMap), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&valelem))
 			m.SetMapIndex(key, valelem)
 			ptr = true // val = vind
 		} else if originalValue.IsValid() {
-			typ = tool.Rdecodesimple(originalValue).Type()
+			typ := tool.Rdecodesimple(originalValue).Type()
 			val, _ = newFromTypeEspSlice(typ)
 			ptr = true
 			dbglog.Log("    val.typ: %v, key.typ: %v | '%v' -> %v", tool.Typfmt(typ), tool.Typfmtv(&key), tool.Valfmt(&key), tool.Valfmtptr(&val))
@@ -1329,12 +1402,13 @@ func ensureMapPtrValue(c *cpController, params *Params, m, key, originalValue re
 func cloneMapKey(c *cpController, params *Params, tgt, key reflect.Value) (ck reflect.Value, err error) {
 	keyType := tgt.Type().Key()
 	ptrToCopyKey := reflect.New(keyType)
-	dbglog.Log("  tgt.type: %v, ptrToCopyKey.type: %v", tool.Typfmtv(&tgt), tool.Typfmtv(&ptrToCopyKey))
+	dbglog.Log("     cloneMapKey(%v): tgt.type: %v, ptrToCopyKey.type: %v", tool.Valfmt(&key), tool.Typfmtv(&tgt), tool.Typfmtv(&ptrToCopyKey))
 	ck = ptrToCopyKey.Elem()
 	if err = c.copyTo(params, key, ck); err != nil {
+		log.Errorf("    cloneMapKey error on copyTo: %+v", err) // early break-point here
 		return
 	}
-	dbglog.Log("         <KEY> duplicated: '%v'", tool.Valfmtptr(&ck))
+	dbglog.Log("         <KEY> cloned: '%v'", tool.Valfmtptr(&ck))
 	return
 }
 
@@ -1403,18 +1477,12 @@ func copyChan(c *cpController, params *Params, from, to reflect.Value) (err erro
 		tgt.Set(from)
 		// Log("        after: %v -> %v", from.Interface(), tgt.Interface())
 	} else {
-		// to.SetPointer(from.Pointer())
-		dbglog.Log("    copy chan not support: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
-		err = ErrCannotCopy.FormatWith(tool.Valfmt(&from), tool.Typfmtv(&from), tool.Valfmt(&to), tool.Typfmtv(&to))
+		v := reflect.MakeChan(from.Type(), from.Cap())
+		to.Set(v)
+		// // to.SetPointer(from.Pointer())
+		// dbglog.Log("    copy chan not support: %v (%v) -> %v (%v)", from.Kind(), from.Type(), to.Kind(), to.Type())
+		// err = ErrCannotCopy.FormatWith(tool.Valfmt(&from), tool.Typfmtv(&from), tool.Valfmt(&to), tool.Typfmtv(&to))
 	}
-	// v := reflect.MakeChan(from.Type(), from.Cap())
-	// ft := from.Type()
-	// p := ptr(to, ft)
-	// if from.Type().ConvertibleTo(to.Type()) {
-	//	p.Set(v.Convert(to.Type()))
-	// } else {
-	//	p.Set(v)
-	// }
 	return
 }
 

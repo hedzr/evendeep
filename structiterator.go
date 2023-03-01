@@ -8,6 +8,7 @@ import (
 	"github.com/hedzr/log"
 
 	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/internal"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
@@ -505,9 +506,13 @@ func (s *fieldAccessorT) ensurePtrField() {
 			case reflect.Ptr:
 				if tool.IsNil(fv) {
 					dbglog.Log("   autoNew")
-					typ := sf.Type.Elem()
-					nv := reflect.New(typ)
-					fv.Set(nv)
+					if fv.CanSet() {
+						typ := sf.Type.Elem()
+						nv := reflect.New(typ)
+						fv.Set(nv)
+					} else {
+						log.Warnf("     gave up since fv.CanSet is false. fv.typ: %v", tool.Typfmtv(&fv))
+					}
 				}
 			default:
 			}
