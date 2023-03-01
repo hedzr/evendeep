@@ -1,14 +1,17 @@
 package evendeep
 
 import (
+	"strconv"
+
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 
 	"reflect"
 	"testing"
 )
 
-func testDeepEqual(printer func(msg string, args ...interface{}), got, expect interface{}) {
+func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) {
 	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
 	// switch kind:=a.Kind();kind {
 	// case reflect.Map:
@@ -229,4 +232,35 @@ func TestCopyArray(t *testing.T) {
 
 func TestCopyStructSlice(t *testing.T) {
 
+}
+
+func TestPointerOfPre(t *testing.T) {
+	type A struct {
+		A int
+	}
+	var a = &A{9}
+	var b = &a
+	t.Logf("a = %v, %p", a, a)
+	t.Logf("b = %v", b)
+	av := reflect.ValueOf(a)
+	ptr1 := av.Pointer()
+	t.Logf("a.pointer = %v", strconv.FormatUint(uint64(ptr1), 16))
+	np := reflect.New(av.Type())
+	t.Logf("np = %v, typ = %v", tool.Valfmt(&np), tool.Typfmtv(&np))
+
+	typ := av.Type() // type of *A
+	val := reflect.New(typ)
+	valElem := val.Elem()
+	ptr, _ := newFromType(typ.Elem())
+	valElem.Set(ptr)
+	t.Logf("ptr = %+v", *(val.Interface().(**A)))
+
+	// np.Elem().Set(av.Addr())
+	// t.Logf("np = %v, typ = %v", tool.Valfmt(&np), tool.Typfmtv(&np))
+	//
+	// avp, ok := pointerOf(av)
+	// if !ok {
+	// 	t.Fail()
+	// }
+	// t.Logf("avp = %v", tool.Valfmt(&avp))
 }

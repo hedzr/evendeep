@@ -243,35 +243,29 @@ func TestDeepCopyGenerally(t *testing.T) {
 	}
 
 	t.Run("MakeClone()", func(t *testing.T) {
-
-		var ret interface{} // nolint:gosimple
+		var ret typ.Any // nolint:gosimple
 		// x2 := &X2{N: nn[1:3]}
 
 		ret = evendeep.MakeClone(&x1)
 		x1.K = &x0
 		testIfBadCopy(t, x1, ret, ret, "MakeClone x1 -> new")
 		t.Log("MakeClone is done.")
-
 	})
 
 	t.Run("DeepCopy()", func(t *testing.T) {
-
-		var ret interface{}
+		var ret typ.Any
 		x2 := &evendeep.X2{N: nn[1:3]}
 
 		ret = evendeep.DeepCopy(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "DeepCopy x1 -> x2", true)
-
 	})
 
 	t.Run("NewDeepCopier().CopyTo()", func(t *testing.T) {
-
-		var ret interface{}
+		var ret typ.Any
 		x2 := &evendeep.X2{N: nn[1:3]}
 
 		ret = evendeep.New().CopyTo(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
-
 	})
 
 }

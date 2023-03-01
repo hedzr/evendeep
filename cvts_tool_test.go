@@ -15,6 +15,7 @@ import (
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 )
 
 type sample struct {
@@ -65,7 +66,7 @@ func TestForBool(t *testing.T) {
 
 func TestToBool(t *testing.T) {
 
-	for _, vi := range []interface{}{
+	for _, vi := range []typ.Any{
 		false,
 		0,
 		uint(0),
@@ -88,7 +89,7 @@ func TestToBool(t *testing.T) {
 		}
 	}
 
-	for _, vi := range []interface{}{
+	for _, vi := range []typ.Any{
 		true,
 		-1,
 		uint(1),
@@ -114,7 +115,7 @@ func TestToBool(t *testing.T) {
 }
 
 func TestForInteger(t *testing.T) {
-	for _, src := range []interface{}{
+	for _, src := range []typ.Any{
 		13579,
 		uint(13579),
 	} {
@@ -125,7 +126,7 @@ func TestForInteger(t *testing.T) {
 		}
 	}
 
-	var z interface{}
+	var z typ.Any
 	v1 := reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForInteger(v1).Interface(); x != "0" {
@@ -168,7 +169,7 @@ func TestToInteger(t *testing.T) {
 }
 
 func TestForUInteger(t *testing.T) {
-	for _, src := range []interface{}{
+	for _, src := range []typ.Any{
 		13579,
 		uint(13579),
 	} {
@@ -179,7 +180,7 @@ func TestForUInteger(t *testing.T) {
 		}
 	}
 
-	var z interface{}
+	var z typ.Any
 	v1 := reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
@@ -232,7 +233,7 @@ func TestForUIntegerHex(t *testing.T) {
 		}
 	}
 
-	var z interface{}
+	var z typ.Any
 	v1 := reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
@@ -264,7 +265,7 @@ func TestForUIntegerHex(t *testing.T) {
 }
 
 func TestForFloat(t *testing.T) {
-	for _, src := range []interface{}{
+	for _, src := range []typ.Any{
 		13579,
 		uint(13579),
 	} {
@@ -275,7 +276,7 @@ func TestForFloat(t *testing.T) {
 		}
 	}
 
-	var z interface{}
+	var z typ.Any
 	v1 := reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForFloat(v1).Interface(); x != "0" {
@@ -316,7 +317,7 @@ func TestToFloat(t *testing.T) {
 }
 
 func TestForComplex(t *testing.T) {
-	for src, exp := range map[interface{}]string{
+	for src, exp := range map[typ.Any]string{
 		13579:        "(13579+0i)",
 		uint(13579):  "(13579+0i)",
 		1.316:        "(1.316+0i)",
@@ -330,7 +331,7 @@ func TestForComplex(t *testing.T) {
 		}
 	}
 
-	var z interface{}
+	var z typ.Any
 	v1 := reflect.ValueOf(z)
 	v1 = tool.Rdecodesimple(v1)
 	if x := rForComplex(v1).Interface(); x != "(0+0i)" {
@@ -396,7 +397,7 @@ func TestToStringConverter_Transform(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString("hello")
 
-	for sv, exp := range map[interface{}]string{
+	for sv, exp := range map[typ.Any]string{
 		"sss":           "sss",
 		true:            "true",
 		false:           "false",
@@ -472,7 +473,7 @@ var tgtTypes = map[reflect.Kind]reflect.Type{
 func TestFromStringConverter_Transform(t *testing.T) {
 	var bbc fromStringConverter
 
-	for src, tgtm := range map[string]map[reflect.Kind]interface{}{
+	for src, tgtm := range map[string]map[reflect.Kind]typ.Any{
 		"sss":    {reflect.String: "sss"},
 		"true":   {reflect.Bool: true},
 		"false":  {reflect.Bool: false},
@@ -518,7 +519,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
 
-	var src interface{} = int64(13 * time.Hour)
+	var src typ.Any = int64(13 * time.Hour)
 	svv := reflect.ValueOf(src)
 	tgt, err := bbc.Transform(nil, svv, tgtType)
 	if err != nil {
@@ -529,7 +530,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	t.Run("toDurationConverter = pre", func(t *testing.T) {
 
 		for ix, cas := range []struct {
-			src, tgt, expect interface{}
+			src, tgt, expect typ.Any
 		}{
 			{"71ms", &dur, 71 * time.Millisecond},
 			{"9h71ms", &dur, 9*time.Hour + 71*time.Millisecond},

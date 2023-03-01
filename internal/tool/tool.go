@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/typ"
 )
 
 func PtrOf(tgt reflect.Value) reflect.Value {
@@ -82,7 +83,7 @@ func inspectStructV(val reflect.Value, level int) {
 		typeField := val.Type().Field(i)
 		valueField, address := testFieldValue(valField)
 
-		var v interface{}
+		var v typ.Any
 		if valueField.IsValid() && !IsZero(valueField) && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
@@ -96,7 +97,7 @@ func inspectStructV(val reflect.Value, level int) {
 }
 
 // InspectStruct dumps wach field in a struct with its reflect information.
-func InspectStruct(v interface{}) {
+func InspectStruct(v typ.Any) {
 	inspectStructV(reflect.ValueOf(v), 0)
 }
 
@@ -149,7 +150,7 @@ func PartialContains(names []string, partialNeedle string) (index int, matched s
 }
 
 // ReverseAnySlice reverse any slice/array.
-func ReverseAnySlice(s interface{}) {
+func ReverseAnySlice(s typ.Any) {
 	n := reflect.ValueOf(s).Len()
 	swap := reflect.Swapper(s)
 	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
@@ -158,7 +159,7 @@ func ReverseAnySlice(s interface{}) {
 }
 
 // FindInSlice finds a value elv is in array ns.
-func FindInSlice(ns reflect.Value, elv interface{}, i int) (found bool) {
+func FindInSlice(ns reflect.Value, elv typ.Any, i int) (found bool) {
 	for j := 0; j < ns.Len(); j++ {
 		tev := ns.Index(j).Interface()
 		// dbglog.Log("  testing tgt[%v](%v) and src[%v](%v)", j, tev, i, elv)

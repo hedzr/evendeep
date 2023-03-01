@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"github.com/hedzr/evendeep/diff"
+	"github.com/hedzr/evendeep/typ"
 
 	"testing"
 )
@@ -41,7 +42,7 @@ func TestDeepEqual(t *testing.T) {
 }
 
 type testCase struct {
-	a, b  interface{}
+	a, b  typ.Any
 	diff  string
 	equal bool
 	opt   diff.Opt

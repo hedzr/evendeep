@@ -10,6 +10,7 @@ import (
 	"github.com/hedzr/log"
 
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 )
 
 func TestNestedRecovery(t *testing.T) {
@@ -170,7 +171,7 @@ type X0 struct{}
 // X1 type for testing
 type X1 struct {
 	A uintptr
-	B map[string]interface{}
+	B map[string]typ.Any
 	C bytes.Buffer
 	D []string
 	E []*X0
@@ -178,7 +179,7 @@ type X1 struct {
 	G chan bool
 	H chan int
 	I func()
-	J interface{}
+	J typ.Any
 	K *X0
 	L unsafe.Pointer
 	M unsafe.Pointer
@@ -191,7 +192,7 @@ type X1 struct {
 // X2 type for testing
 type X2 struct {
 	A uintptr
-	B map[string]interface{}
+	B map[string]typ.Any
 	C bytes.Buffer
 	D []string
 	E []*X0
@@ -199,7 +200,7 @@ type X2 struct {
 	G chan bool
 	H chan int
 	I func()
-	J interface{}
+	J typ.Any
 	K *X0
 	L unsafe.Pointer
 	M unsafe.Pointer

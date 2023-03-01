@@ -2,6 +2,7 @@ package tool_test
 
 import (
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 
 	"reflect"
 	"testing"
@@ -17,7 +18,7 @@ func TestRdecode(t *testing.T) {
 	vc := reflect.ValueOf(c)
 	t.Logf("         vc (%v (%v)) : %v, &b = %v, c = %v, *c -> %v", vc.Kind(), vc.Type(), vc.Interface(), &b, c, *c)
 
-	var ii interface{} // nolint:gosimple
+	var ii typ.Any // nolint:gosimple
 
 	ii = c
 
@@ -45,7 +46,7 @@ func Test1(t *testing.T) {
 	vb := reflect.ValueOf(b)
 	t.Logf("vb (%v (%v)) : %v, &b = %v", vb.Kind(), vb.Type(), vb.Interface(), &b)
 
-	var ii interface{} // nolint:gosimple
+	var ii typ.Any // nolint:gosimple
 
 	ii = b
 	vi := reflect.ValueOf(&ii)
@@ -66,7 +67,7 @@ func TestRskipRdecodeAndSoOn(t *testing.T) {
 	vb := reflect.ValueOf(b)
 	t.Logf("vb (%v (%v)) : %v, &b = %v", vb.Kind(), vb.Type(), vb.Interface(), &b)
 
-	var ii interface{}
+	var ii typ.Any
 
 	ii = b
 	vi := reflect.ValueOf(&ii)

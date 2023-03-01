@@ -4,6 +4,7 @@ import (
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/diff/testdata" //nolint:typecheck
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/typ"
 
 	"reflect"
 	"testing"
@@ -34,7 +35,7 @@ func newRecursiveStruct(key int) *RecursiveStruct {
 }
 
 type testCase struct {
-	a, b  interface{}
+	a, b  typ.Any
 	diff  string
 	equal bool
 	opt   diff.Opt
@@ -81,8 +82,8 @@ func TestPrettyDiff(t *testing.T) {
 		},
 
 		{
-			[]interface{}{3, 0, 9},
-			[]interface{}{9, 3, 0},
+			[]typ.Any{3, 0, 9},
+			[]typ.Any{9, 3, 0},
 			"",
 			true,
 			diff.WithSliceOrderedComparison(true),
