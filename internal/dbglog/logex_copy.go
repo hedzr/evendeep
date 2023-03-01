@@ -1,12 +1,12 @@
-package dbglog_test
+package dbglog
 
 // a little copy from logex, so we can avoid importing it
 
 import (
-	"github.com/hedzr/log"
-
 	"io"
 	"testing"
+
+	"github.com/hedzr/log"
 )
 
 // LogCapturer reroutes testing.T log output
@@ -34,5 +34,21 @@ func NewCaptureLog(tb testing.TB) LogCapturer {
 	if !testing.Verbose() {
 		log.SetOutput(lc)
 	}
+	return &lc
+}
+
+// // NewCaptureLogOld redirects logrus output to testing.Log
+// func NewCaptureLogOld(tb testing.TB) LogCapturer {
+// 	lc := logCapturer{TB: tb, origOut: logrus.StandardLogger().Out}
+// 	if !testing.Verbose() {
+// 		log.SetOutput(lc)
+// 	}
+// 	return &lc
+// }
+
+// CaptureLog redirects logrus output to testing.Log
+func CaptureLog(tb testing.TB) LogCapturer {
+	lc := logCapturer{TB: tb, origOut: log.GetOutput()}
+	log.SetOutput(lc)
 	return &lc
 }
