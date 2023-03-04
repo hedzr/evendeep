@@ -44,3 +44,13 @@ func SetUnexportedField(field, value reflect.Value) {
 	dat := ptr.Elem()
 	dat.Set(value)
 }
+
+func SetUnexportedFieldIfMap(field, key, value reflect.Value) {
+	ptr := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr()))
+	dat := ptr.Elem()
+	if field.Kind() == reflect.Map {
+		dat.SetMapIndex(key, value)
+	} else {
+		dat.Set(value)
+	}
+}
