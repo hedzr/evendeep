@@ -1,5 +1,12 @@
 ## HISTORY
 
+- v0.4.1
+  - public `dbglog` subpackage, added Err/Wrn/Colored
+  - added ability to disable dbglog.Log at runtime
+  - improved internal functions (tool.Valfmt, cl.SetUnexportedFieldIfMap, ...)
+  - improved dbglog.Log outputting
+  - fixed bugs
+
 - v0.4.0
   - fixed autonew when copying to nil member
   - improved diff on chan
