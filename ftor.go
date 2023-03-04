@@ -1348,6 +1348,7 @@ func matchTypeAndSetMapIndex(c *cpController, params *Params, m, key, val reflec
 }
 
 func trySetMapIndex(c *cpController, params *Params, m, key, val reflect.Value) {
+	// dbglog.Colored(color.LightMagenta, "    setting map index: %v -> %v", tool.Valfmt(&key), tool.Valfmt(&val))
 	if params != nil && params.controller != nil && params.accessor != nil && params.controller.copyUnexportedFields {
 		if fld := params.accessor.StructField(); fld != nil {
 			// in a struct
