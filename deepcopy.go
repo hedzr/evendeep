@@ -1,9 +1,9 @@
 package evendeep
 
 import (
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 
 	"reflect"

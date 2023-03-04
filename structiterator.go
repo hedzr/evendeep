@@ -7,10 +7,10 @@ import (
 
 	"github.com/hedzr/log"
 
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 )
 
@@ -363,19 +363,26 @@ func (s *fieldAccessorT) Set(v reflect.Value) {
 	if s.isStruct {
 		// dbglog.Log("    target struct type: %v", tool.Typfmt(s.structType))
 		dbglog.Log("    setting struct.%q", s.structType.Field(s.index).Name)
-		sv := tool.Rindirect(*s.structValue).Field(s.index)
+		// if !tool.IsZero(*s.structValue) {
+		sv := tool.Rindirect(*s.structValue)
+		fv := sv.Field(s.index)
 		dbglog.Log("      set %v (%v) -> struct.%q", tool.Valfmt(&v), tool.Typfmtv(&v), s.structType.Field(s.index).Name)
 		if v.IsValid() && !tool.IsZero(v) {
 			dbglog.Log("      set to v : %v", tool.Valfmt(&v))
-			sv.Set(v)
+			fv.Set(v)
 		} else {
 			dbglog.Log("      setToZero")
-			setToZero(&sv)
+			setToZero(&fv)
 		}
+		// } else {
+		// 	dbglog.Wrn(`    setting struct.%q, but struct is zero (typ = %v).`, s.structType.Field(s.index).Name, tool.Typfmt(s.structType))
+		// }
 	} else if s.structType.Kind() == reflect.Map {
 		key := s.mapkey()
 		dbglog.Log("    set %v (%v) -> map[%v]", tool.Valfmt(&v), tool.Typfmtv(&v), tool.Valfmt(&key))
 		s.structValue.SetMapIndex(key, v)
+	} else {
+		dbglog.Wrn(`    setting struct field value, but the container has type: %v`, tool.Typfmt(s.structType))
 	}
 }
 func (s *fieldAccessorT) SourceField() *tableRecT { return s.sourceTableRec }
@@ -495,21 +502,35 @@ func (s *fieldAccessorT) incr() *fieldAccessorT {
 	s.structField = nil
 	return s
 }
-func (s *fieldAccessorT) ensurePtrField() {
+func (s *fieldAccessorT) ensurePtrField() (newed bool) {
 	if s.isStruct && s.index < s.structType.NumField() {
 		if s.structValue != nil {
 			sf := s.structType.Field(s.index)
 			vind := tool.Rindirect(*s.structValue)
+			// if tool.IsZero(vind) {
+			// 	fv := vind.Field(s.index)
+			// 	dbglog.Wrn(`zero value struct cannot .Field(): typ = %v, vind = %v | fv: %v`, tool.Typfmtv(&vind), tool.Valfmt(&vind), tool.Valfmt(&fv))
+			// 	return
+			// }
+			if vind.Kind() != reflect.Struct {
+				dbglog.Wrn(`vind isn't struct, cannot .Field(): typ = %v, vind = %v`, tool.Typfmtv(&vind), tool.Valfmt(&vind))
+				return
+			}
 			fv := vind.Field(s.index)
 
 			switch kind := sf.Type.Kind(); kind { //nolint:exhaustive //no need
 			case reflect.Ptr:
 				if tool.IsNil(fv) {
 					dbglog.Log("   autoNew")
-					if fv.CanSet() {
+					if settable := fv.CanSet(); settable || !tool.IsExported(&sf) { // unexported field, try new it
 						typ := sf.Type.Elem()
 						nv := reflect.New(typ)
-						fv.Set(nv)
+						if settable {
+							fv.Set(nv)
+						} else {
+							cl.SetUnexportedField(fv, nv)
+						}
+						newed = true
 					} else {
 						log.Warnf("     gave up since fv.CanSet is false. fv.typ: %v", tool.Typfmtv(&fv))
 					}
@@ -518,7 +539,9 @@ func (s *fieldAccessorT) ensurePtrField() {
 			}
 		}
 	}
+	return
 }
+
 func (s *fieldAccessorT) mapkey() reflect.Value {
 	if s.sourceTableRec == nil {
 		var ck reflect.Value
@@ -837,16 +860,19 @@ retryExpand:
 		if s.autoExpandStruct {
 			tind := tool.RindirectType(field.Type)
 			k1 := tind.Kind()
-			dbglog.Log("typ: %v, name: %v | %v", tool.Typfmt(tind), field.Name, field)
+			dbglog.Log("   typ: %v, name: %v | %v", tool.Typfmt(tind), field.Name, field)
 			if s.autoNew {
-				lastone.ensurePtrField()
+				var did = lastone.ensurePtrField()
+				if did {
+					dbglog.Log("     lastone.ensurePtrField() made ptr field newed.")
+				}
 			}
 			if k1 == reflect.Struct &&
 				!srcFieldIsFuncAndTargetShouldNotExpand &&
 				!s.typShouldBeIgnored(tind) {
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
-				dbglog.Log("    -- (retry) -> filed is struct, typ: %v\n", tool.Typfmt(tind))
+				dbglog.Log("    -- (retry) -> filed is struct, typ: %v", tool.Typfmt(tind))
 				inretry = true
 				goto retryExpand
 			}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/hedzr/evendeep/internal/dbglog"
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/natsort"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"

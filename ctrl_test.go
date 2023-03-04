@@ -16,9 +16,9 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 
 	"github.com/hedzr/evendeep"
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
 )
@@ -862,10 +862,11 @@ func TestStructWithSourceExtractor(t *testing.T) {
 				return m[targetName]
 			}
 			return nil
-		}))
+		}),
+	)
 
 	if tgt.A != 12 || err != nil {
-		t.FailNow()
+		t.Fatalf(`err: %+v`, err)
 	}
 }
 

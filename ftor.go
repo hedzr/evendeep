@@ -7,9 +7,9 @@ import (
 	"github.com/hedzr/log"
 	"github.com/hedzr/log/color"
 
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
 
