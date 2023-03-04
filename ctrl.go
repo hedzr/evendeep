@@ -178,6 +178,7 @@ func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integra
 		if e := recover(); e != nil {
 			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v])",
 				tool.RindirectType(from.Type()), tool.RindirectType(to.Type())).
+				WithMaxObjectStringLength(maxObjectStringLen).
 				WithData(e).
 				WithTaggedData(errors.TaggedData{
 					"source": from,
@@ -224,8 +225,8 @@ func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to re
 	if dc, ok := fromObj.(Cloneable); ok { //nolint:gocritic // no need to rewrite to 'switch'
 		to.Set(reflect.ValueOf(dc.Clone()))
 		processed = true
-	} else if dc, ok1 := fromObj.(DeepCopyable); ok1 {
-		to.Set(reflect.ValueOf(dc.DeepCopy()))
+	} else if dc1, ok1 := fromObj.(DeepCopyable); ok1 {
+		to.Set(reflect.ValueOf(dc1.DeepCopy()))
 		processed = true
 	}
 	return
@@ -270,3 +271,5 @@ func (c *cpController) SaveFlagsAndRestore() func() {
 		c.flags = saved
 	}
 }
+
+const maxObjectStringLen = 320
