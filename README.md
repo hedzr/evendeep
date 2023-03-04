@@ -48,6 +48,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.3
+  - fixed sometimes a ptr to new slice has not been cleaned in time
+
 - v0.4.1
   - public `dbglog` subpackage, added Err/Wrn/Colored
   - added ability to disable dbglog.Log at runtime
