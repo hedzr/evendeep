@@ -195,6 +195,7 @@ func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integra
 		}
 	}()
 
+	params.resultForNewSlice = nil
 	err = cb(c, params, from, to)
 	return
 }
