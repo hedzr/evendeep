@@ -183,6 +183,15 @@ func Typfmtptr(t *reflect.Type) string { //nolint:gocritic //ptrToRefParam: cons
 
 // Valfmtptr will step into a ptr value at first, then Valfmt.
 func Valfmtptr(v *reflect.Value) string {
+	s := ValfmtptrPure(v)
+	if len(s) > maxValueStringLen {
+		return s[0:maxValueStringLen-3] + "..."
+	}
+	return s
+}
+
+// ValfmtptrPure will step into a ptr value at first, then Valfmt.
+func ValfmtptrPure(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
@@ -193,7 +202,21 @@ func Valfmtptr(v *reflect.Value) string {
 	return Valfmt(v)
 }
 
+const maxValueStringLen = 320
+
+func Valfmtv(v reflect.Value) string {
+	return Valfmt(&v)
+}
+
 func Valfmt(v *reflect.Value) string {
+	s := ValfmtPure(v)
+	if len(s) > maxValueStringLen {
+		return s[0:maxValueStringLen-3] + "..."
+	}
+	return s
+}
+
+func ValfmtPure(v *reflect.Value) string {
 	if v == nil || !v.IsValid() {
 		return "<invalid>"
 	}
