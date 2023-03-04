@@ -13,9 +13,9 @@ import (
 
 	"github.com/hedzr/log"
 
+	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/dbglog"
 	"github.com/hedzr/evendeep/internal/syscalls"
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
@@ -449,7 +449,7 @@ func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, targe
 func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	tgt, tgtptr := tool.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
-	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
+	dbglog.Log("     target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
 		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
 		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
 
@@ -597,11 +597,11 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 		} else {
 			err = ErrCannotSet.FormatWith(tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tool.Valfmt(&ret), tool.Typfmtv(&ret))
 		}
-		dbglog.Log("  tgt: %v (ret = %v)", tool.Valfmt(&tgt), tool.Valfmt(&ret))
+		dbglog.Log("  tgt / ret transformed: %v / %v", tool.Valfmt(&tgt), tool.Valfmt(&ret))
 		return
 	}
 
-	if !errors.Is(e, strconv.ErrSyntax) && !errors.Is(e, strconv.ErrRange) {
+	if !errors.IsAnyOf(e, strconv.ErrSyntax, strconv.ErrRange) {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  try running postCopyTo()")
 		err = c.postCopyTo(ctx, source, target)
@@ -610,56 +610,56 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 }
 
 // Transform will transform source string to target type (bool, int, ...)
-func (c *fromStringConverter) Transform(ctx *ValueConverterContext,
-	source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-	if source.IsValid() {
-		// var processed bool
-		// if processed, target, err = c.preprocess(ctx, source, targetType); processed {
-		//	return
-		// }
+func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	if !source.IsValid() {
+		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
+		return
+	}
 
-		var processed bool
-		if target, processed = c.checkSource(ctx, source, targetType); processed {
-			return
-		}
+	// var processed bool
+	// if processed, target, err = c.preprocess(ctx, source, targetType); processed {
+	//	return
+	// }
 
-		switch k := targetType.Kind(); k { //nolint:exhaustive //no need
-		case reflect.Bool:
-			target = rToBool(source)
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			target, err = rToInteger(source, targetType)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			target, err = rToUInteger(source, targetType)
+	var processed bool
+	if target, processed = c.checkSource(ctx, source, targetType); processed {
+		return
+	}
 
-		case reflect.Uintptr:
-			target = rToUIntegerHex(source, targetType)
-		// case reflect.UnsafePointer:
-		//	// target = rToUIntegerHex(source, targetType)
-		//	err = errors.InvalidArgument
-		// case reflect.Ptr:
-		//	//target = rToUIntegerHex(source, targetType)
-		//	err = errors.InvalidArgument
+	switch k := targetType.Kind(); k { //nolint:exhaustive //no need
+	case reflect.Bool:
+		target = rToBool(source)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		target, err = rToInteger(source, targetType)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		target, err = rToUInteger(source, targetType)
 
-		case reflect.Float32, reflect.Float64:
-			target, err = rToFloat(source, targetType)
-		case reflect.Complex64, reflect.Complex128:
-			target, err = rToComplex(source, targetType)
+	case reflect.Uintptr:
+		target = rToUIntegerHex(source, targetType)
+	// case reflect.UnsafePointer:
+	//	// target = rToUIntegerHex(source, targetType)
+	//	err = errors.InvalidArgument
+	// case reflect.Ptr:
+	//	//target = rToUIntegerHex(source, targetType)
+	//	err = errors.InvalidArgument
 
-		case reflect.String:
-			target = source
+	case reflect.Float32, reflect.Float64:
+		target, err = rToFloat(source, targetType)
+	case reflect.Complex64, reflect.Complex128:
+		target, err = rToComplex(source, targetType)
 
-		// reflect.Array
-		// reflect.Chan
-		// reflect.Func
-		// reflect.Interface
-		// reflect.Map
-		// reflect.Slice
-		// reflect.Struct
+	case reflect.String:
+		target = source
 
-		default:
-			target, err = c.convertToOrZeroTarget(ctx, source, targetType)
-		}
-	} else {
+	// reflect.Array
+	// reflect.Chan
+	// reflect.Func
+	// reflect.Interface
+	// reflect.Map
+	// reflect.Slice
+	// reflect.Struct
+
+	default:
 		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 	}
 	return

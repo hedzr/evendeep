@@ -32,8 +32,9 @@ type Params struct {
 	// dstAnonymous bool                 //
 	// mergingMode    bool                 // base state
 
-	visited  map[visit]visiteddestination
-	visiting visit
+	visited           map[visit]visiteddestination
+	visiting          visit
+	resultForNewSlice *reflect.Value
 
 	targetIterator structIterable //
 	accessor       accessor       //
@@ -209,7 +210,10 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	if params == nil || params.controller == nil || params.accessor == nil {
 		return
 	}
-	if fld := params.accessor.StructField(); fld != nil && params.controller.copyUnexportedFields {
+	if !params.controller.copyUnexportedFields {
+		return
+	}
+	if fld := params.accessor.StructField(); fld != nil {
 		// in a struct
 		if !tool.IsExported(fld) {
 			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)",
