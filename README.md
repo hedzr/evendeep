@@ -48,6 +48,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.7
+  - upgrade deps
+
 - v0.4.3
   - fixed sometimes a ptr to new slice has not been cleaned in time
 
