@@ -7,15 +7,13 @@ import (
 	"time"
 )
 
-var Randtool = &randomizer{}
+var (
+	Randtool = &randomizer{}
 
-type randomizer struct {
-	lastErr error //nolint:unused,structcheck //usable
-}
-
-var hundred = big.NewInt(100)                                            //nolint:unused,deadcode,varcheck //test
-var seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
-var mu sync.Mutex
+	hundred    = big.NewInt(100)                                         //nolint:unused,deadcode,varcheck //test
+	seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
+	mu         sync.Mutex
+)
 
 // var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 const (
@@ -31,32 +29,42 @@ const (
 	ASCII = AlphabetNumerics + Symbols
 )
 
+type randomizer struct {
+	lastErr error //nolint:unused,structcheck //usable
+}
+
 func (r *randomizer) Next() int {
 	mu.Lock()
 	defer mu.Unlock()
 	return seededRand.Int()
 }
+
 func (r *randomizer) NextIn(max int) int {
 	mu.Lock()
 	defer mu.Unlock()
 	return seededRand.Intn(max)
 }
+
 func (r *randomizer) inRange(min, max int) int {
 	mu.Lock()
 	defer mu.Unlock()
 	return seededRand.Intn(max-min) + min
 }
+
 func (r *randomizer) NextInRange(min, max int) int { return r.inRange(min, max) }
+
 func (r *randomizer) NextInt63n(n int64) int64 {
 	mu.Lock()
 	defer mu.Unlock()
 	return seededRand.Int63n(n)
 }
+
 func (r *randomizer) NextIntn(n int) int {
 	mu.Lock()
 	defer mu.Unlock()
 	return seededRand.Intn(n)
 }
+
 func (r *randomizer) NextFloat64() float64 {
 	mu.Lock()
 	defer mu.Unlock()
