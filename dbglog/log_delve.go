@@ -9,11 +9,13 @@ import (
 	"gopkg.in/hedzr/errors.v3"
 )
 
+// LogValid shows dbglog.Log is enabled or abandoned
 const LogValid bool = true
 
-func SetLogEnabled()  { logValid = true }
-func SetLogDisabled() { logValid = false }
+func SetLogEnabled()  { logValid = true }  // enables dbglog.Log at runtime
+func SetLogDisabled() { logValid = false } // disables dbglog.Log at runtime
 
+// DeferVisit moves errors in container ec, and log its via dbglog.Log
 func DeferVisit(ec errors.Error, err *error) {
 	ec.Defer(err)
 	if *err != nil {

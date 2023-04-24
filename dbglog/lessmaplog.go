@@ -3,6 +3,13 @@
 
 package dbglog
 
+// MoreMapLog shows the buildtag 'moremaplog' is enabled or not.
+//
+// This flag is used for hedzr/evendeep package so that it can print
+// more debug logging messages when copying map struct.
+//
+// You may borrow the mechanism to dump the more verbose messages for
+// debugging purpose.
 const MoreMapLog = true
 
 // DisableLog can be used to disable dbglog.Log at runtime.
