@@ -1670,7 +1670,12 @@ func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error
 			return //nolint:nilerr //i do
 		}
 	}
-	err = ErrUnknownState
+	if err == nil {
+		err = ErrUnknownState.WithTaggedData(errors.TaggedData{ // record the sites
+			"source": tool.Valfmt(&toind),
+			"target": tool.Valfmt(&newval),
+		})
+	}
 	return
 }
 
