@@ -1,5 +1,13 @@
 ## HISTORY
 
+- v0.4.8
+  - fixed: check unexported field recursively now
+  - improved some lines for better context logging in debugging
+  - little changes
+
+- v0.4.7
+  - upgrade deps
+
 - v0.4.3
   - fixed sometimes a ptr to new slice has not been cleaned in time
 

@@ -48,6 +48,11 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.8
+  - fixed: check unexported field recursively now
+  - improved some lines for better context logging in debugging
+  - little changes
+
 - v0.4.7
   - upgrade deps
 
