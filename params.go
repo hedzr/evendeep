@@ -205,6 +205,22 @@ func (params *Params) inMergeMode() bool {
 		params.flags.IsAnyFlagsOK(cms.SliceMerge, cms.MapMerge)
 }
 
+func (params *Params) dstFieldIsExportedR() (copyUnexportedFields, isExported bool) {
+	k := reflect.Invalid
+	if params != nil && params.dstDecoded != nil {
+		k = params.dstDecoded.Kind()
+	}
+	if k != reflect.Struct || params.accessor == nil {
+		return false, true // non-struct-field target, treat it as exported
+	}
+
+	isExported, copyUnexportedFields = tool.IsExported(params.accessor.StructField()), params.controller.copyUnexportedFields
+	if isExported && params.owner != nil {
+		copyUnexportedFields, isExported = params.owner.dstFieldIsExportedR()
+	}
+	return
+}
+
 // processUnexportedField try to set newval into target if it's an unexported field.
 func (params *Params) processUnexportedField(target, newval reflect.Value) (processed bool) {
 	if params == nil || params.controller == nil || params.accessor == nil {

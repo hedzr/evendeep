@@ -1679,17 +1679,35 @@ func setTargetValue1(params *Params, to, toind, newval reflect.Value) (err error
 }
 
 func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
-	k := reflect.Invalid
-	if params != nil && params.dstDecoded != nil {
-		k = params.dstDecoded.Kind()
-	}
-
-	if k == reflect.Struct && params.accessor != nil && !tool.IsExported(params.accessor.StructField()) {
-		if params.controller.copyUnexportedFields {
+	if copyUnexportedFields, isExported := params.dstFieldIsExportedR(); !isExported {
+		if copyUnexportedFields {
 			cl.SetUnexportedField(to, newval)
-		} // else ignore the unexported field
+		} // else do nothing
 		return
 	}
+	
+	// const unexportedR = true
+	// if unexportedR {
+	// 	if copyUnexportedFields, isExported := params.dstFieldIsExportedR(); !isExported {
+	// 		if copyUnexportedFields {
+	// 			cl.SetUnexportedField(to, newval)
+	// 		} // else do nothing
+	// 		return
+	// 	}
+	// } else {
+	// 	k := reflect.Invalid
+	// 	if params != nil && params.dstDecoded != nil {
+	// 		k = params.dstDecoded.Kind()
+	// 	}
+	// 
+	// 	if k == reflect.Struct && params.accessor != nil && !tool.IsExported(params.accessor.StructField()) {
+	// 		if params.controller.copyUnexportedFields {
+	// 			cl.SetUnexportedField(to, newval)
+	// 		} // else ignore the unexported field
+	// 		return
+	// 	}
+	// }
+
 	if to.CanSet() {
 		to.Set(newval)
 		return
