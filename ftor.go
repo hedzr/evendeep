@@ -436,11 +436,10 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 
 		fn, srcval, dstval := sourceField.FieldName(), sourceField.FieldValue(), params.accessor.FieldValue()
 
+		dstfieldname := params.accessor.StructFieldName()
 		// log.VDebugf will be tuned and stripped off in normal build.
 		dbglog.Colored(color.LightMagenta, "%d. fld %q (%v) -> %s (%v) | (%v) -> (%v)", *i,
-			fn, tool.Typfmtv(srcval),
-			params.accessor.StructFieldName(),
-			tool.Typfmt(*params.accessor.FieldType()),
+			fn, tool.Typfmtv(srcval), dstfieldname, tool.Typfmt(*params.accessor.FieldType()),
 			tool.Valfmt(srcval), tool.Valfmt(dstval))
 
 		// The following if clause will be stripped off completely
@@ -1699,6 +1698,9 @@ func setTargetValue2(params *Params, to, newval reflect.Value) (err error) {
 		//	return
 	}
 
-	err = ErrUnknownState
+	err = ErrUnknownState.WithTaggedData(errors.TaggedData{ // record the sites
+		"source": tool.Valfmt(&to),
+		"target": tool.Valfmt(&newval),
+	})
 	return
 }
