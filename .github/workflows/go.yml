@@ -19,11 +19,12 @@ env:
   APPS: ""                    # optional, a space separated name list.
   FROM_FOLDER: "."            # Use "." for building "cli"; use "./_examples" for building them
   IMAGE_NAME: ""
-  ENABLE_DOCKER: 1
-  ENABLE_Apps_Building: 0
-  ENABLE_FULL_ARCHes_TEST: 1
+  ENABLE_DOCKER: 0
+  ENABLE_Apps_Building: 1
+  ENABLE_FULL_ARCHes_TEST: 0
   ENABLE_Coveralls_Sender: 0
   ENABLE_Simple_Release: 1    # simple (1), or normal (0): build+docker+brew+release
+  ENABLE_Homebrew: 0
   #HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
   #GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -51,7 +52,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: Test
         run: |
-          if ((ENABLE_FULL_ARCHes_TESTS)); then
+          if [[ $ENABLE_FULL_ARCHes_TESTS -eq 1 ]]; then
             for GOOS in $(go tool dist list|awk -F'/' '{print $1}'|sort -u); do
               echo -e "\n\nTESTING FOR $GOOS ...\n"
               go test ./...
@@ -60,7 +61,7 @@ jobs:
             GOSUMDB=off go mod download
             # go install -v github.com/swaggo/swag/cmd/swag
             # go generate ./...
-            go build -v ./cli/...
+            [ -d ./cli ] && go build -v ./cli/... || go build -v ./...
             go test -v ./...
           fi
 
@@ -99,17 +100,21 @@ jobs:
           parallel: true
           parallel-finished: true
 
+  #
+  # https://docs.github.com/en/actions/learn-github-actions/contexts#job-context
   simple-release:
     runs-on: ubuntu-latest
     needs: coverage
-    if: startsWith(github.ref, 'refs/tags/') && env.ENABLE_Simple_Release != 0
+    if: startsWith(github.ref, 'refs/tags/')            # in job.<job-id>.if, 'env' is not available !!
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        if: env.ENABLE_Simple_Release != 0
       # - name: Generate Changelog
       #  run: echo "# Good things have arrived" > ${{ github.workspace }}-CHANGELOG.txt
       - name: Release
         uses: softprops/action-gh-release@v1
+        if: env.ENABLE_Simple_Release != 0
         with:
           # body_path: ${{ github.workspace }}-CHANGELOG.txt
           body_path: RELNOTES.md
@@ -296,7 +301,7 @@ jobs:
           ls -la bin/*
 
       - name: bump homebrew-brew
-        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release == 0
+        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release == 0 && env.ENABLE_Homebrew != 0
         env:
           HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
@@ -363,7 +368,7 @@ jobs:
           ACTOR=$(echo $GITHUB_ACTOR | tr '[:upper:]' '[:lower:]')
           GOT=0
           for f in RELNOTES relnotes RELNOTES.md REL-NOTES.md relnotes.md rel-notes.md; do
-            if ! (($GOT)); then
+            if [[ $GOT -eq 0 ]]; then
               if [ -f $f ]; then
                 r=$(cat $f)
                 r="${r//'%'/'%25'}"
