@@ -48,6 +48,10 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.13
+  - fixed test on strconv.NumError
+  - upgrade deps
+
 - v0.4.8
   - fixed: check unexported field recursively now
   - improved some lines for better context logging in debugging
