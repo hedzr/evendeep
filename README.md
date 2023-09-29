@@ -50,6 +50,8 @@ This library is designed for making everything customizable.
 
 - v0.4.13
   - fixed test on strconv.NumError
+    - and errors.Is(err, strconv.SyntaxError) is invalid now
+    - use errors.Is(err, strconv.NumError{Err:strconv.SyntaxError}) as a workaround
   - upgrade deps
 
 - v0.4.8
