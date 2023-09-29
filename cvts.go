@@ -601,7 +601,7 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 		return
 	}
 
-	if !errors.IsAnyOf(e, strconv.ErrSyntax, strconv.ErrRange) {
+	if !errors.Is(e, &strconv.NumError{Err: strconv.ErrSyntax}) && !errors.IsAnyOf(e, strconv.ErrSyntax, strconv.ErrRange) {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  try running postCopyTo()")
 		err = c.postCopyTo(ctx, source, target)
