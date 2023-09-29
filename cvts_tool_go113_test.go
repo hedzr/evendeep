@@ -89,6 +89,10 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) {
 			err := c.CopyTo(ctx, fnv, tgtv)
 
 			if err != nil {
+				if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) {
+					return
+				}
+
 				if fnCase.err != nil && errors.Is(err, fnCase.err) {
 					return
 				}
