@@ -2,7 +2,6 @@ package evendeep
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -934,7 +933,9 @@ func TestFromFuncConverter(t *testing.T) {
 		expect interface{}
 		err    error
 	}{
-		{func() ([]int, error) { return []int{2, 3}, nil }, &[]int{1}, []int{1, 2, 3}, nil},
+		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet},
+
+		// {func() ([]int, error) { return []int{2, 3}, nil }, &[]int{1}, []int{1, 2, 3}, nil},
 
 		// {func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
 
@@ -976,9 +977,13 @@ func TestFromFuncConverter(t *testing.T) {
 			err := c.CopyTo(ctx, fnv, tgtv)
 
 			if err != nil {
-				if fnCase.err != nil && errors.Is(err, fnCase.err) {
+				if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) {
 					return
 				}
+
+				// for go1.11, 12, any error would be ignored
+				// but when go1.13 and higher, we will test the returned error obj
+				// can match case.err, see also TestFromFuncConverterGo113AndHigher()
 				t.Fatalf("has error: %v, but expecting %v", err, fnCase.err)
 			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) == false {
 				t.Fatalf("unexpect result: expect %v but got %v", fnCase.expect, ret)
