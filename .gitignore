@@ -3,7 +3,7 @@ bgo
 bgo.yml
 _bgo
 tools/bgo/go.work
-go.work
+go.work*
 .local/
 
 Makefile
