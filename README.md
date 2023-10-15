@@ -48,6 +48,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.17
+  - upgrade deps
+
 - v0.4.13
   - fixed test on strconv.NumError
     - and errors.Is(err, strconv.SyntaxError) is invalid now
