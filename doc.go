@@ -3,5 +3,5 @@ package evendeep
 
 const (
 	// Version string for hedzr/evendeep package
-	Version = "0.4.17"
+	Version = "0.4.19"
 )

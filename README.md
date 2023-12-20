@@ -48,6 +48,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v0.4.19
+  - upgrade deps
+
 - v0.4.17
   - upgrade deps
 
