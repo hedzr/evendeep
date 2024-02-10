@@ -6,9 +6,10 @@
 package cl
 
 import (
-	"gopkg.in/hedzr/errors.v3"
 	"strconv"
 	"strings"
+
+	"gopkg.in/hedzr/errors.v3"
 )
 
 // FormatComplex converts the complex number c to a string of the

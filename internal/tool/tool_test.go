@@ -7,10 +7,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/hedzr/log"
-
 	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
+	logz "github.com/hedzr/logg/slog"
 )
 
 func TestNestedRecovery(t *testing.T) {
@@ -18,15 +17,15 @@ func TestNestedRecovery(t *testing.T) {
 
 	defer func() {
 		if e := recover(); e != nil {
-			log.Errorf("ERR [TestRec]: %v", e)
+			logz.Error("ERR [TestRec]:", "error", e)
 		}
 	}()
 
 	func(v int) {
 		defer func() {
 			if e := recover(); e != nil {
-				// log.Errorf("ERR: %v", e)
-				log.Panicf("ERR: %v", e)
+				// logz.Errorf("ERR: %v", e)
+				logz.Panic("ERR: ", "error", e)
 			}
 		}()
 
@@ -128,41 +127,6 @@ type A4 struct {
 	A3   *A3
 	Int4 int
 	*A1
-}
-
-// Employee type for testing
-type Employee struct {
-	Name      string
-	Birthday  *time.Time
-	F11       float32
-	F12       float64
-	C11       complex64
-	C12       complex128
-	Feat      []byte
-	Sptr      *string
-	Nickname  *string
-	Age       int64
-	FakeAge   int
-	EmployeID int64
-	DoubleAge int32
-	SuperRule string
-	Notes     []string
-	RetryU    uint8
-	TimesU    uint16
-	FxReal    uint32
-	FxTime    int64
-	FxTimeU   uint64
-	UxA       uint
-	UxB       int
-	Retry     int8
-	Times     int16
-	Born      *int
-	BornU     *uint
-	// nolint:unused
-	flags []byte // nolint:structcheck
-	Bool1 bool
-	Bool2 bool
-	Ro    []int
 }
 
 // X0 type for testing

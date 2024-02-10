@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/hedzr/evendeep/dbglog"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 )
 
@@ -84,7 +85,7 @@ func inspectStructV(val reflect.Value, level int) {
 		valueField, address := testFieldValue(valField)
 
 		var v typ.Any
-		if valueField.IsValid() && !IsZero(valueField) && valueField.CanInterface() {
+		if valueField.IsValid() && !ref.IsZero(valueField) && valueField.CanInterface() {
 			v = valueField.Interface()
 		}
 		log.Printf("%s%d/%d. Field Name: %s, Field Value: %v,\t Address: %v, Field type: %v [%s]\n",
