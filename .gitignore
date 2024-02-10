@@ -1,37 +1,10 @@
-swaggerdocs/
-bgo
-bgo.yml
-_bgo
-tools/bgo/go.work
-go.work*
-.local/
-
-Makefile
-.env
-.env.local*
-
-*.S
-small
-./small*
-
-*.code-workspace
-
 .idea/
 *.iml
-.DS\_Store
-
 tmp/
-bin/
-output/
-ref/
-refers/
-save/
-SAVE/
 try*/
 bash.comp.1/
 test_try/
 man*/
-study/
 *.1
 *.2
 *.3
@@ -40,47 +13,206 @@ study/
 *.6
 *.7
 *.8
+*.bak
 .vagrant/
 
-*.gz
-*.zip
-*.rar
+.tmp.*
+*.code-workspace
+go.work*
+*.local
+.env*
+
+*-master
+*-devel
+*-main
+
+.DS\_Store
+#*.out
+*.pprof
+*.prof
+*.log
 *.tgz
 *.tar
+*.gz
 *.bz2
-*.dmg
+*.xz
+*.zip
+*.pkg
+*.rar
 *.deb
 *.rpm
+*.dmg
+#*.exe
 coverage.txt
 cover.out
 cover.html
-.tmp.*
-*.local
-*.log
-*.tmp
-*~
-~*
+profile.cov
+*___jb_old___
+fossa-result.json
 
-###
+bin/
+dist/
+output/
+target/
+save/
+sav/
+SAV/
+SAVE/
+ref/
 
-#*_string.go
-#stringer/
+*.info.json
+*.info.txt
+*.webp
+*.webm
+*.flv
+*.mp4
+*.vtt
+you-dl-1
 
+*.db
+*.db3
+*.db-journal
 
-### Go template
+*.txt
+b.sh
+sync.sh
+
+##################################################################### Go
+
 # Binaries for programs and plugins
 *.exe
+*.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, build with `go test -c`
+# Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
-.glide/
+# Dependency directories (remove the comment below to include it)
+# vendor/
 
-.pid/
+##################################################################### C++
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+#*.so
+#*.dylib
+#*.dll
+
+# Fortran module files
+#*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+#*.exe
+#*.out
+*.app
+
+##################################################################### CMake
+
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+#Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+cmake-*/
+
+##################################################################### Linux
+
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+##################################################################### Windows
+
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+##################################################################### macOS
+
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
