@@ -37,11 +37,11 @@ This library is designed for making everything customizable.
   - ...
 
 - The deep series
-  - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L20),
-    or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110)
-  - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L36)
-  - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/equal.go#L13)
-  - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
+  - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L48),
+    or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L32)
+  - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L63)
+  - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/deepequal.go#L12)
+  - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/deepdiff.go#L13)
 
 - Compatibilities
   - Run for Go Modules and Generics enable, and log/slog present (go1.21+ since v1)
