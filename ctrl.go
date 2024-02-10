@@ -1,18 +1,17 @@
 package evendeep
 
 import (
-	"github.com/hedzr/log"
+	"reflect"
+	"unsafe"
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
+	logz "github.com/hedzr/logg/slog"
 
 	"gopkg.in/hedzr/errors.v3"
-
-	"reflect"
-	"unsafe"
 )
 
 type cpController struct {
@@ -84,15 +83,15 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 	var (
 		from0 = reflect.ValueOf(fromObjOrPtr)
 		to0   = reflect.ValueOf(toObjPtr)
-		from  = tool.Rindirect(from0)
-		to    = tool.Rindirect(to0)
+		from  = ref.Rindirect(from0)
+		to    = ref.Rindirect(to0)
 		root  = newParams(withOwners(c, nil, &from0, &to0, &from, &to))
 	)
 
 	dbglog.Log("          flags: %v", c.flags)
 	dbglog.Log("flags (verbose): %+v", c.flags)
-	dbglog.Log("      from.type: %v | input: %v", tool.Typfmtv(&from), tool.Typfmtv(&from0))
-	dbglog.Log("        to.type: %v | input: %v", tool.Typfmtv(&to), tool.Typfmtv(&to0))
+	dbglog.Log("      from.type: %v | input: %v", ref.Typfmtv(&from), ref.Typfmtv(&from0))
+	dbglog.Log("        to.type: %v | input: %v", ref.Typfmtv(&to), ref.Typfmtv(&to0))
 
 	err = c.copyTo(root, from, to)
 	return
@@ -102,7 +101,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			kind, pkgPath := from.Kind(), from.Type().PkgPath()
-			if c.sourceExtractor != nil && to.IsValid() && !tool.IsNil(to) {
+			if c.sourceExtractor != nil && to.IsValid() && !ref.IsNil(to) {
 				// use tool.IsNil because we are checking for:
 				// 1. to,IsNil() if 'to' is an addressable value (such as slice, map, or ptr)
 				// 2. false if 'to' is not an addressable value (such as struct, int, ...)
@@ -118,7 +117,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 			}
 
 			// source is primitive type, or in a reserved package such as time, os, ...
-			dbglog.Log("   - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, tool.Typfmtv(&to))
+			dbglog.Log("   - from.type: %v - fallback to copyDefaultHandler | to.type: %v", kind, ref.Typfmtv(&to))
 			err = copyDefaultHandler(c, params, from, to)
 			return
 		})
@@ -148,7 +147,7 @@ func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integra
 	}
 
 	//nolint:lll,nestif //keep it
-	if from.CanAddr() && to.CanAddr() && tool.KindIs(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+	if from.CanAddr() && to.CanAddr() && ref.KindIs(from.Kind(), reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(from.UnsafeAddr())
 		addr2 := unsafe.Pointer(to.UnsafeAddr())
 		if uintptr(addr1) > uintptr(addr2) {
@@ -177,7 +176,7 @@ func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integra
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New("[recovered] copyTo unsatisfied ([%v] -> [%v])",
-				tool.RindirectType(from.Type()), tool.RindirectType(to.Type())).
+				ref.RindirectType(from.Type()), ref.RindirectType(to.Type())).
 				WithMaxObjectStringLength(maxObjectStringLen).
 				WithData(e).
 				WithTaggedData(errors.TaggedData{
@@ -185,12 +184,18 @@ func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integra
 					"target": to,
 				})
 
-			// skip go-lib frames and defer-recover frame, back to the point throwing panic
-			n := log.CalcStackFrames(1) // skip defer-recover frame at first
+			// // skip go-lib frames and defer-recover frame, back to the point throwing panic
+			// n := logz.CalcStackFrames(1) // skip defer-recover frame at first
+			// if c.rethrow {
+			// 	logz.Skip(n).Panicf("%+v", err)
+			// } else {
+			// 	logz.Skip(n).Errorf("%+v", err)
+			// }
+
 			if c.rethrow {
-				log.Skip(n).Panicf("%+v", err)
+				logz.Panic("[recovered] copyTo unsatisfied", "error", err)
 			} else {
-				log.Skip(n).Errorf("%+v", err)
+				logz.Error("[recovered] copyTo unsatisfied", "error", err)
 			}
 		}
 	}()

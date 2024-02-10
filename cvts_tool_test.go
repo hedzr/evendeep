@@ -14,7 +14,7 @@ import (
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 )
 
@@ -83,9 +83,9 @@ func TestToBool(t *testing.T) {
 		"famale",
 	} {
 		v1 := reflect.ValueOf(vi)
-		v2, _ := tool.Rdecode(v1)
+		v2, _ := ref.Rdecode(v1)
 		if rToBool(v2).Interface() != false {
-			t.Fatalf("for %v (%v) toBool failed", vi, tool.Typfmtv(&v2))
+			t.Fatalf("for %v (%v) toBool failed", vi, ref.Typfmtv(&v2))
 		}
 	}
 
@@ -106,9 +106,9 @@ func TestToBool(t *testing.T) {
 		"male",
 	} {
 		v1 := reflect.ValueOf(vi)
-		v2, _ := tool.Rdecode(v1)
+		v2, _ := ref.Rdecode(v1)
 		if rToBool(v2).Interface() != true {
-			t.Fatalf("for %v (%v) toBool failed", vi, tool.Typfmtv(&v2))
+			t.Fatalf("for %v (%v) toBool failed", vi, ref.Typfmtv(&v2))
 		}
 	}
 
@@ -120,7 +120,7 @@ func TestForInteger(t *testing.T) {
 		uint(13579),
 	} {
 		v1 := reflect.ValueOf(src)
-		v1 = tool.Rdecodesimple(v1)
+		v1 = ref.Rdecodesimple(v1)
 		if rForInteger(v1).Interface() != "13579" {
 			t.Fail()
 		}
@@ -128,14 +128,14 @@ func TestForInteger(t *testing.T) {
 
 	var z typ.Any
 	v1 := reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "bug" //nolint:goconst
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
@@ -174,7 +174,7 @@ func TestForUInteger(t *testing.T) {
 		uint(13579),
 	} {
 		v1 := reflect.ValueOf(src)
-		v1 = tool.Rdecodesimple(v1)
+		v1 = ref.Rdecodesimple(v1)
 		if rForUInteger(v1).Interface() != "13579" {
 			t.Fail()
 		}
@@ -182,14 +182,14 @@ func TestForUInteger(t *testing.T) {
 
 	var z typ.Any
 	v1 := reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "bug"
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
@@ -235,21 +235,21 @@ func TestForUIntegerHex(t *testing.T) {
 
 	var z typ.Any
 	v1 := reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "bug"
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForUInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "0x3e59"
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	uintptrType := reflect.TypeOf(uintptr(0))
 	if x := uintptr(rToUIntegerHex(v1, uintptrType).Uint()); x != uintptr(0x3e59) {
 		t.Fatalf("failed, x = %v", x)
@@ -270,7 +270,7 @@ func TestForFloat(t *testing.T) {
 		uint(13579),
 	} {
 		v1 := reflect.ValueOf(src)
-		v1 = tool.Rdecodesimple(v1)
+		v1 = ref.Rdecodesimple(v1)
 		if rForFloat(v1).Interface() != "13579" {
 			t.Fail()
 		}
@@ -278,14 +278,14 @@ func TestForFloat(t *testing.T) {
 
 	var z typ.Any
 	v1 := reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForFloat(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "bug"
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForFloat(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
@@ -325,7 +325,7 @@ func TestForComplex(t *testing.T) {
 		-8.5 - 7.13i: "(-8.5-7.13i)",
 	} {
 		v1 := reflect.ValueOf(src)
-		v1 = tool.Rdecodesimple(v1)
+		v1 = ref.Rdecodesimple(v1)
 		if x := rForComplex(v1).Interface(); x != exp {
 			t.Fatalf("failed, x = %v, expect = %v", x, exp)
 		}
@@ -333,14 +333,14 @@ func TestForComplex(t *testing.T) {
 
 	var z typ.Any
 	v1 := reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForComplex(v1).Interface(); x != "(0+0i)" {
 		t.Fatalf("failed, x = %v", x)
 	}
 
 	z = "bug"
 	v1 = reflect.ValueOf(z)
-	v1 = tool.Rdecodesimple(v1)
+	v1 = ref.Rdecodesimple(v1)
 	if x := rForComplex(v1).Interface(); x != "(0+0i)" {
 		t.Fatalf("failed, x = %v", x)
 	}
@@ -425,7 +425,7 @@ func TestToStringConverter_Transform(t *testing.T) {
 
 		var tgtstr = "1"
 		tgt = reflect.ValueOf(&tgtstr).Elem()
-		dbglog.Log("target/; %v %v", tool.Valfmt(&tgt), tool.Typfmtv(&tgt))
+		dbglog.Log("target/; %v %v", ref.Valfmt(&tgt), ref.Typfmtv(&tgt))
 		err = bbc.CopyTo(nil, svv, tgt)
 		if err != nil {
 			t.Fatalf("err: %v", err)
@@ -494,7 +494,7 @@ func TestFromStringConverter_Transform(t *testing.T) {
 			}
 
 			if x := tgt.Interface(); x != exp {
-				t.Fatalf("convert failed, want %v but got %v (%v)", exp, x, tool.Typfmt(tgt.Type()))
+				t.Fatalf("convert failed, want %v but got %v (%v)", exp, x, ref.Typfmt(tgt.Type()))
 			}
 
 			tgt = reflect.New(tgtType).Elem()
@@ -503,7 +503,7 @@ func TestFromStringConverter_Transform(t *testing.T) {
 				t.Fatalf("err: %v", err)
 			}
 			if x := tgt.Interface(); x != exp {
-				t.Fatalf("convert failed, want %v but got %v (%v)", exp, x, tool.Typfmt(tgt.Type()))
+				t.Fatalf("convert failed, want %v but got %v (%v)", exp, x, ref.Typfmt(tgt.Type()))
 			}
 		}
 	}
@@ -515,7 +515,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	var dur = 3 * time.Second
 
 	var v = reflect.ValueOf(dur)
-	t.Logf("dur: %v (%v, kind: %v, name: %v, pkgpath: %v)", dur, tool.Typfmtv(&v), v.Kind(), v.Type().Name(), v.Type().PkgPath())
+	t.Logf("dur: %v (%v, kind: %v, name: %v, pkgpath: %v)", dur, ref.Typfmtv(&v), v.Kind(), v.Type().Name(), v.Type().PkgPath())
 
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
 
@@ -525,7 +525,7 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	t.Logf("res: %v (%v)", tgt.Interface(), tool.Typfmtv(&tgt))
+	t.Logf("res: %v (%v)", tgt.Interface(), ref.Typfmtv(&tgt))
 
 	t.Run("toDurationConverter = pre", func(t *testing.T) {
 
@@ -582,9 +582,9 @@ func TestToDurationConverter_Transform(t *testing.T) {
 				t.Fatalf("err: %v", err)
 			}
 			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
-				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), tool.Typfmt(tgt.Type()))
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
-			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), tool.Typfmt(tgt.Type()))
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
 
 	})
@@ -613,9 +613,9 @@ func TestToDurationConverter_Transform(t *testing.T) {
 				t.Fatalf("err: %v", err)
 			}
 			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
-				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), tool.Typfmt(tgt.Type()))
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
-			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), tool.Typfmt(tgt.Type()))
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
 
 	})
@@ -709,9 +709,9 @@ func TestToTimeConverter_Transform(t *testing.T) {
 				t.Fatalf("err: %v", err)
 			}
 			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
-				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), tool.Typfmt(tgt.Type()))
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
-			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), tool.Typfmt(tgt.Type()))
+			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
 
 	})
@@ -742,9 +742,9 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			}
 			got := tgt.Interface().(time.Time).UTC().Format(layout)
 			if reflect.DeepEqual(got, cas.expect) == false {
-				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, got, tool.Typfmt(tgt.Type()))
+				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, got, ref.Typfmt(tgt.Type()))
 			}
-			t.Logf("res #%d: %v (%v)", ix, got, tool.Typfmt(tgt.Type()))
+			t.Logf("res #%d: %v (%v)", ix, got, ref.Typfmt(tgt.Type()))
 		}
 
 	})
@@ -762,7 +762,7 @@ func TestFromStringConverter_defaultTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	t.Logf("ret: %v (%v)", tool.Valfmt(&ret), tool.Typfmtv(&ret))
+	t.Logf("ret: %v (%v)", ref.Valfmt(&ret), ref.Typfmtv(&ret))
 }
 
 func TestFromStringConverter_postCopyTo(t *testing.T) {
@@ -779,7 +779,7 @@ func TestFromStringConverter_postCopyTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	t.Logf("ret: %v (%v)", dst, tool.Typfmtv(&dvv))
+	t.Logf("ret: %v (%v)", dst, ref.Typfmtv(&dvv))
 }
 
 func TestToStringConverter_postCopyTo(t *testing.T) {
@@ -792,8 +792,8 @@ func TestToStringConverter_postCopyTo(t *testing.T) {
 	}{}
 	var svv = reflect.ValueOf(&src)
 	var dvv = reflect.ValueOf(&dst)
-	var sf1 = tool.Rindirect(svv).Field(0)
-	var df1 = tool.Rindirect(dvv).Field(0)
+	var sf1 = ref.Rindirect(svv).Field(0)
+	var df1 = ref.Rindirect(dvv).Field(0)
 	// var sft = reflect.TypeOf(src).Field(0)
 
 	ctx := &ValueConverterContext{
@@ -822,7 +822,7 @@ func TestToStringConverter_postCopyTo(t *testing.T) {
 	if dst.fval != "3.3" {
 		t.Fatalf("want '3.3' but got %v", dst.fval)
 	}
-	t.Logf("ret: %v (%v)", dst, tool.Typfmtv(&dvv))
+	t.Logf("ret: %v (%v)", dst, ref.Typfmtv(&dvv))
 }
 
 type si1 struct{}
@@ -835,11 +835,11 @@ func TestHasStringer(t *testing.T) {
 	var i2 si2
 
 	v := reflect.ValueOf(i1)
-	t.Logf("si1: %v", tool.HasStringer(&v))
+	t.Logf("si1: %v", ref.HasStringer(&v))
 	v = reflect.ValueOf(i2)
-	t.Logf("si2: %v", tool.HasStringer(&v))
+	t.Logf("si2: %v", ref.HasStringer(&v))
 	v = reflect.ValueOf(&i2)
-	t.Logf("*si2: %v", tool.HasStringer(&v))
+	t.Logf("*si2: %v", ref.HasStringer(&v))
 }
 
 func TestNameToMapKey(t *testing.T) {
@@ -868,14 +868,14 @@ func TestNameToMapKey(t *testing.T) {
 
 	for _, m := range mapslice {
 		mv := reflect.ValueOf(&m) // nolint:gosec // G601: Implicit memory aliasing in for loop
-		mvind := tool.Rdecodesimple(mv)
-		t.Logf("    target map is %v", tool.Typfmtv(&mvind))
-		mt := tool.Rdecodetypesimple(mvind.Type())
+		mvind := ref.Rdecodesimple(mv)
+		t.Logf("    target map is %v", ref.Typfmtv(&mvind))
+		mt := ref.Rdecodetypesimple(mvind.Type())
 		key, err := nameToMapKey(name, mt)
 		if err != nil {
 			t.Errorf("nameToMapKey, has error: %v", err)
 		} else {
-			t.Logf("for target map %v, got key from nameToMapKey: %v %v", tool.Typfmt(mt), tool.Valfmt(&key), tool.Typfmt(key.Type()))
+			t.Logf("for target map %v, got key from nameToMapKey: %v %v", ref.Typfmt(mt), ref.Valfmt(&key), ref.Typfmt(key.Type()))
 		}
 	}
 }
@@ -968,9 +968,9 @@ func TestFromFuncConverter(t *testing.T) {
 		if fnCase.fn != nil { //nolint:gocritic //nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
 			fnv := reflect.ValueOf(&fnCase.fn)
 			tgtv := reflect.ValueOf(&fnCase.target)
-			ff, tt := tool.Rdecodesimple(fnv), tool.Rdecodesimple(tgtv)
-			dbglog.Log("---- CASE %d. %v -> %v", ix, tool.Typfmtv(&ff), tool.Typfmtv(&tt))
-			t.Logf("---- CASE %d. %v -> %v", ix, tool.Typfmtv(&ff), tool.Typfmtv(&tt))
+			ff, tt := ref.Rdecodesimple(fnv), ref.Rdecodesimple(tgtv)
+			dbglog.Log("---- CASE %d. %v -> %v", ix, ref.Typfmtv(&ff), ref.Typfmtv(&tt))
+			t.Logf("---- CASE %d. %v -> %v", ix, ref.Typfmtv(&ff), ref.Typfmtv(&tt))
 
 			c := fromFuncConverter{}
 			ctx := newValueConverterContextForTest(nil)

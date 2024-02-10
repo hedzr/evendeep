@@ -13,14 +13,15 @@ import (
 	"time"
 	"unsafe"
 
-	"gopkg.in/hedzr/errors.v3"
+	"github.com/hedzr/evendeep/ref"
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/typ"
+
+	"gopkg.in/hedzr/errors.v3"
 )
 
 const (
@@ -981,10 +982,10 @@ func TestStructWithTargetSetter_map2struct(t *testing.T) {
 		var f = s.FieldByName(fldName)
 		if f.IsValid() {
 			if value.Type().ConvertibleTo(f.Type()) {
-				dbglog.Log("struct.%q <- %v", fldName, tool.Valfmt(&value))
+				dbglog.Log("struct.%q <- %v", fldName, ref.Valfmt(&value))
 				f.Set(value.Convert(f.Type()))
 			} else {
-				dbglog.Log("struct.%q <- %v", fldName, tool.Valfmt(&value))
+				dbglog.Log("struct.%q <- %v", fldName, ref.Valfmt(&value))
 				f.Set(value)
 			}
 		}
@@ -994,7 +995,7 @@ func TestStructWithTargetSetter_map2struct(t *testing.T) {
 			if value != nil {
 				name := "Mo" + strings.Join(sourceNames, ".")
 				setStructByName(reflect.ValueOf(tgt).Elem(), name, *value)
-				dbglog.Log("struct.%q <- %v", name, tool.Valfmt(value))
+				dbglog.Log("struct.%q <- %v", name, ref.Valfmt(value))
 			}
 			return // ErrShouldFallback to call the evendeep standard processing
 		}),

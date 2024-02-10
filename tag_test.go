@@ -3,7 +3,7 @@ package evendeep
 import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 
 	"reflect"
 	"testing"
@@ -49,7 +49,7 @@ func subtestParse(t *testing.T) {
 	// c := newCopier()
 
 	v := reflect.ValueOf(&a)
-	v = tool.Rindirect(v)
+	v = ref.Rindirect(v)
 
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
@@ -71,7 +71,7 @@ func subtestFlagTests(t *testing.T) {
 	}
 	var a AFS1
 	v := reflect.ValueOf(&a)
-	v = tool.Rindirect(v)
+	v = ref.Rindirect(v)
 	sf, _ := v.Type().FieldByName("wouldbe")
 	sf0, _ := v.Type().FieldByName("flags")
 	sf1, _ := v.Type().FieldByName("converter")
@@ -85,13 +85,13 @@ func subtestFlagTests(t *testing.T) {
 	z.isFlagExists(cms.SliceCopy)
 
 	v = reflect.ValueOf(&z)
-	tool.Rwant(v, reflect.Struct)
+	ref.Rwant(v, reflect.Struct)
 	ve := v.Elem()
-	t.Logf("z: %v, nil: %v", tool.Valfmt(&ve), tool.Valfmt(nil))
+	t.Logf("z: %v, nil: %v", ref.Valfmt(&ve), ref.Valfmt(nil))
 
 	var nilArray = [1]*int{(*int)(nil)}
 	v = reflect.ValueOf(nilArray)
-	t.Logf("nilArray: %v, nil: %v", tool.Valfmt(&v), tool.Valfmt(nil))
+	t.Logf("nilArray: %v, nil: %v", ref.Valfmt(&v), ref.Valfmt(nil))
 
 	v = reflect.ValueOf(&fieldTags{
 		flags:           nil,
@@ -100,7 +100,7 @@ func subtestFlagTests(t *testing.T) {
 		nameConverter:   nil,
 		nameConvertRule: "",
 	})
-	tool.Rwant(v, reflect.Struct)
+	ref.Rwant(v, reflect.Struct)
 
 	var ss1 = []int{8, 9}
 	var ss2 = []int64{}
@@ -109,11 +109,11 @@ func subtestFlagTests(t *testing.T) {
 	var vv1 = reflect.ValueOf(ss1)
 	var tt3 = reflect.TypeOf(ss3)
 	var tp4 = reflect.TypeOf(&ss4)
-	t.Logf("ss1.type: %v", tool.Typfmtv(&vv1))
-	t.Log(tool.CanConvertHelper(reflect.ValueOf(&ss1), reflect.TypeOf(&ss2)))
-	t.Log(tool.CanConvertHelper(vv1, reflect.TypeOf(ss2)))
-	t.Log(tool.CanConvertHelper(vv1, tt3))
-	t.Log(tool.CanConvertHelper(vv1, tp4))
+	t.Logf("ss1.type: %v", ref.Typfmtv(&vv1))
+	t.Log(ref.CanConvertHelper(reflect.ValueOf(&ss1), reflect.TypeOf(&ss2)))
+	t.Log(ref.CanConvertHelper(vv1, reflect.TypeOf(ss2)))
+	t.Log(ref.CanConvertHelper(vv1, tt3))
+	t.Log(ref.CanConvertHelper(vv1, tp4))
 }
 
 func TestFieldTags_CalcTargetName(t *testing.T) {

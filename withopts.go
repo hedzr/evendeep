@@ -3,8 +3,6 @@ package evendeep
 import (
 	"encoding/json"
 
-	"github.com/hedzr/log/dir"
-
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 )
@@ -363,7 +361,58 @@ func WithIgnoreNamesReset() Opt {
 // isWildMatch provides a filename wildcard matching algorithm
 // by dir.IsWildMatch.
 func isWildMatch(s, pattern string) bool {
-	return dir.IsWildMatch(s, pattern)
+	runeInputArray := []rune(s)
+	runePatternArray := []rune(pattern)
+	if len(runeInputArray) > 0 && len(runePatternArray) > 0 {
+		if runePatternArray[len(runePatternArray)-1] != '*' && runePatternArray[len(runePatternArray)-1] != '?' && runeInputArray[len(runeInputArray)-1] != runePatternArray[len(runePatternArray)-1] {
+			return false
+		}
+	}
+	return isMatchUtil([]rune(s), []rune(pattern), 0, 0, len([]rune(s)), len([]rune(pattern)))
+}
+
+func isMatchUtil(input, pattern []rune, inputIndex, patternIndex int, inputLength, patternLength int) bool {
+
+	if inputIndex == inputLength && patternIndex == patternLength {
+		return true
+	} else if patternIndex == patternLength {
+		return false
+	} else if inputIndex == inputLength {
+		if pattern[patternIndex] == '*' && restPatternStar(pattern, patternIndex+1, patternLength) {
+			return true
+		} else {
+			return false
+		}
+	}
+
+	if pattern[patternIndex] == '*' {
+		return isMatchUtil(input, pattern, inputIndex, patternIndex+1, inputLength, patternLength) ||
+			isMatchUtil(input, pattern, inputIndex+1, patternIndex, inputLength, patternLength)
+	}
+
+	if pattern[patternIndex] == '?' {
+		return isMatchUtil(input, pattern, inputIndex+1, patternIndex+1, inputLength, patternLength)
+	}
+
+	if inputIndex < inputLength {
+		if input[inputIndex] == pattern[patternIndex] {
+			return isMatchUtil(input, pattern, inputIndex+1, patternIndex+1, inputLength, patternLength)
+		} else {
+			return false
+		}
+	}
+
+	return false
+}
+
+func restPatternStar(pattern []rune, patternIndex int, patternLength int) bool {
+	for patternIndex < patternLength {
+		if pattern[patternIndex] != '*' {
+			return false
+		}
+		patternIndex++
+	}
+	return true
 }
 
 // WithStructTagName set the name which is used for retrieve the struct tag pieces.

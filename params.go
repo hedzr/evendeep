@@ -1,16 +1,15 @@
 package evendeep
 
 import (
-	"github.com/hedzr/log"
+	"reflect"
+	"unsafe"
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/tool"
-
-	"reflect"
-	"unsafe"
+	"github.com/hedzr/evendeep/ref"
+	logz "github.com/hedzr/logg/slog"
 )
 
 // Params is params package.
@@ -92,7 +91,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 		var st, tt reflect.Type
 
 		if p.srcDecoded == nil && p.srcOwner != nil {
-			d, _ := tool.Rdecode(*p.srcOwner)
+			d, _ := ref.Rdecode(*p.srcOwner)
 			p.srcDecoded = &d
 			if p.srcOwner.IsValid() {
 				p.srcType = p.srcOwner.Type()
@@ -105,13 +104,13 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			p.dstType = p.dstOwner.Type()
 		} else if p.srcOwner != nil {
 			st = p.srcOwner.Type()
-			st = tool.RindirectType(st)
+			st = ref.RindirectType(st)
 			p.parseSourceStruct(ownerParams, st)
 			p.dstType = st
 		}
 
 		if p.dstDecoded == nil && p.dstOwner != nil {
-			d, _ := tool.Rdecode(*p.dstOwner)
+			d, _ := ref.Rdecode(*p.dstOwner)
 			p.dstDecoded = &d
 		}
 
@@ -120,7 +119,7 @@ func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, 
 			p.parseTargetStruct(ownerParams, tt)
 		} else if p.dstOwner != nil {
 			tt = p.dstOwner.Type()
-			tt = tool.RindirectType(tt)
+			tt = ref.RindirectType(tt)
 			p.parseTargetStruct(ownerParams, tt)
 		}
 
@@ -214,7 +213,7 @@ func (params *Params) dstFieldIsExportedR() (copyUnexportedFields, isExported bo
 		return false, true // non-struct-field target, treat it as exported
 	}
 
-	isExported, copyUnexportedFields = tool.IsExported(params.accessor.StructField()), params.controller.copyUnexportedFields
+	isExported, copyUnexportedFields = ref.IsExported(params.accessor.StructField()), params.controller.copyUnexportedFields
 	if isExported && params.owner != nil {
 		copyUnexportedFields, isExported = params.owner.dstFieldIsExportedR()
 	}
@@ -231,9 +230,9 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 	}
 	if fld := params.accessor.StructField(); fld != nil {
 		// in a struct
-		if !tool.IsExported(fld) {
+		if !ref.IsExported(fld) {
 			dbglog.Log("    unexported field %q (typ: %v): old(%v) -> new(%v)",
-				fld.Name, tool.Typfmt(fld.Type), tool.Valfmt(&target), tool.Valfmt(&newval))
+				fld.Name, ref.Typfmt(fld.Type), ref.Valfmt(&target), ref.Valfmt(&newval))
 			cl.SetUnexportedField(target, newval)
 			processed = true
 		}
@@ -307,10 +306,10 @@ func (params *Params) addChildParams(ppChild *Params) {
 			params.children = make(map[string]*Params)
 		}
 		if _, ok := ppChild.children[fieldName]; ok {
-			log.Panicf("field %q exists, cannot iterate another field on the same name", fieldName)
+			logz.Panic("field exists, cannot iterate another field on the same name", "field", fieldName)
 		}
 		// if ppChild == nil {
-		//	log.Panicf("setting nil Params for field %q, r u kidding me?", fieldName)
+		//	logz.Panic("setting nil Params for field, r u kidding me?", "field", fieldName)
 		// }
 
 		params.children[fieldName] = ppChild

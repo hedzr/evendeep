@@ -7,11 +7,12 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/syscalls"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 
 	"gopkg.in/hedzr/errors.v3"
 )
@@ -27,7 +28,7 @@ func rForBool(v reflect.Value) (ret reflect.Value) {
 func rToBool(v reflect.Value) (ret reflect.Value) {
 	var b bool
 
-	if !v.IsValid() || tool.IsNil(v) || tool.IsZero(v) {
+	if !v.IsValid() || ref.IsNil(v) || ref.IsZero(v) {
 		return reflect.ValueOf(b)
 	}
 
@@ -45,11 +46,11 @@ func rToBool(v reflect.Value) (ret reflect.Value) {
 		c := v.Complex()
 		b = math.Float64bits(real(c)) != 0 || math.Float64bits(imag(c)) != 0
 	case reflect.Array:
-		b = !tool.ArrayIsZero(v)
+		b = !ref.ArrayIsZero(v)
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		b = !tool.IsNil(v)
+		b = !ref.IsNil(v)
 	case reflect.Struct:
-		b = !tool.StructIsZero(v)
+		b = !ref.StructIsZero(v)
 	case reflect.String:
 		b = internalToBool(v.String())
 	}
@@ -72,7 +73,7 @@ func rForInteger(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(int64typ)
 	} else if k := v.Kind(); k < reflect.Int || k > reflect.Int64 {
-		if tool.CanConvert(&v, int64typ) {
+		if ref.CanConvert(&v, int64typ) {
 			v = v.Convert(int64typ)
 		} else {
 			v = reflect.Zero(int64typ)
@@ -130,7 +131,7 @@ func rForUInteger(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(uint64typ)
 	} else if k := v.Kind(); k < reflect.Uint || k > reflect.Uintptr {
-		if tool.CanConvert(&v, uint64typ) {
+		if ref.CanConvert(&v, uint64typ) {
 			v = v.Convert(uint64typ)
 		} else {
 			v = reflect.Zero(uint64typ)
@@ -214,7 +215,7 @@ func rForFloat(v reflect.Value) (ret reflect.Value) {
 	if !v.IsValid() {
 		v = reflect.Zero(float64typ)
 	} else if k := v.Kind(); k < reflect.Float32 || k > reflect.Float64 {
-		if tool.CanConvert(&v, float64typ) {
+		if ref.CanConvert(&v, float64typ) {
 			v = v.Convert(float64typ)
 		} else {
 			v = reflect.Zero(float64typ)
@@ -326,12 +327,12 @@ func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 	converter func(str string, base int, bitSize int) (ret reflect.Value, err error),
 ) (ret reflect.Value, err error) {
-	if !v.IsValid() || tool.IsNil(v) || tool.IsZero(v) {
+	if !v.IsValid() || ref.IsNil(v) || ref.IsZero(v) {
 		ret = reflect.Zero(desiredType)
 		return
 	}
 
-	if tool.CanConvert(&v, desiredType) {
+	if ref.CanConvert(&v, desiredType) {
 		ret = v.Convert(desiredType)
 		return
 	}
@@ -365,7 +366,7 @@ func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target refle
 		return
 	}
 
-	if tool.CanConvert(&source, desiredType) {
+	if ref.CanConvert(&source, desiredType) {
 		nv := source.Convert(desiredType)
 		// target.Set(nv)
 		target = nv
@@ -422,7 +423,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 			target, _, err = tryStringerIt(source, desiredType)
 		}
 	} else {
-		target = reflect.Zero(tool.StringType)
+		target = reflect.Zero(ref.StringType)
 	}
 	return
 }
@@ -430,7 +431,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 //nolint:unused,deadcode,lll //reserved
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {
@@ -458,7 +459,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 //nolint:unused,deadcode,lll //reserved
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
-	dbglog.Log("  desiredType: %v, el.type: %v", tool.Typfmt(desiredType), tool.Typfmt(eltyp))
+	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
 
 	count, length := sources.Len(), targetLength
 	if length <= 0 {
@@ -532,7 +533,7 @@ func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.
 	} else {
 		dstval := target.MapIndex(key)
 		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v",
-			tool.Valfmt(&key), tool.Valfmt(&srcVal), tool.Valfmt(&dstval))
+			ref.Valfmt(&key), ref.Valfmt(&srcVal), ref.Valfmt(&dstval))
 	}
 	return
 }
@@ -564,3 +565,235 @@ func rToStruct(ctx *ValueConverterContext, source reflect.Value, fromFuncType, d
 func rToFunc(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	return
 }
+
+//
+
+//
+
+//
+
+func intToString[T Integers](val T) string {
+	return intToStringEx(val, 10)
+}
+
+func intToStringEx[T Integers](val T, base int) string {
+	return strconv.FormatInt(int64(val), base)
+}
+
+func uintToString[T Uintegers](val T) string {
+	return uintToStringEx(val, 10)
+}
+
+func uintToStringEx[T Uintegers](val T, base int) string {
+	return strconv.FormatUint(uint64(val), base)
+}
+
+func floatToString[T Floats](val T) string {
+	return floatToStringEx(float64(val), 'f', -1, 64)
+}
+
+func floatToStringEx[T Floats](val T, format byte, prec, bitSize int) string {
+	return strconv.FormatFloat(float64(val), format, prec, bitSize)
+}
+
+func complexToString[T Complexes](val T) string {
+	return complexToStringEx(val, 'f', -1, 128)
+}
+
+func complexToStringEx[T Complexes](val T, format byte, prec, bitSize int) string {
+	return strconv.FormatComplex(complex128(val), format, prec, bitSize)
+}
+
+func boolToString(b bool) string {
+	return strconv.FormatBool(b)
+}
+
+func timeToString(tm time.Time) string {
+	const layout = time.RFC3339Nano
+	return tm.Format(layout)
+}
+
+func durationToString(dur time.Duration) string {
+	return dur.String()
+}
+
+//
+
+func bytesToString(data []byte) string {
+	var b = make([]byte, 0, 3+len(data)*4)
+	b = append(b, data...)
+	b = append(b, []byte(" [")...)
+	for i := 0; i < len(data); {
+		if i > 0 {
+			b = append(b, ' ')
+		}
+		strconv.AppendInt(b, int64(data[i]), 16)
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func intSliceToString[T Integers](val IntSlice[T]) string {
+	var b = make([]byte, 0, len(val)*8) // 8: assume integer need 8 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendInt(b, int64(val[i]), 10)
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func uintSliceToString[T Uintegers](val UintSlice[T]) string {
+	var b = make([]byte, 0, len(val)*8) // 8: assume unsigned integer need 8 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendUint(b, uint64(val[i]), 10)
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func floatSliceToString[T Floats](val FloatSlice[T]) string {
+	var b = make([]byte, 0, len(val)*16+2) // 8: assume floats need 16 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendFloat(b, float64(val[i]), 'f', -1, 64)
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func complexSliceToString[T Complexes](val ComplexSlice[T]) string {
+	var b = make([]byte, 0, len(val)*32+2) // 8: assume complex need 32 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		num := strconv.FormatComplex(complex128(val[i]), 'f', -1, 128)
+		b = append(b, []byte(num)...)
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+// func complexSliceToString[T Complexes](val ComplexSlice[T]) string {
+// 	var b = make([]byte, 0, len(val)*32+2) // 8: assume complex need 32 runes
+// 	b = append(b, []byte("[")...)
+// 	for i := range val {
+// 		if i > 0 {
+// 			b = append(b, []byte(",")...)
+// 		}
+// 		b=strconv.AppendComplex(b, complex128(val[i]), 'f', -1, 128)
+// 	}
+// 	b = append(b, []byte("]")...)
+// 	return string(b)
+// }
+
+func stringSliceToString(val []string) string {
+	var b = make([]byte, 0, len(val)*32+2) // 8: assume integer need 32 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendQuote(b, val[i])
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func boolSliceToString(val []bool) string {
+	var b = make([]byte, 0, len(val)*8) // 8: assume bool need 5 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendBool(b, val[i])
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func timeSliceToString(val []time.Time) string {
+	var b = make([]byte, 0, len(val)*32+2) // 8: assume time need 24 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendQuote(b, val[i].Format(time.RFC3339Nano))
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+func durationSliceToString(val []time.Duration) string {
+	var b = make([]byte, 0, len(val)*16+2) // 8: assume duration need 16 runes
+	b = append(b, []byte("[")...)
+	for i := range val {
+		if i > 0 {
+			b = append(b, []byte(",")...)
+		}
+		b = strconv.AppendQuote(b, val[i].String())
+	}
+	b = append(b, []byte("]")...)
+	return string(b)
+}
+
+//
+
+type Stringer interface {
+	String() string
+}
+
+type ToString interface {
+	ToString(args ...any) string
+}
+
+type Integers interface {
+	int | int8 | int16 | int32 | int64
+}
+
+type Uintegers interface {
+	uint | uint8 | uint16 | uint32 | uint64
+}
+
+type Floats interface {
+	float32 | float64
+}
+
+type Complexes interface {
+	complex64 | complex128
+}
+
+type Numerics interface {
+	Integers | Uintegers | Floats | Complexes
+}
+
+type IntSlice[T Integers] []T
+type UintSlice[T Uintegers] []T
+type FloatSlice[T Floats] []T
+type ComplexSlice[T Complexes] []T
+type StringSlice[T string] []T
+type BoolSlice[T bool] []T
+
+type Slice[T Integers | Uintegers | Floats] []T
+
+// const (
+// 	TimeNoNano      = "15:04:05Z07:00"
+// 	TimeNano        = "15:04:05.000000Z07:00"
+// 	DateTime        = "2006-01-0215:04:05Z07:00"
+// 	RFC3339Nano     = "2006-01-02T15:04:05.000000Z07:00"
+// 	RFC3339NanoOrig = "2006-01-02T15:04:05.999999999Z07:00"
+// )

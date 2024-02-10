@@ -9,16 +9,17 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-
-	"github.com/hedzr/log"
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/syscalls"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
+
+	logz "github.com/hedzr/logg/slog"
 
 	"gopkg.in/hedzr/errors.v3"
 )
@@ -32,6 +33,7 @@ const timeConstString = "time"
 // and New, ....
 func RegisterDefaultConverters(ss ...ValueConverter) {
 	defValueConverters = append(defValueConverters, ss...)
+	lenValueConverters, lenValueCopiers = len(defValueConverters), len(defValueCopiers)
 	initGlobalOperators()
 }
 
@@ -42,6 +44,7 @@ func RegisterDefaultConverters(ss ...ValueConverter) {
 // and New, ....
 func RegisterDefaultCopiers(ss ...ValueCopier) {
 	defValueCopiers = append(defValueCopiers, ss...)
+	lenValueConverters, lenValueCopiers = len(defValueConverters), len(defValueCopiers)
 	initGlobalOperators()
 }
 
@@ -80,8 +83,7 @@ func initConverters() {
 		&fromMapConverter{},
 	}
 
-	lenValueConverters = len(defValueConverters)
-	lenValueCopiers = len(defValueCopiers)
+	lenValueConverters, lenValueCopiers = len(defValueConverters), len(defValueCopiers)
 }
 
 var defValueConverters ValueConverters      //nolint:gochecknoglobals //i know that
@@ -127,6 +129,2015 @@ type NameConverterContext struct {
 type ValueConverterContext struct {
 	*Params
 }
+
+//
+
+type CvtV struct {
+	Data any
+}
+
+func (s *CvtV) String() string {
+	return anyToString(s.Data)
+}
+
+//
+
+type Cvt struct{}
+
+func (s *Cvt) String(data any) string               { return anyToString(data) }
+func (s *Cvt) StringSlice(data any) []string        { return anyToStringSlice(data) }
+func (s *Cvt) StringMap(data any) map[string]string { return anyToStringMap(data) }
+
+func anyToStringSlice(data any) (ret []string) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []string:
+		return z
+
+	case []float64:
+		return zfToStringS(z)
+	case []float32:
+		return zfToStringS(z)
+
+	case []int:
+		return zfToStringS(z)
+	case []int64:
+		return zfToStringS(z)
+	case []int32:
+		return zfToStringS(z)
+	case []int16:
+		return zfToStringS(z)
+	case []int8:
+		return zfToStringS(z)
+	case []uint:
+		return zfToStringS(z)
+	case []uint64:
+		return zfToStringS(z)
+	case []uint32:
+		return zfToStringS(z)
+	case []uint16:
+		return zfToStringS(z)
+	case []uint8:
+		return zfToStringS(z)
+
+	case []bool:
+		return zfToStringS(z)
+	case []fmt.Stringer:
+		return zfToStringS(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToStringS[T any](in []T) (out []string) {
+	out = make([]string, 0, len(in))
+	for _, it := range in {
+		out = append(out, anyToString(it))
+	}
+	return
+}
+
+func zfToStringM(in map[string]any) (out map[string]string) {
+	out = make(map[string]string, len(in))
+	for k, it := range in {
+		out[k] = anyToString(it)
+	}
+	return
+}
+
+func anyToStringMap(data any) (ret map[string]string) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]string:
+		return z
+	case map[string]any:
+		return zfToStringM(z)
+	default:
+		break
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Bool(data any) bool { return anyToBool(data) }
+
+func anyToBool(data any) bool {
+	if data == nil {
+		return false
+	}
+
+	switch z := data.(type) {
+	case bool:
+		return z
+	default:
+		return toBool(anyToString(data))
+	}
+}
+
+func toBool(s string) bool {
+	_, ok := stringToBoolMap[strings.ToLower(s)]
+	return ok
+}
+
+var stringToBoolMap = map[string]struct{}{
+	"1":     {},
+	"t":     {},
+	"male":  {},
+	"y":     {},
+	"yes":   {},
+	"true":  {},
+	"ok":    {},
+	"allow": {},
+	"on":    {},
+	"open":  {},
+}
+
+func (s *Cvt) BoolSlice(data any) []bool { return anyToBoolSlice(data) }
+
+func anyToBoolSlice(data any) (ret []bool) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []bool:
+		return z
+
+	case []float64:
+		return zfToBoolS(z)
+	case []float32:
+		return zfToBoolS(z)
+
+	case []int:
+		return zfToBoolS(z)
+	case []int64:
+		return zfToBoolS(z)
+	case []int32:
+		return zfToBoolS(z)
+	case []int16:
+		return zfToBoolS(z)
+	case []int8:
+		return zfToBoolS(z)
+	case []uint:
+		return zfToBoolS(z)
+	case []uint64:
+		return zfToBoolS(z)
+	case []uint32:
+		return zfToBoolS(z)
+	case []uint16:
+		return zfToBoolS(z)
+	case []uint8:
+		return zfToBoolS(z)
+
+	case []string:
+		return zfToBoolS(z)
+	case []fmt.Stringer:
+		return zfToBoolS(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToBoolS[T any](in []T) (out []bool) {
+	out = make([]bool, 0, len(in))
+	for _, it := range in {
+		out = append(out, anyToBool(it))
+	}
+	return
+}
+
+func (s *Cvt) BoolMap(data any) map[string]bool { return anyToBoolMap(data) }
+
+func zfToBoolM(in map[string]any) (out map[string]bool) {
+	out = make(map[string]bool, len(in))
+	for k, it := range in {
+		out[k] = anyToBool(it)
+	}
+	return
+}
+
+func anyToBoolMap(data any) (ret map[string]bool) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]bool:
+		return z
+	case map[string]any:
+		return zfToBoolM(z)
+	default:
+		break
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Int(data any) int64 { return anyToInt(data) }
+
+func anyToInt(data any) int64 {
+	if data == nil {
+		return 0
+	}
+
+	switch z := data.(type) {
+	case int:
+		return int64(z)
+	case int8:
+		return int64(z)
+	case int16:
+		return int64(z)
+	case int32:
+		return int64(z)
+	case int64:
+		return z
+
+	case uint:
+		return int64(z)
+	case uint8:
+		return int64(z)
+	case uint16:
+		return int64(z)
+	case uint32:
+		return int64(z)
+	case uint64:
+		if z <= uint64(math.MaxInt64) {
+			return int64(z)
+		}
+		break
+
+	case float32:
+		return int64(z)
+	case float64:
+		return int64(z)
+
+	case complex64:
+		return int64(real(z))
+	case complex128:
+		return int64(real(z))
+
+	case string:
+		return atoi(z)
+
+	case time.Duration:
+		return int64(z)
+	case time.Time:
+		return z.UnixNano()
+
+	default:
+		return atoi(fmt.Sprint(data))
+	}
+
+	// reflect approach
+	rv := reflect.ValueOf(data)
+	logz.Warn("[anyToInt]: unrecognized data type",
+		"typ", ref.Typfmtv(&rv),
+		"val", ref.Valfmt(&rv),
+	)
+	return 0
+}
+
+//
+
+func (s *Cvt) Int64Slice(data any) []int64 { return anyToInt64Slice(data) }
+func (s *Cvt) Int32Slice(data any) []int32 { return anyToInt32Slice(data) }
+func (s *Cvt) Int16Slice(data any) []int16 { return anyToInt16Slice(data) }
+func (s *Cvt) Int8Slice(data any) []int8   { return anyToInt8Slice(data) }
+func (s *Cvt) IntSlice(data any) []int     { return anyToIntSlice(data) }
+
+func anyToInt64Slice(data any) (ret []int64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []int64:
+		return z
+
+	case []float64:
+		return zfToInt64S(z)
+	case []float32:
+		return zfToInt64S(z)
+
+	case []int:
+		return zfToInt64S(z)
+	case []string:
+		return zfToInt64S(z)
+	case []int32:
+		return zfToInt64S(z)
+	case []int16:
+		return zfToInt64S(z)
+	case []int8:
+		return zfToInt64S(z)
+	case []uint:
+		return zfToInt64S(z)
+	case []uint64:
+		return zfToInt64S(z)
+	case []uint32:
+		return zfToInt64S(z)
+	case []uint16:
+		return zfToInt64S(z)
+	case []uint8:
+		return zfToInt64S(z)
+
+	case []bool:
+		return zfToInt64S(z)
+	case []fmt.Stringer:
+		return zfToInt64S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt32Slice(data any) (ret []int32) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []int32:
+		return z
+
+	case []float64:
+		return zfToInt32S(z)
+	case []float32:
+		return zfToInt32S(z)
+
+	case []int:
+		return zfToInt32S(z)
+	case []string:
+		return zfToInt32S(z)
+	case []int64:
+		return zfToInt32S(z)
+	case []int16:
+		return zfToInt32S(z)
+	case []int8:
+		return zfToInt32S(z)
+	case []uint:
+		return zfToInt32S(z)
+	case []uint64:
+		return zfToInt32S(z)
+	case []uint32:
+		return zfToInt32S(z)
+	case []uint16:
+		return zfToInt32S(z)
+	case []uint8:
+		return zfToInt32S(z)
+
+	case []bool:
+		return zfToInt32S(z)
+	case []fmt.Stringer:
+		return zfToInt32S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt16Slice(data any) (ret []int16) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []int16:
+		return z
+
+	case []float64:
+		return zfToInt16S(z)
+	case []float32:
+		return zfToInt16S(z)
+
+	case []int:
+		return zfToInt16S(z)
+	case []string:
+		return zfToInt16S(z)
+	case []int32:
+		return zfToInt16S(z)
+	case []int64:
+		return zfToInt16S(z)
+	case []int8:
+		return zfToInt16S(z)
+	case []uint:
+		return zfToInt16S(z)
+	case []uint64:
+		return zfToInt16S(z)
+	case []uint32:
+		return zfToInt16S(z)
+	case []uint16:
+		return zfToInt16S(z)
+	case []uint8:
+		return zfToInt16S(z)
+
+	case []bool:
+		return zfToInt16S(z)
+	case []fmt.Stringer:
+		return zfToInt16S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt8Slice(data any) (ret []int8) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []int8:
+		return z
+
+	case []float64:
+		return zfToInt8S(z)
+	case []float32:
+		return zfToInt8S(z)
+
+	case []int:
+		return zfToInt8S(z)
+	case []string:
+		return zfToInt8S(z)
+	case []int32:
+		return zfToInt8S(z)
+	case []int16:
+		return zfToInt8S(z)
+	case []int64:
+		return zfToInt8S(z)
+	case []uint:
+		return zfToInt8S(z)
+	case []uint64:
+		return zfToInt8S(z)
+	case []uint32:
+		return zfToInt8S(z)
+	case []uint16:
+		return zfToInt8S(z)
+	case []uint8:
+		return zfToInt8S(z)
+
+	case []bool:
+		return zfToInt8S(z)
+	case []fmt.Stringer:
+		return zfToInt8S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToIntSlice(data any) (ret []int) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []int:
+		return z
+
+	case []float64:
+		return zfToIntS(z)
+	case []float32:
+		return zfToIntS(z)
+
+	case []int64:
+		return zfToIntS(z)
+	case []string:
+		return zfToIntS(z)
+	case []int32:
+		return zfToIntS(z)
+	case []int16:
+		return zfToIntS(z)
+	case []int8:
+		return zfToIntS(z)
+	case []uint:
+		return zfToIntS(z)
+	case []uint64:
+		return zfToIntS(z)
+	case []uint32:
+		return zfToIntS(z)
+	case []uint16:
+		return zfToIntS(z)
+	case []uint8:
+		return zfToIntS(z)
+
+	case []bool:
+		return zfToIntS(z)
+	case []fmt.Stringer:
+		return zfToIntS(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToInt64S[T any](in []T) (out []int64) {
+	out = make([]int64, 0, len(in))
+	for _, it := range in {
+		out = append(out, anyToInt(it))
+	}
+	return
+}
+
+func zfToInt32S[T any](in []T) (out []int32) {
+	out = make([]int32, 0, len(in))
+	for _, it := range in {
+		out = append(out, int32(anyToInt(it)))
+	}
+	return
+}
+
+func zfToInt16S[T any](in []T) (out []int16) {
+	out = make([]int16, 0, len(in))
+	for _, it := range in {
+		out = append(out, int16(anyToInt(it)))
+	}
+	return
+}
+
+func zfToInt8S[T any](in []T) (out []int8) {
+	out = make([]int8, 0, len(in))
+	for _, it := range in {
+		out = append(out, int8(anyToInt(it)))
+	}
+	return
+}
+
+func zfToIntS[T any](in []T) (out []int) {
+	out = make([]int, 0, len(in))
+	for _, it := range in {
+		out = append(out, int(anyToInt(it)))
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Int64Map(data any) map[string]int64 { return anyToInt64Map(data) }
+func (s *Cvt) Int32Map(data any) map[string]int32 { return anyToInt32Map(data) }
+func (s *Cvt) Int16Map(data any) map[string]int16 { return anyToInt16Map(data) }
+func (s *Cvt) Int8Map(data any) map[string]int8   { return anyToInt8Map(data) }
+func (s *Cvt) IntMap(data any) map[string]int     { return anyToIntMap(data) }
+
+func anyToInt64Map(data any) (ret map[string]int64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]int64:
+		return z
+	case map[string]any:
+		return zfToInt64M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt32Map(data any) (ret map[string]int32) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]int32:
+		return z
+	case map[string]any:
+		return zfToInt32M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt16Map(data any) (ret map[string]int16) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]int16:
+		return z
+	case map[string]any:
+		return zfToInt16M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToInt8Map(data any) (ret map[string]int8) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]int8:
+		return z
+	case map[string]any:
+		return zfToInt8M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToIntMap(data any) (ret map[string]int) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]int:
+		return z
+	case map[string]any:
+		return zfToIntM(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToInt64M(in map[string]any) (out map[string]int64) {
+	out = make(map[string]int64, len(in))
+	for k, it := range in {
+		out[k] = anyToInt(it)
+	}
+	return
+}
+
+func zfToInt32M(in map[string]any) (out map[string]int32) {
+	out = make(map[string]int32, len(in))
+	for k, it := range in {
+		out[k] = int32(anyToInt(it))
+	}
+	return
+}
+
+func zfToInt16M(in map[string]any) (out map[string]int16) {
+	out = make(map[string]int16, len(in))
+	for k, it := range in {
+		out[k] = int16(anyToInt(it))
+	}
+	return
+}
+
+func zfToInt8M(in map[string]any) (out map[string]int8) {
+	out = make(map[string]int8, len(in))
+	for k, it := range in {
+		out[k] = int8(anyToInt(it))
+	}
+	return
+}
+
+func zfToIntM(in map[string]any) (out map[string]int) {
+	out = make(map[string]int, len(in))
+	for k, it := range in {
+		out[k] = int(anyToInt(it))
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Uint(data any) uint64 { return anyToUint(data) }
+
+func anyToUint(data any) uint64 {
+	if data == nil {
+		return 0
+	}
+
+	switch z := data.(type) {
+	case int:
+		return uint64(z)
+	case int8:
+		return uint64(z)
+	case int16:
+		return uint64(z)
+	case int32:
+		return uint64(z)
+	case int64:
+		return uint64(z)
+
+	case uint:
+		return uint64(z)
+	case uint8:
+		return uint64(z)
+	case uint16:
+		return uint64(z)
+	case uint32:
+		return uint64(z)
+	case uint64:
+		return z
+
+	case float32:
+		return uint64(z)
+	case float64:
+		return uint64(z)
+
+	case complex64:
+		return uint64(real(z))
+	case complex128:
+		return uint64(real(z))
+
+	case string:
+		return atou(z)
+
+	case time.Duration:
+		return uint64(z)
+	case time.Time:
+		return uint64(z.UnixNano())
+
+	default:
+		return atou(fmt.Sprint(data))
+	}
+}
+
+func atoi(v string) int64 {
+	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+		return i
+	}
+	if f, err := strconv.ParseFloat(v, 64); err == nil {
+		return int64(f)
+	}
+	if u, err := strconv.ParseUint(v, 10, 64); err != nil {
+		return int64(u)
+	}
+	return 0
+}
+
+func atou(v string) uint64 {
+	if u, err := strconv.ParseUint(v, 10, 64); err != nil {
+		return u
+	}
+	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+		return uint64(i)
+	}
+	if f, err := strconv.ParseFloat(v, 64); err == nil {
+		return uint64(f)
+	}
+	return 0
+}
+
+//
+
+func (s *Cvt) Uint64Slice(data any) []uint64 { return anyToUint64Slice(data) }
+func (s *Cvt) Uint32Slice(data any) []uint32 { return anyToUint32Slice(data) }
+func (s *Cvt) Uint16Slice(data any) []uint16 { return anyToUint16Slice(data) }
+func (s *Cvt) Uint8Slice(data any) []uint8   { return anyToUint8Slice(data) }
+func (s *Cvt) UintSlice(data any) []uint     { return anyToUintSlice(data) }
+
+func anyToUint64Slice(data any) (ret []uint64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []uint64:
+		return z
+
+	case []float64:
+		return zfToUint64S(z)
+	case []float32:
+		return zfToUint64S(z)
+
+	case []int:
+		return zfToUint64S(z)
+	case []string:
+		return zfToUint64S(z)
+	case []int32:
+		return zfToUint64S(z)
+	case []int16:
+		return zfToUint64S(z)
+	case []int8:
+		return zfToUint64S(z)
+	case []uint:
+		return zfToUint64S(z)
+	case []int64:
+		return zfToUint64S(z)
+	case []uint32:
+		return zfToUint64S(z)
+	case []uint16:
+		return zfToUint64S(z)
+	case []uint8:
+		return zfToUint64S(z)
+
+	case []bool:
+		return zfToUint64S(z)
+	case []fmt.Stringer:
+		return zfToUint64S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint32Slice(data any) (ret []uint32) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []uint32:
+		return z
+
+	case []float64:
+		return zfToUint32S(z)
+	case []float32:
+		return zfToUint32S(z)
+
+	case []int:
+		return zfToUint32S(z)
+	case []string:
+		return zfToUint32S(z)
+	case []int64:
+		return zfToUint32S(z)
+	case []int16:
+		return zfToUint32S(z)
+	case []int8:
+		return zfToUint32S(z)
+	case []uint:
+		return zfToUint32S(z)
+	case []uint64:
+		return zfToUint32S(z)
+	case []int32:
+		return zfToUint32S(z)
+	case []uint16:
+		return zfToUint32S(z)
+	case []uint8:
+		return zfToUint32S(z)
+
+	case []bool:
+		return zfToUint32S(z)
+	case []fmt.Stringer:
+		return zfToUint32S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint16Slice(data any) (ret []uint16) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []uint16:
+		return z
+
+	case []float64:
+		return zfToUint16S(z)
+	case []float32:
+		return zfToUint16S(z)
+
+	case []int:
+		return zfToUint16S(z)
+	case []string:
+		return zfToUint16S(z)
+	case []int32:
+		return zfToUint16S(z)
+	case []int64:
+		return zfToUint16S(z)
+	case []int8:
+		return zfToUint16S(z)
+	case []uint:
+		return zfToUint16S(z)
+	case []uint64:
+		return zfToUint16S(z)
+	case []uint32:
+		return zfToUint16S(z)
+	case []int16:
+		return zfToUint16S(z)
+	case []uint8:
+		return zfToUint16S(z)
+
+	case []bool:
+		return zfToUint16S(z)
+	case []fmt.Stringer:
+		return zfToUint16S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint8Slice(data any) (ret []uint8) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []uint8:
+		return z
+
+	case []float64:
+		return zfToUint8S(z)
+	case []float32:
+		return zfToUint8S(z)
+
+	case []int:
+		return zfToUint8S(z)
+	case []string:
+		return zfToUint8S(z)
+	case []int32:
+		return zfToUint8S(z)
+	case []int16:
+		return zfToUint8S(z)
+	case []int64:
+		return zfToUint8S(z)
+	case []uint:
+		return zfToUint8S(z)
+	case []uint64:
+		return zfToUint8S(z)
+	case []uint32:
+		return zfToUint8S(z)
+	case []uint16:
+		return zfToUint8S(z)
+	case []int8:
+		return zfToUint8S(z)
+
+	case []bool:
+		return zfToUint8S(z)
+	case []fmt.Stringer:
+		return zfToUint8S(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUintSlice(data any) (ret []uint) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []uint:
+		return z
+
+	case []float64:
+		return zfToUintS(z)
+	case []float32:
+		return zfToUintS(z)
+
+	case []int64:
+		return zfToUintS(z)
+	case []string:
+		return zfToUintS(z)
+	case []int32:
+		return zfToUintS(z)
+	case []int16:
+		return zfToUintS(z)
+	case []int8:
+		return zfToUintS(z)
+	case []int:
+		return zfToUintS(z)
+	case []uint64:
+		return zfToUintS(z)
+	case []uint32:
+		return zfToUintS(z)
+	case []uint16:
+		return zfToUintS(z)
+	case []uint8:
+		return zfToUintS(z)
+
+	case []bool:
+		return zfToUintS(z)
+	case []fmt.Stringer:
+		return zfToUintS(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToUint64S[T any](in []T) (out []uint64) {
+	out = make([]uint64, 0, len(in))
+	for _, it := range in {
+		out = append(out, anyToUint(it))
+	}
+	return
+}
+
+func zfToUint32S[T any](in []T) (out []uint32) {
+	out = make([]uint32, 0, len(in))
+	for _, it := range in {
+		out = append(out, uint32(anyToUint(it)))
+	}
+	return
+}
+
+func zfToUint16S[T any](in []T) (out []uint16) {
+	out = make([]uint16, 0, len(in))
+	for _, it := range in {
+		out = append(out, uint16(anyToUint(it)))
+	}
+	return
+}
+
+func zfToUint8S[T any](in []T) (out []uint8) {
+	out = make([]uint8, 0, len(in))
+	for _, it := range in {
+		out = append(out, uint8(anyToUint(it)))
+	}
+	return
+}
+
+func zfToUintS[T any](in []T) (out []uint) {
+	out = make([]uint, 0, len(in))
+	for _, it := range in {
+		out = append(out, uint(anyToUint(it)))
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Uint64Map(data any) map[string]uint64 { return anyToUint64Map(data) }
+func (s *Cvt) Uint32Map(data any) map[string]uint32 { return anyToUint32Map(data) }
+func (s *Cvt) Uint16Map(data any) map[string]uint16 { return anyToUint16Map(data) }
+func (s *Cvt) Uint8Map(data any) map[string]uint8   { return anyToUint8Map(data) }
+func (s *Cvt) UintMap(data any) map[string]uint     { return anyToUintMap(data) }
+
+func anyToUint64Map(data any) (ret map[string]uint64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]uint64:
+		return z
+	case map[string]any:
+		return zfToUint64M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint32Map(data any) (ret map[string]uint32) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]uint32:
+		return z
+	case map[string]any:
+		return zfToUint32M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint16Map(data any) (ret map[string]uint16) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]uint16:
+		return z
+	case map[string]any:
+		return zfToUint16M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUint8Map(data any) (ret map[string]uint8) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]uint8:
+		return z
+	case map[string]any:
+		return zfToUint8M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToUintMap(data any) (ret map[string]uint) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]uint:
+		return z
+	case map[string]any:
+		return zfToUintM(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToUint64M(in map[string]any) (out map[string]uint64) {
+	out = make(map[string]uint64, len(in))
+	for k, it := range in {
+		out[k] = anyToUint(it)
+	}
+	return
+}
+
+func zfToUint32M(in map[string]any) (out map[string]uint32) {
+	out = make(map[string]uint32, len(in))
+	for k, it := range in {
+		out[k] = uint32(anyToUint(it))
+	}
+	return
+}
+
+func zfToUint16M(in map[string]any) (out map[string]uint16) {
+	out = make(map[string]uint16, len(in))
+	for k, it := range in {
+		out[k] = uint16(anyToUint(it))
+	}
+	return
+}
+
+func zfToUint8M(in map[string]any) (out map[string]uint8) {
+	out = make(map[string]uint8, len(in))
+	for k, it := range in {
+		out[k] = uint8(anyToUint(it))
+	}
+	return
+}
+
+func zfToUintM(in map[string]any) (out map[string]uint) {
+	out = make(map[string]uint, len(in))
+	for k, it := range in {
+		out[k] = uint(anyToUint(it))
+	}
+	return
+}
+
+//
+
+//
+
+func anyToString(data any) string {
+	if data == nil {
+		return "<nil>"
+	}
+	rv := reflect.ValueOf(data)
+	if ref.IsZero(rv) {
+		return "<zero>"
+	}
+
+	switch z := data.(type) {
+	case string:
+		return z
+
+	case time.Duration:
+		return durationToString(z)
+	case time.Time:
+		return timeToString(z)
+	case []time.Time:
+		return timeSliceToString(z)
+	case []time.Duration:
+		return durationSliceToString(z)
+
+	case error:
+		return z.Error()
+
+	case fmt.Stringer:
+		return z.String()
+
+	case bool:
+		return boolToString(z)
+
+	case []byte:
+		return bytesToString(z)
+
+	case []string:
+		return stringSliceToString(z)
+
+	case []bool:
+		return boolSliceToString(z)
+
+	case []int:
+		return intSliceToString(z)
+	case []int8:
+		return intSliceToString(z)
+	case []int16:
+		return intSliceToString(z)
+	case []int32:
+		return intSliceToString(z)
+	case []int64:
+		return intSliceToString(z)
+
+	case int:
+		return intToString(z)
+	case int8:
+		return intToString(z)
+	case int16:
+		return intToString(z)
+	case int32:
+		return intToString(z)
+	case int64:
+		return intToString(z)
+
+	case []uint:
+		return uintSliceToString(z)
+	// case []uint8: // = []byte
+	case []uint16:
+		return uintSliceToString(z)
+	case []uint32:
+		return uintSliceToString(z)
+	case []uint64:
+		return uintSliceToString(z)
+
+	case uint:
+		return uintToString(z)
+	case uint8:
+		return uintToString(z)
+	case uint16:
+		return uintToString(z)
+	case uint32:
+		return uintToString(z)
+	case uint64:
+		return uintToString(z)
+
+	case []float32:
+		return floatSliceToString(z)
+	case []float64:
+		return floatSliceToString(z)
+
+	case float32:
+		return floatToString(z)
+	case float64:
+		return floatToString(z)
+
+	case []complex64:
+		return complexSliceToString(z)
+	case []complex128:
+		return complexSliceToString(z)
+
+	case complex64:
+		return complexToString(z)
+	case complex128:
+		return complexToString(z)
+
+	default:
+		break
+	}
+
+	// reflect approach
+	logz.Warn("[anyToString]: unrecognized data type",
+		"typ", ref.Typfmtv(&rv),
+		"val", ref.Valfmt(&rv),
+	)
+	return ref.Valfmt(&rv)
+}
+
+//
+
+func (s *Cvt) Float64(data any) float64 { return anyToFloat[float64](data) }
+func (s *Cvt) Float32(data any) float32 { return anyToFloat[float32](data) }
+
+func anyToFloat[R Floats](data any) R {
+	if data == nil {
+		return 0
+	}
+
+	switch z := data.(type) {
+	case float64:
+		return R(z)
+	case float32:
+		return R(z)
+
+	case int:
+		return R(z)
+	case int64:
+		return R(z)
+	case int32:
+		return R(z)
+	case int16:
+		return R(z)
+	case int8:
+		return R(z)
+	case uint:
+		return R(z)
+	case uint64:
+		return R(z)
+	case uint32:
+		return R(z)
+	case uint16:
+		return R(z)
+	case uint8:
+		return R(z)
+
+	case string:
+		return R(mustParseFloat(z))
+	case fmt.Stringer:
+		return R(mustParseFloat(z.String()))
+
+	default:
+		str := fmt.Sprintf("%v", data)
+		return R(mustParseFloat(str))
+	}
+}
+
+func mustParseFloat(s string) (ret float64) {
+	ret, _ = strconv.ParseFloat(s, 64)
+	return
+}
+
+func (s *Cvt) Float64Slice(data any) []float64 { return anyToFloatSlice[float64](data) }
+func (s *Cvt) Float32Slice(data any) []float32 { return anyToFloatSlice[float32](data) }
+
+func zfToFloatS[T Floats, R Floats](in []T) (out []R) {
+	out = make([]R, 0, len(in))
+	for _, it := range in {
+		out = append(out, R(it))
+	}
+	return
+}
+
+func anyToFloatSlice[R Floats](data any) (ret []R) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []float64:
+		return zfToFloatS[float64, R](z)
+	case []float32:
+		return zfToFloatS[float32, R](z)
+
+	case []int:
+		return zsToFloatS[int, R](z)
+	case []int64:
+		return zsToFloatS[int64, R](z)
+	case []int32:
+		return zsToFloatS[int32, R](z)
+	case []int16:
+		return zsToFloatS[int16, R](z)
+	case []int8:
+		return zsToFloatS[int8, R](z)
+	case []uint:
+		return zsToFloatS[uint, R](z)
+	case []uint64:
+		return zsToFloatS[uint64, R](z)
+	case []uint32:
+		return zsToFloatS[uint32, R](z)
+	case []uint16:
+		return zsToFloatS[uint16, R](z)
+	case []uint8:
+		return zsToFloatS[uint8, R](z)
+
+	case []string:
+		ret = make([]R, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, R(mustParseFloat(it)))
+		}
+		return
+	case []fmt.Stringer:
+		ret = make([]R, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, R(mustParseFloat(it.String())))
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+func zsToFloatS[T Integers | Uintegers, R Floats](z []T) (ret []R) {
+	ret = make([]R, 0, len(z))
+	for _, it := range z {
+		ret = append(ret, R(int64(it)))
+	}
+	return
+}
+
+func (s *Cvt) Float64Map(data any) map[string]float64 { return anyToFloat64Map(data) }
+func (s *Cvt) Float32Map(data any) map[string]float32 { return anyToFloat32Map(data) }
+
+func anyToFloat64Map(data any) (ret map[string]float64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]float64:
+		return z
+	case map[string]any:
+		return zfToFloat64M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToFloat32Map(data any) (ret map[string]float32) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]float32:
+		return z
+	case map[string]any:
+		return zfToFloat32M(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToFloat64M(in map[string]any) (out map[string]float64) {
+	out = make(map[string]float64, len(in))
+	for k, it := range in {
+		out[k] = anyToFloat[float64](it)
+	}
+	return
+}
+
+func zfToFloat32M(in map[string]any) (out map[string]float32) {
+	out = make(map[string]float32, len(in))
+	for k, it := range in {
+		out[k] = anyToFloat[float32](it)
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Complex128(data any) complex128 { return anyToComplex[complex128](data) }
+func (s *Cvt) Complex64(data any) complex64   { return anyToComplex[complex64](data) }
+
+func anyToComplex[R Complexes](data any) R {
+	if data == nil {
+		return 0
+	}
+
+	switch z := data.(type) {
+	case complex128:
+		return R(z)
+	case complex64:
+		return R(z)
+
+	case int:
+		return R(complex(float64(z), 0))
+	case int64:
+		return R(complex(float64(z), 0))
+	case int32:
+		return R(complex(float64(z), 0))
+	case int16:
+		return R(complex(float64(z), 0))
+	case int8:
+		return R(complex(float64(z), 0))
+	case uint:
+		return R(complex(float64(z), 0))
+	case uint64:
+		return R(complex(float64(z), 0))
+	case uint32:
+		return R(complex(float64(z), 0))
+	case uint16:
+		return R(complex(float64(z), 0))
+	case uint8:
+		return R(complex(float64(z), 0))
+
+	case float64:
+		return R(complex(float64(z), 0))
+	case float32:
+		return R(complex(float32(z), 0))
+
+	case string:
+		return R(mustParseComplex(z))
+	case fmt.Stringer:
+		return R(mustParseComplex(z.String()))
+
+	default:
+		str := fmt.Sprintf("%v", data)
+		return R(mustParseComplex(str))
+	}
+}
+
+func mustParseComplex(s string) (ret complex128) {
+	ret, _ = strconv.ParseComplex(s, 64)
+	return
+}
+
+func (s *Cvt) Complex128Slice(data any) []complex128 { return anyToComplexSlice[complex128](data) }
+func (s *Cvt) Complex64Slice(data any) []complex64   { return anyToComplexSlice[complex64](data) }
+
+func zfToComplexS[T Complexes, R Complexes](in []T) (out []R) {
+	out = make([]R, 0, len(in))
+	for _, it := range in {
+		out = append(out, R(it))
+	}
+	return
+}
+
+func anyToComplexSlice[R Complexes](data any) (ret []R) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []complex128:
+		return zfToComplexS[complex128, R](z)
+	case []complex64:
+		return zfToComplexS[complex64, R](z)
+
+	case []float64:
+		return zsToComplexS[float64, R](z)
+	case []float32:
+		return zsToComplexS[float32, R](z)
+
+	case []int:
+		return zsToComplexS[int, R](z)
+	case []int64:
+		return zsToComplexS[int64, R](z)
+	case []int32:
+		return zsToComplexS[int32, R](z)
+	case []int16:
+		return zsToComplexS[int16, R](z)
+	case []int8:
+		return zsToComplexS[int8, R](z)
+	case []uint:
+		return zsToComplexS[uint, R](z)
+	case []uint64:
+		return zsToComplexS[uint64, R](z)
+	case []uint32:
+		return zsToComplexS[uint32, R](z)
+	case []uint16:
+		return zsToComplexS[uint16, R](z)
+	case []uint8:
+		return zsToComplexS[uint8, R](z)
+
+	case []string:
+		ret = make([]R, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, R(mustParseComplex(it)))
+		}
+		return
+	case []fmt.Stringer:
+		ret = make([]R, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, R(mustParseComplex(it.String())))
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+func zsToComplexS[T Integers | Uintegers | Floats, R Complexes](z []T) (ret []R) {
+	ret = make([]R, 0, len(z))
+	for _, it := range z {
+		ret = append(ret, R(complex(float64(it), 0)))
+	}
+	return
+}
+
+func (s *Cvt) Complex128Map(data any) map[string]complex128 { return anyToComplex128Map(data) }
+func (s *Cvt) Complex64Map(data any) map[string]complex64   { return anyToComplex64Map(data) }
+
+func anyToComplex128Map(data any) (ret map[string]complex128) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]complex128:
+		return z
+	case map[string]any:
+		return zfToComplex128M(z)
+	default:
+		break
+	}
+	return
+}
+
+func anyToComplex64Map(data any) (ret map[string]complex64) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]complex64:
+		return z
+	case map[string]any:
+		return zfToComplex64M(z)
+	default:
+		break
+	}
+	return
+}
+
+func zfToComplex128M(in map[string]any) (out map[string]complex128) {
+	out = make(map[string]complex128, len(in))
+	for k, it := range in {
+		out[k] = anyToComplex[complex128](it)
+	}
+	return
+}
+
+func zfToComplex64M(in map[string]any) (out map[string]complex64) {
+	out = make(map[string]complex64, len(in))
+	for k, it := range in {
+		out[k] = anyToComplex[complex64](it)
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Duration(data any) time.Duration { return anyToDuration(data) }
+
+func anyToDuration(data any) time.Duration {
+	if data == nil {
+		return 0
+	}
+
+	switch z := data.(type) {
+	case time.Duration:
+		return z
+
+	case int:
+		return time.Duration(int64(z))
+	case int64:
+		return time.Duration(int64(z))
+	case int32:
+		return time.Duration(int64(z))
+	case int16:
+		return time.Duration(int64(z))
+	case int8:
+		return time.Duration(int64(z))
+	case uint:
+		return time.Duration(int64(z))
+	case uint64:
+		return time.Duration(int64(z))
+	case uint32:
+		return time.Duration(int64(z))
+	case uint16:
+		return time.Duration(int64(z))
+	case uint8:
+		return time.Duration(int64(z))
+
+	case string:
+		return mustParseDuration(z)
+	case fmt.Stringer:
+		return mustParseDuration(z.String())
+
+	default:
+		str := fmt.Sprintf("%v", data)
+		return mustParseDuration(str)
+	}
+}
+
+func (s *Cvt) DurationSlice(data any) []time.Duration { return anyToDurationSlice(data) }
+
+func anyToDurationSlice(data any) (ret []time.Duration) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []time.Duration:
+		return z
+
+	case []int:
+		return zsToDurationS(z)
+	case []int64:
+		return zsToDurationS(z)
+	case []int32:
+		return zsToDurationS(z)
+	case []int16:
+		return zsToDurationS(z)
+	case []int8:
+		return zsToDurationS(z)
+	case []uint:
+		return zsToDurationS(z)
+	case []uint64:
+		return zsToDurationS(z)
+	case []uint32:
+		return zsToDurationS(z)
+	case []uint16:
+		return zsToDurationS(z)
+	case []uint8:
+		return zsToDurationS(z)
+
+	case []string:
+		ret = make([]time.Duration, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, mustParseDuration(it))
+		}
+		return
+	case []fmt.Stringer:
+		ret = make([]time.Duration, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, mustParseDuration(it.String()))
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+func mustParseDuration(s string) (dur time.Duration) {
+	dur, _ = time.ParseDuration(s)
+	return
+}
+
+func zsToDurationS[T Integers | Uintegers](z []T) (ret []time.Duration) {
+	ret = make([]time.Duration, 0, len(z))
+	for _, it := range z {
+		ret = append(ret, time.Duration(int64(it)))
+	}
+	return
+}
+
+func (s *Cvt) DurationMap(data any) map[string]time.Duration { return anyToDurationMap(data) }
+
+func anyToDurationMap(data any) (ret map[string]time.Duration) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]time.Duration:
+		return z
+	case map[string]string:
+		ret = make(map[string]time.Duration, len(z))
+		for k, v := range z {
+			ret[k] = mustParseDuration(v)
+		}
+		return
+	case map[string]fmt.Stringer:
+		ret = make(map[string]time.Duration, len(z))
+		for k, v := range z {
+			ret[k] = mustParseDuration(v.String())
+		}
+		return
+	case map[string]any:
+		ret = make(map[string]time.Duration, len(z))
+		for k, v := range z {
+			ret[k] = anyToDuration(v)
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+//
+
+func (s *Cvt) Time(data any) time.Time { return anyToTime(data) }
+
+func anyToTime(data any) (tm time.Time) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case time.Time:
+		return z
+	case *time.Time:
+		return *z
+
+	case int:
+		return time.Unix(int64(z), 0)
+	case int64:
+		return time.Unix(int64(z), 0)
+	case int32:
+		return time.Unix(int64(z), 0)
+	case int16:
+		return time.Unix(int64(z), 0)
+	case int8:
+		return time.Unix(int64(z), 0)
+	case uint:
+		return time.Unix(int64(z), 0)
+	case uint64:
+		return time.Unix(int64(z), 0)
+	case uint32:
+		return time.Unix(int64(z), 0)
+	case uint16:
+		return time.Unix(int64(z), 0)
+	case uint8:
+		return time.Unix(int64(z), 0)
+
+	case string:
+		return mustSmartParseTime(z)
+	case fmt.Stringer:
+		return mustSmartParseTime(z.String())
+
+	default:
+		str := fmt.Sprintf("%v", data)
+		return mustSmartParseTime(str)
+	}
+}
+
+// mustSmartParseTime parses a formatted string and returns the time value it represents.
+func mustSmartParseTime(str string) (tm time.Time) {
+	tm, _ = smartParseTime(str)
+	return
+}
+
+func smartParseTime(str string) (tm time.Time, err error) {
+	for _, layout := range onceInitTimeFormats() {
+		if tm, err = time.Parse(layout, str); err == nil {
+			break
+		}
+	}
+	return
+}
+
+var knownDateTimeFormats []string
+var onceFormats sync.Once
+
+func onceInitTimeFormats() []string {
+	onceFormats.Do(func() {
+		knownDateTimeFormats = []string{
+			"2006-01-02 15:04:05.999999999 -0700",
+			"2006-01-02 15:04:05.999999999Z07:00",
+			"2006-01-02 15:04:05.999999999",
+			"2006-01-02 15:04:05.999",
+			"2006-01-02 15:04:05",
+			"2006-01-02",
+			"2006/01/02",
+			"01/02/2006",
+			"01-02",
+
+			"2006-1-2 15:4:5.999999999 -0700",
+			"2006-1-2 15:4:5.999999999Z07:00",
+			"2006-1-2 15:4:5.999999999",
+			"2006-1-2 15:4:5.999",
+			"2006-1-2 15:4:5",
+			"2006-1-2",
+			"2006/1/2",
+			"1/2/2006",
+			"1-2",
+
+			"15:04:05.999999999",
+			"15:04.999999999",
+			"15:04:05.999",
+			"15:04.999",
+			"15:04:05",
+			"15:04",
+
+			"15:4:5.999999999",
+			"15:4.999999999",
+			"15:4:5.999",
+			"15:4.999",
+			"15:4:5",
+			"15:4",
+
+			time.RFC3339,
+			time.RFC3339Nano,
+			time.RFC1123Z,
+			time.RFC1123,
+			time.RFC850,
+			time.RFC822Z,
+			time.RFC822,
+			time.RubyDate,
+			time.UnixDate,
+			time.ANSIC,
+		}
+	})
+	return knownDateTimeFormats
+}
+
+func (s *Cvt) TimeSlice(data any) []time.Time { return anyToTimeSlice(data) }
+
+func anyToTimeSlice(data any) (ret []time.Time) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case []time.Time:
+		return z
+	case []*time.Time:
+		break // todo convert []*time.Time to []time.Time?
+
+	case []int:
+		return zsToTimeS(z)
+	case []int64:
+		return zsToTimeS(z)
+	case []int32:
+		return zsToTimeS(z)
+	case []int16:
+		return zsToTimeS(z)
+	case []int8:
+		return zsToTimeS(z)
+	case []uint:
+		return zsToTimeS(z)
+	case []uint64:
+		return zsToTimeS(z)
+	case []uint32:
+		return zsToTimeS(z)
+	case []uint16:
+		return zsToTimeS(z)
+	case []uint8:
+		return zsToTimeS(z)
+
+	case []string:
+		ret = make([]time.Time, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, mustSmartParseTime(it))
+		}
+		return
+	case []fmt.Stringer:
+		ret = make([]time.Time, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, mustSmartParseTime(it.String()))
+		}
+		return
+
+	case []any:
+		ret = make([]time.Time, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, anyToTime(it))
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+func zsToTimeS[T Integers | Uintegers](z []T) (ret []time.Time) {
+	ret = make([]time.Time, 0, len(z))
+	for _, it := range z {
+		ret = append(ret, time.Unix(int64(it), 0))
+	}
+	return
+}
+
+func (s *Cvt) TimeMap(data any) map[string]time.Time { return anyToTimeMap(data) }
+
+func anyToTimeMap(data any) (ret map[string]time.Time) {
+	if data == nil {
+		return
+	}
+
+	switch z := data.(type) {
+	case map[string]time.Time:
+		return z
+	case map[string]string:
+		ret = make(map[string]time.Time, len(z))
+		for k, v := range z {
+			ret[k] = mustSmartParseTime(v)
+		}
+		return
+	case map[string]fmt.Stringer:
+		ret = make(map[string]time.Time, len(z))
+		for k, v := range z {
+			ret[k] = mustSmartParseTime(v.String())
+		}
+		return
+	case map[string]any:
+		ret = make(map[string]time.Time, len(z))
+		for k, v := range z {
+			ret[k] = anyToTime(v)
+		}
+		return
+
+	default:
+		break
+	}
+	return
+}
+
+//
+
+//
+
+//
+
+//
 
 //
 
@@ -283,8 +2294,8 @@ func (c *cvtbase) safeType(tgt, tgtptr reflect.Value) reflect.Type {
 		}
 		return tgtptr.Type().Elem()
 	}
-	log.Panicf("niltyp !! CANNOT fetch type: tgt = %v, tgtptr = %v", tool.Typfmtv(&tgt), tool.Typfmtv(&tgtptr))
-	return tool.Niltyp
+	logz.Panic("niltyp !! CANNOT fetch type:", "tgt", ref.Typfmtv(&tgt), "tgtptr", ref.Typfmtv(&tgtptr))
+	return ref.Niltyp
 }
 
 // processUnexportedField try to set newval into target if it's an unexported field.
@@ -305,11 +2316,11 @@ func (c *cvtbase) checkSource(ctx *ValueConverterContext, source reflect.Value, 
 	if processed = ctx.isGroupedFlagOKDeeply(cms.Ignore); processed {
 		return
 	}
-	if processed = tool.IsNil(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty); processed {
+	if processed = ref.IsNil(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfNil, cms.OmitIfEmpty); processed {
 		target = reflect.Zero(targetType)
 		return
 	}
-	if processed = tool.IsZero(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty); processed {
+	if processed = ref.IsZero(source) && ctx.isGroupedFlagOKDeeply(cms.OmitIfZero, cms.OmitIfEmpty); processed {
 		target = reflect.Zero(targetType)
 	}
 	return
@@ -317,13 +2328,32 @@ func (c *cvtbase) checkSource(ctx *ValueConverterContext, source reflect.Value, 
 
 //nolint:lll //no why
 func (c *cvtbase) checkTarget(ctx *ValueConverterContext, target reflect.Value, targetType reflect.Type) (processed bool) {
-	if processed = !target.IsValid(); processed {
+	// if processed = !target.IsValid(); processed {
+	// 	return
+	// }
+
+	if processed = c.checkTargetLite(ctx, target, targetType); processed {
 		return
 	}
-	if processed = tool.IsNil(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil); processed {
+
+	if processed = !ref.IsValid(target); processed {
 		return
 	}
-	processed = tool.IsZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero)
+
+	return
+}
+
+//nolint:lll //no why
+func (c *cvtbase) checkTargetLite(ctx *ValueConverterContext, target reflect.Value, targetType reflect.Type) (processed bool) {
+	// if processed = !target.IsValid(); processed {
+	// 	return
+	// }
+
+	if processed = ref.IsNil(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetNil); processed {
+		return
+	}
+	processed = ref.IsZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero)
+
 	return
 }
 
@@ -333,7 +2363,7 @@ type toConverterBase struct{ cvtbase }
 
 func (c *toConverterBase) fallback(target reflect.Value) (err error) {
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
-	tool.Rindirect(target).Set(reflect.Zero(tgtType))
+	ref.Rindirect(target).Set(reflect.Zero(tgtType))
 	return
 }
 
@@ -394,10 +2424,10 @@ func (c *fromConverterBase) postCopyTo(ctx *ValueConverterContext, source, targe
 	nv, err = c.convertToOrZeroTarget(ctx, source, target.Type())
 	if err == nil {
 		if target.CanSet() {
-			dbglog.Log("    postCopyTo: set nv(%v) into target (%v)", tool.Valfmt(&nv), tool.Valfmt(&target))
+			dbglog.Log("    postCopyTo: set nv(%v) into target (%v)", ref.Valfmt(&nv), ref.Valfmt(&target))
 			target.Set(nv)
 		} else {
-			err = ErrCannotSet.FormatWith(tool.Valfmt(&target), tool.Typfmtv(&target), tool.Valfmt(&nv), tool.Typfmtv(&nv))
+			err = ErrCannotSet.FormatWith(ref.Valfmt(&target), ref.Typfmtv(&target), ref.Valfmt(&nv), ref.Typfmtv(&nv))
 		}
 	}
 	return
@@ -405,7 +2435,7 @@ func (c *fromConverterBase) postCopyTo(ctx *ValueConverterContext, source, targe
 
 func (c *fromConverterBase) convertToOrZeroTarget(ctx *ValueConverterContext,
 	source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
-	if tool.CanConvert(&source, targetType) {
+	if ref.CanConvert(&source, targetType) {
 		nv := source.Convert(targetType)
 		target = nv
 	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
@@ -424,7 +2454,7 @@ type toStringConverter struct{ toConverterBase }
 
 func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	if source.IsValid() {
-		if tool.CanConvert(&source, target.Type()) {
+		if ref.CanConvert(&source, target.Type()) {
 			nv := source.Convert(target.Type())
 			if c.processUnexportedField(ctx, target, nv) {
 				return
@@ -447,13 +2477,13 @@ func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, targe
 }
 
 func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("     target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		return
 	}
 
@@ -461,7 +2491,7 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 		if c.processUnexportedField(ctx, target, ret) {
 			return
 		}
-		dbglog.Log("     set: %v (%v) <- %v", tool.Valfmt(&target), tool.Typfmtv(&target), tool.Valfmt(&ret))
+		dbglog.Log("     set: %v (%v) <- %v", ref.Valfmt(&target), ref.Typfmtv(&target), ref.Valfmt(&ret))
 		tgtptr.Set(ret)
 	} else {
 		err = c.postCopyTo(ctx, source, target)
@@ -574,13 +2604,13 @@ func tryMarshalling(source reflect.Value) (str string, processed bool, err error
 type fromStringConverter struct{ fromConverterBase }
 
 func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgttyp))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgttyp))
 
-	if processed := c.checkTarget(ctx, tgt, tgttyp); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgttyp); processed {
 		// target.Set(ret)
 		return
 	}
@@ -595,9 +2625,9 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 		} else if tgt.CanSet() {
 			tgt.Set(ret)
 		} else {
-			err = ErrCannotSet.FormatWith(tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tool.Valfmt(&ret), tool.Typfmtv(&ret))
+			err = ErrCannotSet.FormatWith(ref.Valfmt(&tgt), ref.Typfmtv(&tgt), ref.Valfmt(&ret), ref.Typfmtv(&ret))
 		}
-		dbglog.Log("  tgt / ret transformed: %v / %v", tool.Valfmt(&tgt), tool.Valfmt(&ret))
+		dbglog.Log("  tgt / ret transformed: %v / %v", ref.Valfmt(&tgt), ref.Valfmt(&ret))
 		return
 	}
 
@@ -683,13 +2713,13 @@ func (c *fromStringConverter) Match(params *Params, source, target reflect.Type)
 type fromMapConverter struct{ fromConverterBase }
 
 func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgttyp))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgttyp))
 
-	if processed := c.checkTarget(ctx, tgt, tgttyp); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgttyp); processed {
 		// target.Set(ret)
 		return
 	}
@@ -716,9 +2746,9 @@ func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target ref
 		} else if tgt.CanSet() {
 			tgt.Set(ret)
 		} else {
-			err = ErrCannotSet.FormatWith(tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tool.Valfmt(&ret), tool.Typfmtv(&ret))
+			err = ErrCannotSet.FormatWith(ref.Valfmt(&tgt), ref.Typfmtv(&tgt), ref.Valfmt(&ret), ref.Typfmtv(&ret))
 		}
-		dbglog.Log("  tgt: %v (ret = %v)", tool.Valfmt(&tgt), tool.Valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", ref.Valfmt(&tgt), ref.Valfmt(&ret))
 	} else if !errors.Is(e, strconv.ErrSyntax) && !errors.Is(e, strconv.ErrRange) {
 		dbglog.Log("  Transform() failed: %v", e)
 		dbglog.Log("  try running postCopyTo()")
@@ -789,18 +2819,18 @@ func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, 
 		}
 
 		// convert map key to string type
-		key, err = rToString(key, tool.StringType)
+		key, err = rToString(key, ref.StringType)
 		if err != nil {
 			continue // ignore non-string key
 		}
 		ks := key.String()
-		dbglog.Log("  key %q, src: %v (%v)", ks, tool.Valfmt(&src), tool.Typfmtv(&src))
+		dbglog.Log("  key %q, src: %v (%v)", ks, ref.Valfmt(&src), ref.Typfmtv(&src))
 
 		if cc.targetSetter != nil {
 			newtyp := src.Type()
 			val := reflect.New(newtyp).Elem()
 			err = ctx.controller.copyTo(ctx.Params, src, val)
-			dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&val), tool.Typfmtv(&val))
+			dbglog.Log("  nv.%q: %v (%v) ", ks, ref.Valfmt(&val), ref.Typfmtv(&val))
 			var processed bool
 			if processed, err = preSetter(val, ks); err != nil || processed {
 				ec.Attach(err)
@@ -842,18 +2872,18 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 		}
 
 		// convert map key to string type
-		key, err = rToString(key, tool.StringType)
+		key, err = rToString(key, ref.StringType)
 		if err != nil {
 			continue // ignore non-string key
 		}
 		ks := key.String()
-		dbglog.Log("  key %q, src: %v (%v)", ks, tool.Valfmt(&src), tool.Typfmtv(&src))
+		dbglog.Log("  key %q, src: %v (%v)", ks, ref.Valfmt(&src), ref.Typfmtv(&src))
 
 		if cc.targetSetter != nil {
 			newtyp := src.Type()
 			val := reflect.New(newtyp).Elem()
 			err = ctx.controller.copyTo(ctx.Params, src, val)
-			dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&val), tool.Typfmtv(&val))
+			dbglog.Log("  nv.%q: %v (%v) ", ks, ref.Valfmt(&val), ref.Typfmtv(&val))
 			var processed bool
 			if processed, err = preSetter(val, ks); err != nil || processed {
 				ec.Attach(err)
@@ -875,7 +2905,7 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			// tsft = tsft.Elem()
 			fld = fld.Elem()
 		} else if tsfk == reflect.Ptr {
-			dbglog.Log("  fld.%q: %v (%v)", ks, tool.Valfmt(&fld), tool.Typfmtv(&fld))
+			dbglog.Log("  fld.%q: %v (%v)", ks, ref.Valfmt(&fld), ref.Typfmtv(&fld))
 			if fld.IsNil() {
 				n := reflect.New(fld.Type().Elem())
 				target.FieldByName(ks).Set(n)
@@ -883,11 +2913,11 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			}
 			// tsft = tsft.Elem()
 			fld = fld.Elem()
-			dbglog.Log("  fld.%q: %v (%v)", ks, tool.Valfmt(&fld), tool.Typfmtv(&fld))
+			dbglog.Log("  fld.%q: %v (%v)", ks, ref.Valfmt(&fld), ref.Typfmtv(&fld))
 		}
 
 		err = ctx.controller.copyTo(ctx.Params, src, fld)
-		dbglog.Log("  nv.%q: %v (%v) ", ks, tool.Valfmt(&fld), tool.Typfmtv(&fld))
+		dbglog.Log("  nv.%q: %v (%v) ", ks, ref.Valfmt(&fld), ref.Typfmtv(&fld))
 		ec.Attach(err)
 
 		// var nv reflect.Value
@@ -906,7 +2936,7 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 		//	}
 		// }
 	}
-	dbglog.Log("  target: %v (%v) ", tool.Valfmt(&target), tool.Typfmtv(&target))
+	dbglog.Log("  target: %v (%v) ", ref.Valfmt(&target), ref.Typfmtv(&target))
 	return
 }
 
@@ -954,12 +2984,12 @@ func (c *fromSyncPkgConverter) Transform(ctx *ValueConverterContext, source refl
 type fromBytesBufferConverter struct{ fromConverterBase }
 
 func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	// tgtType := target.Type()
 	dbglog.Log(" target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()),
-		tool.Typfmtv(&tgtptr), tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()),
+		ref.Typfmtv(&tgtptr), ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
 	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
 		// target.Set(ret)
@@ -1022,13 +3052,13 @@ func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.
 type fromTimeConverter struct{ fromConverterBase }
 
 func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		// tgtptr.Set(ret)
 		return
 	}
@@ -1043,9 +3073,9 @@ func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target re
 		} else if tgt.CanSet() {
 			tgt.Set(ret)
 		} else {
-			err = ErrCannotSet.FormatWith(tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tool.Valfmt(&ret), tool.Typfmtv(&ret))
+			err = ErrCannotSet.FormatWith(ref.Valfmt(&tgt), ref.Typfmtv(&tgt), ref.Valfmt(&ret), ref.Typfmtv(&ret))
 		}
-		dbglog.Log("  tgt: %v (ret = %v)", tool.Valfmt(&tgt), tool.Valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", ref.Valfmt(&tgt), ref.Valfmt(&ret))
 		return
 	}
 
@@ -1065,7 +3095,7 @@ func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect
 
 		switch k := targetType.Kind(); k { //nolint:exhaustive //no need
 		case reflect.Bool:
-			b := tool.IsNil(source) || tool.IsZero(source)
+			b := ref.IsNil(source) || ref.IsZero(source)
 			target = reflect.ValueOf(b)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			tm := source.Interface().(time.Time) //nolint:errcheck //no need
@@ -1162,13 +3192,13 @@ type toTimeConverter struct{ toConverterBase }
 
 func (c *toTimeConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	// tgtType := target.Type()
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		// target.Set(ret)
 		return
 	}
@@ -1222,12 +3252,12 @@ func (c *toTimeConverter) Transform(ctx *ValueConverterContext, source reflect.V
 			target = reflect.ValueOf(tm)
 
 		default:
-			err = ErrCannotConvertTo.FormatWith(source, tool.Typfmtv(&source), targetType, targetType.Kind())
+			err = ErrCannotConvertTo.FormatWith(source, ref.Typfmtv(&source), targetType, targetType.Kind())
 		}
 	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(targetType)
 	} else {
-		err = errors.New("source (%v) is invalid", tool.Valfmt(&source))
+		err = errors.New("source (%v) is invalid", ref.Valfmt(&source))
 	}
 	return
 }
@@ -1250,11 +3280,11 @@ func (c *toTimeConverter) Match(params *Params, source, target reflect.Type) (ct
 type fromDurationConverter struct{ fromConverterBase }
 
 func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgttyp))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgttyp))
 
 	var processed bool
 	if target, processed = c.checkSource(ctx, source, tgttyp); processed {
@@ -1271,9 +3301,9 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 		} else if tgt.CanSet() {
 			tgt.Set(ret)
 		} else {
-			err = ErrCannotSet.FormatWith(tool.Valfmt(&tgt), tool.Typfmtv(&tgt), tool.Valfmt(&ret), tool.Typfmtv(&ret))
+			err = ErrCannotSet.FormatWith(ref.Valfmt(&tgt), ref.Typfmtv(&tgt), ref.Valfmt(&ret), ref.Typfmtv(&ret))
 		}
-		dbglog.Log("  tgt: %v (ret = %v)", tool.Valfmt(&tgt), tool.Valfmt(&ret))
+		dbglog.Log("  tgt: %v (ret = %v)", ref.Valfmt(&tgt), ref.Valfmt(&ret))
 		return
 	}
 
@@ -1358,13 +3388,13 @@ type toDurationConverter struct{ toConverterBase }
 
 func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
 	// tgtType := target.Type()
-	tgt, tgtptr := tool.Rdecode(target)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		// tgtptr.Set(ret)
 		return
 	}
@@ -1427,12 +3457,12 @@ func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source refle
 		// reflect.Struct
 
 		default:
-			err = ErrCannotConvertTo.FormatWith(source, tool.Typfmtv(&source), targetType, targetType.Kind())
+			err = ErrCannotConvertTo.FormatWith(source, ref.Typfmtv(&source), targetType, targetType.Kind())
 		}
 	} else if ctx.isGroupedFlagOKDeeply(cms.ClearIfInvalid) {
 		target = reflect.Zero(targetType)
 	} else {
-		err = errors.New("source (%v) is invalid", tool.Valfmt(&source))
+		err = errors.New("source (%v) is invalid", ref.Valfmt(&source))
 	}
 	return
 }
@@ -1468,7 +3498,7 @@ func copyToFuncImpl(controller *cpController, source, target reflect.Value, targ
 		res := target.Call(args)
 		if len(res) > 0 {
 			last := res[len(res)-1]
-			if tool.Iserrortype(targetType.Out(len(res)-1)) && !tool.IsNil(last) {
+			if ref.Iserrortype(targetType.Out(len(res)-1)) && !ref.IsNil(last) {
 				err = last.Interface().(error) //nolint:errcheck //no need
 			}
 		}
@@ -1493,7 +3523,7 @@ func (c *toFuncConverter) copyTo(ctx *ValueConverterContext, source, src, tgt, t
 	}
 
 	tgttyp := tgt.Type()
-	dbglog.Log("  copyTo: src: %v, tgt: %v,", tool.Typfmtv(&src), tool.Typfmt(tgttyp))
+	dbglog.Log("  copyTo: src: %v, tgt: %v,", ref.Typfmtv(&src), ref.Typfmt(tgttyp))
 
 	if k := src.Kind(); k != reflect.Func && ctx.IsPassSourceToTargetFunction() {
 		var controller *cpController
@@ -1511,15 +3541,15 @@ func (c *toFuncConverter) copyTo(ctx *ValueConverterContext, source, src, tgt, t
 }
 
 func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
-	src := tool.Rdecodesimple(source)
-	tgt, tgtptr := tool.Rdecode(target)
+	src := ref.Rdecodesimple(source)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	// Log("  CopyTo: src: %v, tgt: %v,", typfmtv(&src), typfmt(tgtType))
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		// tgtptr.Set(ret)
 		return
 	}
@@ -1567,15 +3597,15 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	//    // in this case, tsetter represents 'a' and tgt represents
 	//    // 'decoded bool(a)'.
 	//
-	src := tool.Rdecodesimple(source)
-	tgt, tgtptr := tool.Rdecode(target)
+	src := ref.Rdecodesimple(source)
+	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr)
 	// dbglog.Log("  CopyTo: src: %v, tgt: %v, tsetter: %v", typfmtv(&src), typfmt(tgttyp), typfmtv(&tsetter))
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
-		tool.Typfmtv(&target), tool.Typfmt(target.Type()), tool.Typfmtv(&tgtptr),
-		tool.Typfmtv(&tgt), tool.Typfmt(tgtType))
+		ref.Typfmtv(&target), ref.Typfmt(target.Type()), ref.Typfmtv(&tgtptr),
+		ref.Typfmtv(&tgt), ref.Typfmt(tgtType))
 
-	if processed := c.checkTarget(ctx, tgt, tgtType); processed {
+	if processed := c.checkTargetLite(ctx, tgt, tgtType); processed {
 		// target.Set(ret)
 		return
 	}
@@ -1621,7 +3651,7 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 
 			results := srcResults
 			lastoutargtype := sourceType.Out(sourceType.NumOut() - 1)
-			ok = tool.Iserrortype(lastoutargtype)
+			ok = ref.Iserrortype(lastoutargtype)
 			if ok {
 				v := results[len(results)-1].Interface()
 				err, _ = v.(error)

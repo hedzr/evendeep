@@ -5,13 +5,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hedzr/log"
-
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
+	logz "github.com/hedzr/logg/slog"
 )
 
 //
@@ -69,7 +68,7 @@ func (table *fieldsTableT) isReservedPackage(field *reflect.StructField, typ ref
 func (table *fieldsTableT) getAllFields(structValue reflect.Value, autoexpandstruct bool) fieldsTableT {
 	table.autoExpandStruct = autoexpandstruct
 
-	structValue, _ = tool.Rdecode(structValue)
+	structValue, _ = ref.Rdecode(structValue)
 	if structValue.Kind() != reflect.Struct {
 		return *table
 	}
@@ -108,7 +107,7 @@ func (table *fieldsTableT) safeGetStructFieldValueInd(structValue *reflect.Value
 
 //nolint:lll //keep it
 func (table *fieldsTableT) getFields(structValue *reflect.Value, structType reflect.Type, fieldName string, fi int) (ret tableRecordsT) {
-	st := tool.Rdecodetypesimple(structType)
+	st := ref.Rdecodetypesimple(structType)
 	if st.Kind() != reflect.Struct {
 		return
 	}
@@ -119,7 +118,7 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 
 		sf := structType.Field(i)
 		sftyp := sf.Type
-		sftypind := tool.RindirectType(sftyp)
+		sftypind := ref.RindirectType(sftyp)
 		svind := table.safeGetStructFieldValueInd(structValue, i)
 		sftypindKind := sftypind.Kind()
 		isStruct := sftypindKind == reflect.Struct
@@ -131,7 +130,7 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 			if internal.VerboseStructIterating {
 				// only printed on `-tags="structiterating,verbose"
 				dbglog.Log(" field %d: %v (%v) (%v) || %v", i, sf.Name,
-					tool.Typfmt(sftyp), tool.Typfmt(sftypind), tr.FieldValue())
+					ref.Typfmt(sftyp), ref.Typfmt(sftypind), tr.FieldValue())
 			}
 
 			if !tr.ShouldIgnore() {
@@ -148,7 +147,7 @@ func (table *fieldsTableT) getFields(structValue *reflect.Value, structType refl
 			}
 		} else if internal.VerboseStructIterating {
 			dbglog.Log(" field %d: %v (%v) (%v) || %v", i, sf.Name,
-				tool.Typfmt(sftyp), tool.Typfmt(sftypind), tool.Valfmtptr(tr.FieldValue()))
+				ref.Typfmt(sftyp), ref.Typfmt(sftypind), ref.Valfmtptr(tr.FieldValue()))
 		}
 
 		ret = append(ret, tr)
@@ -161,7 +160,7 @@ func (table *fieldsTableT) tableRec(svind *reflect.Value, sf *reflect.StructFiel
 	tr = new(tableRecT)
 
 	tr.structField = sf
-	if tool.IsExported(sf) {
+	if ref.IsExported(sf) {
 		tr.structFieldValue = svind
 	} else if svind.CanAddr() {
 		val := cl.GetUnexportedField(*svind)
@@ -364,11 +363,11 @@ func (s *fieldAccessorT) Set(v reflect.Value) {
 		// dbglog.Log("    target struct type: %v", tool.Typfmt(s.structType))
 		dbglog.Log("    setting struct.%q", s.structType.Field(s.index).Name)
 		// if !tool.IsZero(*s.structValue) {
-		sv := tool.Rindirect(*s.structValue)
+		sv := ref.Rindirect(*s.structValue)
 		fv := sv.Field(s.index)
-		dbglog.Log("      set %v (%v) -> struct.%q", tool.Valfmt(&v), tool.Typfmtv(&v), s.structType.Field(s.index).Name)
-		if v.IsValid() && !tool.IsZero(v) {
-			dbglog.Log("      set to v : %v", tool.Valfmt(&v))
+		dbglog.Log("      set %v (%v) -> struct.%q", ref.Valfmt(&v), ref.Typfmtv(&v), s.structType.Field(s.index).Name)
+		if v.IsValid() && !ref.IsZero(v) {
+			dbglog.Log("      set to v : %v", ref.Valfmt(&v))
 			fv.Set(v)
 		} else {
 			dbglog.Log("      setToZero")
@@ -379,10 +378,10 @@ func (s *fieldAccessorT) Set(v reflect.Value) {
 		// }
 	} else if s.structType.Kind() == reflect.Map {
 		key := s.mapkey()
-		dbglog.Log("    set %v (%v) -> map[%v]", tool.Valfmt(&v), tool.Typfmtv(&v), tool.Valfmt(&key))
+		dbglog.Log("    set %v (%v) -> map[%v]", ref.Valfmt(&v), ref.Typfmtv(&v), ref.Valfmt(&key))
 		s.structValue.SetMapIndex(key, v)
 	} else {
-		dbglog.Wrn(`    setting struct field value, but the container has type: %v`, tool.Typfmt(s.structType))
+		dbglog.Wrn(`    setting struct field value, but the container has type: %v`, ref.Typfmt(s.structType))
 	}
 }
 func (s *fieldAccessorT) SourceField() *tableRecT { return s.sourceTableRec }
@@ -422,7 +421,7 @@ func (s *fieldAccessorT) FieldValue() *reflect.Value {
 
 	if s.isStruct {
 		if s.ValueValid() {
-			vind := tool.Rindirect(*s.structValue)
+			vind := ref.Rindirect(*s.structValue)
 			if vind.IsValid() && s.index < vind.NumField() {
 				r := vind.Field(s.index)
 				return &r
@@ -506,23 +505,23 @@ func (s *fieldAccessorT) ensurePtrField() (newed bool) {
 	if s.isStruct && s.index < s.structType.NumField() {
 		if s.structValue != nil {
 			sf := s.structType.Field(s.index)
-			vind := tool.Rindirect(*s.structValue)
+			vind := ref.Rindirect(*s.structValue)
 			// if tool.IsZero(vind) {
 			// 	fv := vind.Field(s.index)
 			// 	dbglog.Wrn(`zero value struct cannot .Field(): typ = %v, vind = %v | fv: %v`, tool.Typfmtv(&vind), tool.Valfmt(&vind), tool.Valfmt(&fv))
 			// 	return
 			// }
 			if vind.Kind() != reflect.Struct {
-				dbglog.Wrn(`vind isn't struct, cannot .Field(): typ = %v, vind = %v`, tool.Typfmtv(&vind), tool.Valfmt(&vind))
+				dbglog.Wrn(`vind isn't struct, cannot .Field(): typ = %v, vind = %v`, ref.Typfmtv(&vind), ref.Valfmt(&vind))
 				return
 			}
 			fv := vind.Field(s.index)
 
 			switch kind := sf.Type.Kind(); kind { //nolint:exhaustive //no need
 			case reflect.Ptr:
-				if tool.IsNil(fv) {
+				if ref.IsNil(fv) {
 					dbglog.Log("   autoNew")
-					if settable := fv.CanSet(); settable || !tool.IsExported(&sf) { // unexported field, try new it
+					if settable := fv.CanSet(); settable || !ref.IsExported(&sf) { // unexported field, try new it
 						typ := sf.Type.Elem()
 						nv := reflect.New(typ)
 						if settable {
@@ -532,7 +531,7 @@ func (s *fieldAccessorT) ensurePtrField() (newed bool) {
 						}
 						newed = true
 					} else {
-						log.Warnf("     gave up since fv.CanSet is false. fv.typ: %v", tool.Typfmtv(&fv))
+						logz.Warn("     gave up since fv.CanSet is false.", "fv.typ", ref.Typfmtv(&fv))
 					}
 				}
 			default:
@@ -563,7 +562,7 @@ func (s *fieldAccessorT) mapkey() reflect.Value {
 		// if err := fsc.CopyTo(nil, namev, kp.Elem()); err == nil {
 		// 	key = kp.Elem()
 		// }
-		log.Panicf(`unexpected type of key '%v': %v`, name, kk)
+		logz.Panic(`unexpected type of key`, "key", name, "kind", kk)
 	}
 	return key
 }
@@ -585,7 +584,7 @@ func (s *structIteratorT) iipop() {
 }
 func (s *structIteratorT) iitop() *fieldAccessorT {
 	if len(s.stack) == 0 {
-		log.Panicf(`unexpected iitop() on an empty stack`)
+		logz.Panic(`unexpected iitop() on an empty stack`)
 		// return nil
 	}
 	return s.stack[len(s.stack)-1]
@@ -610,13 +609,13 @@ func (s *structIteratorT) iitop() *fieldAccessorT {
 //				// parent struct of the current field)
 //				sf2 := reprev(position - 1)
 //				if sf2 != nil {
-//					//log.Printf("prev.index = %v, prev.sv.valid = %v, sf = %v", prev.index, prev.ValueValid(), sf2)
+//					//logz.Printf("prev.index = %v, prev.sv.valid = %v, sf = %v", prev.index, prev.ValueValid(), sf2)
 //					st = rdecodetypesimple(sf2.Type)
-//					//log.Printf("sf2.Type/st = %v", st)
+//					//logz.Printf("sf2.Type/st = %v", st)
 //					if prev.index < st.NumField() {
 //						fld := st.Field(prev.index)
 //						sf = &fld
-//						//log.Printf("typ: %v, name: %v | %v", typfmt(sf.Type), sf.Name, sf)
+//						//logz.Printf("typ: %v, name: %v | %v", typfmt(sf.Type), sf.Name, sf)
 //					}
 //				}
 //			} else {
@@ -668,7 +667,7 @@ func (s *structIteratorT) MethodCallByName(name string) (mtd reflect.Method, v *
 		if len(retv) > 0 {
 			if len(retv) > 1 {
 				errv := retv[len(retv)-1]
-				if tool.IsNil(errv) && tool.Iserrortype(mtd.Type.Out(len(retv)-1)) {
+				if ref.IsNil(errv) && ref.Iserrortype(mtd.Type.Out(len(retv)-1)) {
 					v = &retv[0]
 				}
 			} else {
@@ -729,8 +728,8 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 
 			dbglog.Log("   | Next %d | src field: %v (%v) -> %v (%v) | autoexpd: (%v, %v)",
 				s.srcIndex, accessorTmp.sourceTableRec.FieldName(),
-				tool.Typfmt(accessorTmp.srcStructField.Type),
-				accessorTmp.StructFieldName(), tool.Typfmt(accessorTmp.Type()),
+				ref.Typfmt(accessorTmp.srcStructField.Type),
+				accessorTmp.StructFieldName(), ref.Typfmt(accessorTmp.Type()),
 				s.srcFields.autoExpandStruct, s.autoExpandStruct,
 			)
 			s.dstIndex++
@@ -746,7 +745,7 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 		if ok {
 			dbglog.Log("   | Next %d | -> %v (%v)",
 				s.dstIndex,
-				accessorTmp.StructFieldName(), tool.Typfmt(accessorTmp.Type()))
+				accessorTmp.StructFieldName(), ref.Typfmt(accessorTmp.Type()))
 			s.dstIndex++
 		}
 	}
@@ -797,7 +796,7 @@ func (s *structIteratorT) doNextFieldByName(sourceTableRec *tableRecT, srcStruct
 
 	dbglog.Log("     looking for field %q (src field: %q)", dstFieldName, srcStructField.Name)
 	var tsf reflect.StructField
-	ts := tool.Rindirect(s.dstStruct)
+	ts := ref.Rindirect(s.dstStruct)
 	tsf, ok = ts.Type().FieldByName(dstFieldName)
 	if ok {
 		dbglog.Log("     tsf: %v", tsf)
@@ -814,7 +813,7 @@ func (s *structIteratorT) doNextFieldByName(sourceTableRec *tableRecT, srcStruct
 			fieldTags:      parseFieldTags(srcStructField.Tag, ""),
 		}
 	} else {
-		log.Warnf("     [WARN] dstFieldName %q NOT FOUND, it'll be ignored", dstFieldName)
+		logz.Warn("     [WARN] dstFieldName NOT FOUND, it'll be ignored", "dstFieldName", dstFieldName)
 		s.dstIndex = -1
 		acc = &fieldAccessorT{
 			structValue:    &ts,
@@ -838,7 +837,7 @@ func (s *structIteratorT) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (a
 	var inretry bool
 
 	if s.iiempty() {
-		vind := tool.Rindirect(s.dstStruct)
+		vind := ref.Rindirect(s.dstStruct)
 		tind := vind.Type()
 		lastone = s.iipush(&vind, tind, 0)
 	} else {
@@ -858,9 +857,9 @@ retryExpand:
 	if field != nil { //nolint:nestif //keep it
 		// tind := field.Type // rindirectType(field.Type)
 		if s.autoExpandStruct {
-			tind := tool.RindirectType(field.Type)
+			tind := ref.RindirectType(field.Type)
 			k1 := tind.Kind()
-			dbglog.Log("   typ: %v, name: %v | %v", tool.Typfmt(tind), field.Name, field)
+			dbglog.Log("   typ: %v, name: %v | %v", ref.Typfmt(tind), field.Name, field)
 			if s.autoNew {
 				var did = lastone.ensurePtrField()
 				if did {
@@ -872,7 +871,7 @@ retryExpand:
 				!s.typShouldBeIgnored(tind) {
 				fvp := lastone.FieldValue()
 				lastone = s.iipush(fvp, tind, 0)
-				dbglog.Log("    -- (retry) -> filed is struct, typ: %v", tool.Typfmt(tind))
+				dbglog.Log("    -- (retry) -> filed is struct, typ: %v", ref.Typfmt(tind))
 				inretry = true
 				goto retryExpand
 			}
@@ -890,7 +889,7 @@ retryExpand:
 			s.iipop()
 			lastone = s.iitop()
 		} else {
-			log.Warnf("cannot fetching field, empty struct ? ")
+			logz.Warn("cannot fetching field, empty struct ? ")
 		}
 	}
 
@@ -935,7 +934,7 @@ func (s *structIteratorT) getTargetFieldNameBySourceField(knownSrcField *reflect
 	ctx := &NameConverterContext{Params: nil}
 	dstFieldName, ok = flagsInTag.CalcTargetName(knownSrcField.Name, ctx)
 	if !ok {
-		if tr := s.dstStruct.FieldByName(knownSrcField.Name); !tool.IsNil(tr) {
+		if tr := s.dstStruct.FieldByName(knownSrcField.Name); !ref.IsNil(tr) {
 			dstFieldName = knownSrcField.Name
 			dbglog.Log("     dstName: %v, ok: %v [pre 2, fld: %v, tag: %v]", dstFieldName, ok, knownSrcField.Name, knownSrcField.Tag)
 		}

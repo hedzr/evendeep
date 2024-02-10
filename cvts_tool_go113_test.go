@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"testing"
 
-	"gopkg.in/hedzr/errors.v3"
-
 	"github.com/hedzr/evendeep/dbglog"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
+
+	"gopkg.in/hedzr/errors.v3"
 )
 
 func TestFromFuncConverterGo113AndHigher(t *testing.T) {
@@ -80,9 +80,9 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) {
 		if fnCase.fn != nil { //nolint:gocritic //nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
 			fnv := reflect.ValueOf(&fnCase.fn)
 			tgtv := reflect.ValueOf(&fnCase.target)
-			ff, tt := tool.Rdecodesimple(fnv), tool.Rdecodesimple(tgtv)
-			dbglog.Log("---- CASE %d. %v -> %v", ix, tool.Typfmtv(&ff), tool.Typfmtv(&tt))
-			t.Logf("---- CASE %d. %v -> %v", ix, tool.Typfmtv(&ff), tool.Typfmtv(&tt))
+			ff, tt := ref.Rdecodesimple(fnv), ref.Rdecodesimple(tgtv)
+			dbglog.Log("---- CASE %d. %v -> %v", ix, ref.Typfmtv(&ff), ref.Typfmtv(&tt))
+			t.Logf("---- CASE %d. %v -> %v", ix, ref.Typfmtv(&ff), ref.Typfmtv(&tt))
 
 			c := fromFuncConverter{}
 			ctx := newValueConverterContextForTest(nil)

@@ -5,13 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hedzr/log"
-
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
+	logz "github.com/hedzr/logg/slog"
 
 	"gopkg.in/hedzr/errors.v3"
 )
@@ -72,17 +71,17 @@ func NewForTest() DeepCopier {
 	var c1 = newCopier()
 	WithStrategies(cms.SliceMerge, cms.MapMerge)(c1)
 	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceMerge, cms.MapMerge, cms.OmitIfEmpty, cms.Default) == false {
-		log.Panicf("except flag set with optional values but not matched, 1")
+		logz.Panic("except flag set with optional values but not matched, 1")
 	}
 	c1 = newDeepCopier()
 	WithStrategies(cms.SliceCopyAppend, cms.MapCopy)(c1)
 	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopyAppend, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
-		log.Panicf("except flag set with optional values but not matched, 2")
+		logz.Panic("except flag set with optional values but not matched, 2")
 	}
 	c1 = newCloner()
 	WithStrategies(cms.SliceCopy)(c1)
 	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopy, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
-		log.Panicf("except flag set with optional values but not matched, 3")
+		logz.Panic("except flag set with optional values but not matched, 3")
 	}
 
 	copier = NewFlatDeepCopier(
@@ -188,12 +187,12 @@ func DefaultDeepCopyTestRunner(ix int, tc TestCase, opts ...Opt) func(t *testing
 
 		// t.Logf("\nexpect: %+v\n   got: %+v.", tc.expect, tc.dst)
 		if err = verifier(tc.Src, tc.Dst, tc.Expect, err); err == nil {
-			log.Printf("%3d. test passed", ix)
+			logz.Print("test passed", "pass-index", ix)
 			return
 		}
 
-		log.Errorf("%3d. Error: %v", ix, err)
-		t.Fatalf("%3d. %s FAILED, %+v", ix, tc.Description, err)
+		logz.Error("Error occurs", "index", ix, "error", err)
+		t.Fatal("FAILED", "index", ix, "desc", tc.Description, "error", err)
 	}
 }
 
@@ -219,11 +218,13 @@ func runTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 func DoTestCasesVerifier(t *testing.T) Verifier {
 	return func(src, dst, expect typ.Any, e error) (err error) {
 		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
-		aa, _ := tool.Rdecode(a)
-		bb, _ := tool.Rdecode(b)
+		aa, _ := ref.Rdecode(a)
+		bb, _ := ref.Rdecode(b)
 		av, bv := aa.Interface(), bb.Interface()
-		log.Printf("\nexpect: %+v (%v | %v)\n   got: %+v (%v | %v)\n   err: %v",
-			bv, tool.Typfmtv(&bb), aa.Type(), av, tool.Typfmtv(&aa), bb.Type(), e)
+		logz.Print("mismatched",
+			logz.Group("expect", "bv", bv, "typ", ref.Typfmtv(&bb), "t", aa.Type()),
+			logz.Group("got", "av", av, "typ", ref.Typfmtv(&aa), "t", bb.Type()),
+			"error", e)
 
 		dif, equal := diff.New(expect, dst,
 			diff.WithSliceOrderedComparison(false),

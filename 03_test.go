@@ -5,11 +5,13 @@ import (
 	"reflect"
 	"testing"
 
-	"gopkg.in/hedzr/errors.v3"
+	"github.com/hedzr/evendeep/ref"
 
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/tool"
+
+	"gopkg.in/hedzr/errors.v3"
 )
 
 func TestRegisterInitRoutines(t *testing.T) {
@@ -72,7 +74,7 @@ func TestParamsBasics(t *testing.T) {
 		a, expects := prepareAFT()
 
 		v := reflect.ValueOf(&a)
-		v = tool.Rindirect(v)
+		v = ref.Rindirect(v)
 
 		for i := 0; i < v.NumField(); i++ {
 			fld := v.Type().Field(i)
@@ -104,7 +106,7 @@ func TestParamsBasics3(t *testing.T) {
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
-		v = tool.Rindirect(v)
+		v = ref.Rindirect(v)
 		sf, _ := v.Type().FieldByName("wouldbe")
 		// sf0, _ := v.Type().FieldByName("flags")
 		// sf1, _ := v.Type().FieldByName("converter")
@@ -210,7 +212,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
+		svv, dvv := ref.Rdecodesimple(src), ref.Rdecodesimple(dst)
 		sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
@@ -241,7 +243,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
+		svv, dvv := ref.Rdecodesimple(src), ref.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		c := newCopier()
@@ -276,7 +278,7 @@ func TestDeferCatchers(t *testing.T) {
 			tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 			src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-			svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
+			svv, dvv := ref.Rdecodesimple(src), ref.Rdecodesimple(dst)
 			// sf1, df1 := svv.Field(1), dvv.Field(1)
 			postCatcher(func() {
 				_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
@@ -295,7 +297,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := tool.Rdecodesimple(src), tool.Rdecodesimple(dst)
+		svv, dvv := ref.Rdecodesimple(src), ref.Rdecodesimple(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		t.Logf("src: %v, %v", src.IsValid(), svv.IsValid())
@@ -340,7 +342,7 @@ func TestDeferCatchers(t *testing.T) {
 		tgt1 := &BBB{X1: "no", X2: "longer", Y: "-1"}
 
 		src, dst := reflect.ValueOf(&src1), reflect.ValueOf(&tgt1)
-		svv, dvv := tool.Rindirect(src), tool.Rindirect(dst)
+		svv, dvv := ref.Rindirect(src), ref.Rindirect(dst)
 		// sf1, df1 := svv.Field(1), dvv.Field(1)
 
 		root := newParams(withOwners(c, nil, &svv, &dvv, &src, &dst))

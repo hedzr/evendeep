@@ -10,24 +10,24 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/hedzr/log"
-	"gopkg.in/hedzr/errors.v3"
-
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/cl"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
+	logz "github.com/hedzr/logg/slog"
+
+	"gopkg.in/hedzr/errors.v3"
 )
 
 // TestLogNormal _
 func TestLogNormal(t *testing.T) {
-	// config := log.NewLoggerConfigWith(true, "logrus", "trace")
+	// config := logz.NewLoggerConfigWith(true, "logrus", "trace")
 	// logger := logrus.NewWithConfig(config)
-	log.Printf("hello")
-	log.Infof("hello info")
-	log.Warnf("hello warn")
-	log.Errorf("hello error")
-	log.Debugf("hello debug")
-	log.Tracef("hello trace")
+	logz.Print("hello")
+	logz.Info("hello info")
+	logz.Warn("hello warn")
+	logz.Error("hello error")
+	logz.Debug("hello debug")
+	logz.Trace("hello trace")
 
 	dbglog.Log("but again")
 }
@@ -75,7 +75,7 @@ func TestSliceLen(t *testing.T) {
 	v = reflect.Append(v, reflect.ValueOf("ghi"), reflect.ValueOf("jkl"))
 
 	fmt.Println("Our value is a type of :", v.Kind())
-	fmt.Printf("len : %v, %v\n", v.Len(), tool.Typfmtv(&v))
+	fmt.Printf("len : %v, %v\n", v.Len(), ref.Typfmtv(&v))
 
 	vSlice := v.Slice(0, v.Len())
 	vSliceElems := vSlice.Interface()
@@ -140,25 +140,25 @@ func TestValueValid(t *testing.T) {
 
 	var v reflect.Value
 
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	v = reflect.ValueOf(ival)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	v = reflect.ValueOf(pival)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	v = reflect.ValueOf(aval)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	v = reflect.ValueOf(paval)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	var b bool
 	v = reflect.ValueOf(b)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 
 	b = true
 	v = reflect.ValueOf(b)
-	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", tool.Valfmt(&v), tool.Typfmtv(&v), v.IsValid(), tool.IsNil(v), tool.IsZero(v))
+	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
 }
