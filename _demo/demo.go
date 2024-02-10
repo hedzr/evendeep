@@ -1,9 +1,9 @@
 package demo
 
 import (
-	"github.com/hedzr/logex"
+	"github.com/hedzr/is"
 )
 
 func mainFunc() {
-	println(logex.InDebugging())
+	println(is.InDebugging())
 }
