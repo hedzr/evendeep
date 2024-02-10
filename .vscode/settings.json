@@ -2,10 +2,10 @@
   "go.buildTags": "-tags='hzstudio'",
   // "go.buildFlags": ["-tags=hzstudio"],
   "go.testTags": "hzstudio,unit,integration,verbose",
-
   "go.coverOnSave": true,
   "go.coverageDecorator": {
-    "type": "gutter", // highlight or gutter
+    "type": "gutter",
+    // highlight or gutter
 
     // "coveredHighlightColor": "rgba(0,0,0,0.0)",
     // "uncoveredHighlightColor": "rgba(32,96,96,0.5)",
@@ -19,9 +19,9 @@
   },
   // "go.coverOnSingleTest": true,
   "go.coverageOptions": "showUncoveredCodeOnly",
-
   "go.diagnostic.vulncheck": "Imports",
-  "go.formatTool": "gofumpt", //
+  "go.formatTool": "gofumpt",
+  //
 
   // first item for Windows, next item for macOS
   // because I use sync settings for multiple OS
