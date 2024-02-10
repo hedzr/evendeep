@@ -99,7 +99,7 @@ type ValueConverter interface {
 	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
 }
 
-// ValueCopier  for internal used.
+// ValueCopier for internal used.
 type ValueCopier interface {
 	CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error)
 	Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool)
