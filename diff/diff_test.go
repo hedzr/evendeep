@@ -3,7 +3,7 @@ package diff_test
 import (
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/diff/testdata" //nolint:typecheck
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 
 	"reflect"
@@ -66,7 +66,7 @@ func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff
 	aTime := lhs.Interface().(time.Time) //nolint:errcheck //no need
 	bTime := rhs.Interface().(time.Time) //nolint:errcheck //no need
 	if equal = aTime.Equal(bTime); !equal {
-		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: tool.Typfmtvlite(&lhs)})
+		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: ref.Typfmtvlite(&lhs)})
 	}
 	return
 }

@@ -9,7 +9,9 @@ import (
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/natsort"
 	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
+	unsafe2 "github.com/hedzr/evendeep/unsafe"
 )
 
 // New compares two value deeply and returns the Diff of them.
@@ -195,10 +197,10 @@ func (d *info) mkkey(path Path, parts ...PathPart) (key string) {
 func (d *info) diff(lhs, rhs typ.Any) bool {
 	lv, rv := reflect.ValueOf(lhs), reflect.ValueOf(rhs)
 	if d.stripPtr1st {
-		lv, rv = tool.Rdecodesimple(lv), tool.Rdecodesimple(rv)
+		lv, rv = ref.Rdecodesimple(lv), ref.Rdecodesimple(rv)
 	} else {
-		_, lv = tool.Rskip(lv, reflect.Interface)
-		_, rv = tool.Rskip(rv, reflect.Interface)
+		_, lv = ref.Rskip(lv, reflect.Interface)
+		_, rv = ref.Rskip(rv, reflect.Interface)
 	}
 	var path Path
 	return d.diffv(lv, rv, path)
@@ -209,20 +211,20 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 
 	lvv, rvv := lv.IsValid(), rv.IsValid()
 	if equal, processed = d.testinvalid(lv, rv, lvv, rvv, path); processed {
-		dbglog.Log("  - Invalid object found: l = %v, r = %v, path = %v", tool.Valfmt(&lv), tool.Valfmtptr(&rv), path)
+		dbglog.Log("  - Invalid object found: l = %v, r = %v, path = %v", ref.Valfmt(&lv), ref.Valfmtptr(&rv), path)
 		return
 	}
 
 	lvt, rvt := lv.Type(), rv.Type()
 	if lvt != rvt {
-		dbglog.Log("  - Unmatched type found: l = %v, r = %v, path = %v", tool.Typfmt(lvt), tool.Typfmt(rvt), path)
+		dbglog.Log("  - Unmatched type found: l = %v, r = %v, path = %v", ref.Typfmt(lvt), ref.Typfmt(rvt), path)
 		if d.differentTypeStructs && lv.Kind() == reflect.Struct && rv.Kind() == reflect.Struct {
 			return d.compareStructFields(lv, rv, path)
 		}
 		if d.differentSizeArrays && lv.Kind() == reflect.Array && rv.Kind() == reflect.Array {
 			return d.compareArrayDifferSizes(lv, rv, path)
 		}
-		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&rv)})
+		d.PutModified(d.mkkey(path), Update{Old: ref.Valfmt(&lv), New: ref.Valfmt(&rv), Typ: ref.Typfmtvlite(&rv)})
 		return
 	}
 
@@ -249,11 +251,11 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 	}
 
 	if !lvv {
-		d.PutModified(d.mkkey(path), Update{Old: nil, New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&rv)})
+		d.PutModified(d.mkkey(path), Update{Old: nil, New: ref.Valfmt(&rv), Typ: ref.Typfmtvlite(&rv)})
 		return false, true
 	}
 	if !rvv {
-		d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: nil, Typ: tool.Typfmtvlite(&lv)})
+		d.PutModified(d.mkkey(path), Update{Old: ref.Valfmt(&lv), New: nil, Typ: ref.Typfmtvlite(&lv)})
 		return false, true
 	}
 	return
@@ -262,7 +264,7 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
 	kind reflect.Kind) (equal, processed bool) {
 	if lv.CanAddr() && rv.CanAddr() &&
-		tool.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
+		ref.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
 		addr2 := unsafe.Pointer(rv.UnsafeAddr())
 		if uintptr(addr1) > uintptr(addr2) {
@@ -286,7 +288,7 @@ func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
 func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
 	switch kind { //nolint:exhaustive //no need
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
-		ln, rn := tool.IsNil(lv), tool.IsNil(rv)
+		ln, rn := ref.IsNil(lv), ref.IsNil(rv)
 		if ln && rn {
 			return true, true
 		}
@@ -313,7 +315,7 @@ func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind 
 					return true, true
 				}
 			}
-			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
+			d.PutModified(d.mkkey(path), Update{Old: ref.Valfmt(&lv), New: ref.Valfmt(&rv), Typ: ref.Typfmtvlite(&lv)})
 			return false, true
 		}
 	}
@@ -368,7 +370,7 @@ func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind re
 	default:
 		a, b := lv.Interface(), rv.Interface()
 		if equal = reflect.DeepEqual(a, b); !equal {
-			d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&lv), New: tool.Valfmt(&rv), Typ: tool.Typfmtvlite(&lv)})
+			d.PutModified(d.mkkey(path), Update{Old: ref.Valfmt(&lv), New: ref.Valfmt(&rv), Typ: ref.Typfmtvlite(&lv)})
 		}
 	}
 
@@ -382,28 +384,28 @@ func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
 		localPath := path.appendAndNew(sliceIndex(i))
 		aI, bI := lv.Index(i), rv.Index(i)
 		if eq := d.diffv(aI, bI, localPath); !eq {
-			dbglog.Log("    diffArray: [%d] not equal %v - %v", i, tool.Valfmt(&aI), tool.Valfmt(&bI))
+			dbglog.Log("    diffArray: [%d] not equal %v - %v", i, ref.Valfmt(&aI), ref.Valfmt(&bI))
 			equal = false
 		}
 	}
 	if ll > rl {
 		for i := rl; i < ll; i++ {
 			v := lv.Index(i)
-			if d.differentSizeArrays && tool.IsZero(v) {
+			if d.differentSizeArrays && ref.IsZero(v) {
 				continue
 			}
 			localPath := path.appendAndNew(sliceIndex(i))
-			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&v))
+			d.PutRemoved(d.mkkey(localPath), ref.Valfmt(&v))
 			equal = false
 		}
 	} else if ll < rl {
 		for i := ll; i < rl; i++ {
 			v := rv.Index(i)
-			if d.differentSizeArrays && tool.IsZero(v) {
+			if d.differentSizeArrays && ref.IsZero(v) {
 				continue
 			}
 			localPath := path.appendAndNew(sliceIndex(i))
-			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&v))
+			d.PutAdded(d.mkkey(localPath), ref.Valfmt(&v))
 			equal = false
 		}
 	}
@@ -425,7 +427,7 @@ func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path Path) (equal bool) {
 			}
 		}
 		if !eq {
-			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&lvit))
+			d.PutRemoved(d.mkkey(localPath), ref.Valfmt(&lvit))
 			equal = false
 		}
 	}
@@ -435,7 +437,7 @@ func (d *info) diffSliceNoOrder(lv, rv reflect.Value, path Path) (equal bool) {
 			continue
 		}
 		rvit := rv.Index(i)
-		d.PutAdded(d.mkkey(localPath), tool.Valfmt(&rvit))
+		d.PutAdded(d.mkkey(localPath), ref.Valfmt(&rvit))
 		equal = false
 	}
 	return
@@ -447,7 +449,7 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 		aI, bI := lv.MapIndex(key), rv.MapIndex(key)
 		localPath := path.appendAndNew(mapKey{key.Interface()})
 		if !bI.IsValid() {
-			d.PutRemoved(d.mkkey(localPath), tool.Valfmt(&aI))
+			d.PutRemoved(d.mkkey(localPath), ref.Valfmt(&aI))
 			equal = false
 		} else if eq := d.diffv(aI, bI, localPath); !eq {
 			equal = false
@@ -458,7 +460,7 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 		if !aI.IsValid() {
 			bI := rv.MapIndex(key)
 			localPath := path.appendAndNew(mapKey{key.Interface()})
-			d.PutAdded(d.mkkey(localPath), tool.Valfmt(&bI))
+			d.PutAdded(d.mkkey(localPath), ref.Valfmt(&bI))
 			equal = false
 		}
 	}
@@ -477,10 +479,10 @@ func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (e
 			continue
 		}
 		localPath := path.appendAndNew(structField(field.Name))
-		aI := tool.UnsafeReflectValue(lv.FieldByIndex(index))
-		bI := tool.UnsafeReflectValue(rv.FieldByIndex(index))
+		aI := unsafe2.UnsafeReflectValue(lv.FieldByIndex(index))
+		bI := unsafe2.UnsafeReflectValue(rv.FieldByIndex(index))
 		if d.treatEmptyStructPtrAsNil && field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-			ln, rn := tool.IsNil(aI), tool.IsNil(bI)
+			ln, rn := ref.IsNil(aI), ref.IsNil(bI)
 			var eq bool
 			if eq = ln && rn; !equal {
 				if eq = ln && isEmptyStruct(bI.Elem()); !eq {
@@ -489,7 +491,7 @@ func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (e
 			}
 			if !eq {
 				equal = false
-				d.PutModified(d.mkkey(path), Update{Old: tool.Valfmt(&aI), New: tool.Valfmt(&bI), Typ: tool.Typfmtvlite(&aI)})
+				d.PutModified(d.mkkey(path), Update{Old: ref.Valfmt(&aI), New: ref.Valfmt(&bI), Typ: ref.Typfmtvlite(&aI)})
 			}
 			continue
 		}

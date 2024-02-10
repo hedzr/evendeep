@@ -6,7 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/hedzr/evendeep/dbglog"
-	"github.com/hedzr/evendeep/internal/tool"
+	"github.com/hedzr/evendeep/ref"
 )
 
 type visit struct {
@@ -38,10 +38,10 @@ func (n structField) String() string {
 
 // isEmptyObject detects the emptiness of a slice or a map
 func isEmptyObject(v reflect.Value) (yes bool) {
-	if kind := v.Kind(); !tool.KindIs(kind, reflect.Invalid, reflect.Slice, reflect.Map, reflect.Array) {
+	if kind := v.Kind(); !ref.KindIs(kind, reflect.Invalid, reflect.Slice, reflect.Map, reflect.Array) {
 		return
 	}
-	if yes = tool.IsZero(v); yes {
+	if yes = ref.IsZero(v); yes {
 		return
 	}
 	yes = v.Len() == 0
@@ -52,7 +52,7 @@ func isEmptyStruct(v reflect.Value) (yes bool) {
 	if kind := v.Kind(); kind != reflect.Struct {
 		return
 	}
-	yes = tool.IsZero(v)
+	yes = ref.IsZero(v)
 	return
 }
 
@@ -62,8 +62,8 @@ func isEmptyStructDeeply(v reflect.Value) (yes bool) {
 	}
 	ve := reflect.New(v.Type()).Elem()
 	inf := newInfo(WithTreatEmptyStructPtrAsNilPtr(true))
-	dbglog.Log(" isEmptyStructDeeply(v): %+v", tool.Valfmt(&v))
-	dbglog.Log("          the empty obj: %+v", tool.Valfmt(&ve))
+	dbglog.Log(" isEmptyStructDeeply(v): %+v", ref.Valfmt(&v))
+	dbglog.Log("          the empty obj: %+v", ref.Valfmt(&ve))
 	yes = inf.diff(v, ve)
 	return
 }
