@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/hedzr/log"
+	logz "github.com/hedzr/logg/slog"
 )
 
 // LogCapturer reroutes testing.T log output
@@ -25,14 +25,14 @@ func (tl logCapturer) Write(p []byte) (n int, err error) {
 }
 
 func (tl logCapturer) Release() {
-	log.SetOutput(tl.origOut)
+	logz.WithWriter(tl.origOut)
 }
 
 // NewCaptureLog redirects logrus output to testing.Log
 func NewCaptureLog(tb testing.TB) LogCapturer {
-	lc := logCapturer{TB: tb, origOut: log.GetOutput()}
+	lc := logCapturer{TB: tb, origOut: logz.GetDefaultWriter()}
 	if !testing.Verbose() {
-		log.SetOutput(lc)
+		logz.WithWriter(lc)
 	}
 	return &lc
 }
@@ -41,14 +41,14 @@ func NewCaptureLog(tb testing.TB) LogCapturer {
 // func NewCaptureLogOld(tb testing.TB) LogCapturer {
 // 	lc := logCapturer{TB: tb, origOut: logrus.StandardLogger().Out}
 // 	if !testing.Verbose() {
-// 		log.SetOutput(lc)
+// 		logz.SetOutput(lc)
 // 	}
 // 	return &lc
 // }
 
 // CaptureLog redirects logrus output to testing.Log
 func CaptureLog(tb testing.TB) LogCapturer {
-	lc := logCapturer{TB: tb, origOut: log.GetOutput()}
-	log.SetOutput(lc)
+	lc := logCapturer{TB: tb, origOut: logz.GetDefaultWriter()}
+	logz.WithWriter(lc)
 	return &lc
 }

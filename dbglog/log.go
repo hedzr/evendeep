@@ -4,7 +4,8 @@
 package dbglog
 
 import (
-	"github.com/hedzr/log/color"
+	"github.com/hedzr/is/term/color"
+
 	"gopkg.in/hedzr/errors.v3"
 )
 

@@ -1,11 +1,7 @@
 package dbglog
 
-import (
-	stdlog "log"
-)
-
 func init() { //nolint:gochecknoinits //no
-	stdlog.SetFlags(stdlog.LstdFlags | stdlog.Lshortfile | stdlog.Lmicroseconds)
+	// stdlog.SetFlags(stdlog.LstdFlags | stdlog.Lshortfile | stdlog.Lmicroseconds)
 
 	// enable debug level for hedzr/log and log.
 	// - make log.Debugf(...) printing the text onto console;

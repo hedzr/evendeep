@@ -4,19 +4,20 @@
 package dbglog
 
 import (
-	"github.com/hedzr/log"
 	"testing"
+
+	logz "github.com/hedzr/logg/slog"
 )
 
 func TestFLog(t *testing.T) {
 	// config := log.NewLoggerConfigWith(true, "logrus", "trace")
 	// logger := logrus.NewWithConfig(config)
-	log.Printf("hello")
-	log.Infof("hello info")
-	log.Warnf("hello warn")
-	log.Errorf("hello error")
-	log.Debugf("hello debug")
-	log.Tracef("hello trace")
+	logz.Printf("hello")
+	logz.Infof("hello info")
+	logz.Warnf("hello warn")
+	logz.Errorf("hello error")
+	logz.Debugf("hello debug")
+	logz.Tracef("hello trace")
 
 	Log("but again")
 }
