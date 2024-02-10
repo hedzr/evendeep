@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/flags/cms"
 )
@@ -206,8 +204,8 @@ app:
 	t.Logf("holder: %+v", holder)
 
 	var c = evendeep.New(
-		// evendeep.WithStrategies(cms.OmitIfZero),
-		// evendeep.WithCopyStrategyOpt,
+	// evendeep.WithStrategies(cms.OmitIfZero),
+	// evendeep.WithCopyStrategyOpt,
 	)
 
 	// t.Run("copy project-group map", func(t *testing.T) {

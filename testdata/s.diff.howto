@@ -1,0 +1,3 @@
+```bash
+diff -u speedtest1.txt speedtest2.txt >s.diff
+```
