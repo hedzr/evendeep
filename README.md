@@ -23,9 +23,9 @@ This library is designed for making everything customizable.
 - easily apply different strategies
   - basic strategies are: copy-n-merge, clone,
   - strategies per struct field:
-    `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
-    `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
-    `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
+      `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
+      `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
+      `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
 - copy fields by name or ordinal
   - field to field
   - field to method, method to field
@@ -44,60 +44,16 @@ This library is designed for making everything customizable.
   - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/diff.go#L13)
 
 - Compatibilities
-  - Run for Go Modules enabled (go1.11+)
+  - Run for Go Modules and Generics enable, and log/slog present (go1.21+ since v1)
+    - since v1, `debug/buildinfo` requires go1.18+, `log/slog` wants go1.21+.
+    - for the v0.x versions, go1.11+ is okay.
 
 ## History
 
-- v0.4.19
-  - upgrade deps
-
-- v0.4.17
-  - upgrade deps
-
-- v0.4.13
-  - fixed test on strconv.NumError
-    - and errors.Is(err, strconv.SyntaxError) is invalid now
-    - use errors.Is(err, strconv.NumError{Err:strconv.SyntaxError}) as a workaround
-  - upgrade deps
-
-- v0.4.8
-  - fixed: check unexported field recursively now
-  - improved some lines for better context logging in debugging
-  - little changes
-
-- v0.4.7
-  - upgrade deps
-
-- v0.4.3
-  - fixed sometimes a ptr to new slice has not been cleaned in time
-
-- v0.4.1
-  - public `dbglog` subpackage, added Err/Wrn/Colored
-  - added ability to disable dbglog.Log at runtime
-  - improved internal functions (tool.Valfmt, cl.SetUnexportedFieldIfMap, ...)
-  - improved dbglog.Log outputting
-  - fixed bugs
-
-- v0.4.0
-  - fixed autonew when copying to nil member
-  - improved diff on chan
-  - better logging (verbose) with colors
-
-- v0.3.1
-  - changed: `dbglog.LogValid` is constant now
-  - improved code style
-  - DeepCopy:
-    - passing nil parameters can return safely without panic any more
-  - DeepDiff:
-    - imp/fea: `diff.WithStripPointerAtFirst` - locate the final objects and compare them
-    - imp/fea: `diff.WithTreatEmptyStructPtrAsNilPtr` - when comparing two pointers in struct field loop, assume nil and pointer to an empty struct is identical
-    - imp/fea: `diff.WithCompareDifferentTypeStructs` - you can compare two struct with different type, their fields could be `diff` by its name
-    - imp/fea: `diff.WithIgnoreUnmatchedFields` - this is default option for `diff.WithCompareDifferentTypeStructs(true)` mode, the field names unmatched couldn't take effects to comparing result
-    - imp/fea: `diff.WithCompareDifferentSizeArrays` - `[2]string{"1","2"}` and `[3]string{"1","2",<empty>}` can be assumed as identity
-    - By default,
-      - they're assumed as identity: nil and zero array/map.
-      - they're not identical: nil ptr to struct, and ptr to empty struct (can be overridden by `WithTreatEmptyStructPtrAsNilPtr`).
-      - the slice elements' order is sensitive, except you're `diff` with `WithSliceOrderedComparison(true)`.
+- v1.0.0
+  - upgrade to v1
+    - changed log to our logg/slog
+    - fixed bugs found and improved performances
 
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
@@ -107,7 +63,8 @@ This library is designed for making everything customizable.
 
 `eventdeep.New`, `eventdeep.MakeClone` and `eventdeep.DeepCopy` are main entries.
 
-By default, `DeepCopy()` will copy and **merge** source into destination object. That means, a map or a slice will be merged
+By default, `DeepCopy()` will copy and **merge** source into destination object. That means, a map or a slice will be
+merged
 deeply, same to a struct.
 
 [`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110) gives a most even scalable interface
@@ -465,7 +422,7 @@ The available tag names are (Almost newest, see its
 in [flags/cms/copymergestrategy.go](https://github.com/hedzr/evendeep/blob/master/flags/cms/copymergestrategy.go#L23)):
 
 | Tag name           | Flags                   | Detail                                           |
-| ------------------ | ----------------------- | ------------------------------------------------ |
+|--------------------|-------------------------|--------------------------------------------------|
 | `-`                | `cms.Ignore`            | field will be ignored                            |
 | `std` (*)          | `cms.Default`           | reserved                                         |
 | `must`             | `cms.Must`              | reserved                                         |

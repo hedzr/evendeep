@@ -1,4 +1,9 @@
-## HISTORY
+# HISTORY
+
+- v1.0.0
+  - upgrade to v1
+    - changed log to our logg/slog
+    - fixed bugs found and improved performances
 
 - v0.4.19
   - upgrade deps
@@ -58,12 +63,14 @@
   - improved code style, format, ...
   - to fore-prevent low-performance and large-memory usage when retrieve expanded fields from a very large struct, use `cms.ByOrdinal` instead default `cms.ByName`
   - added new strategy `cms.Flat` and field tag to identify a pointer should be shallow copy to target field,
+
     ```go
     package main
     type A struct {
         field1 *ComplexStruct `copy:",flat"`
     }
     ```
+
   - `evendeep` supports to go1.11 currently
 
 ### v0.2.51
