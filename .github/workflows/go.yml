@@ -113,15 +113,56 @@ jobs:
         if: env.ENABLE_Simple_Release != 0
       # - name: Generate Changelog
       #  run: echo "# Good things have arrived" > ${{ github.workspace }}-CHANGELOG.txt
+
+      # This step reads a file from repo and use it for body of the release
+      # This works on any self-hosted runner OS
+      - name: Read RELNOTES.md and use it as a body of new release
+        id: read_release_notes_0
+        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release != 0
+        shell: bash
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          APP_NAME="${GITHUB_REPOSITORY##*/}"
+          APP_NAME=$(echo $APP_NAME | sed 's/^(go-)//' | sed 's/(-go)$//' | tr '[:upper:]' '[:lower:]')
+          if [ $APP_NAME = "cmdrstarter" ]; then APP_NAME=your-starter; fi
+          ACTOR=$(echo $GITHUB_ACTOR | tr '[:upper:]' '[:lower:]')
+          GOT=0
+          for f in RELNOTES relnotes RELNOTES.md REL-NOTES.md relnotes.md rel-notes.md; do
+            if [[ $GOT -eq 0 ]]; then
+              if [ -f $f ]; then
+                r=$(cat $f)
+                r="${r//'%'/'%25'}"
+                r="${r//$'\n'/'%0A'}"
+                r="${r//$'\r'/'%0D'}"
+                r="${r//'{''{'APP_NAME'}''}'/$APP_NAME}"
+                r="${r//'{''{'VERSION'}''}'/$VERSION}"
+                r="${r//'{''{'ACTOR'}''}'/$ACTOR}"
+                r="${r//'{''{'REPO_NAME'}''}'/$REPO_NAME}"
+                r="${r//'{''{'GITHUB_SHA'}''}'/$GITHUB_SHA}"
+                r="${r//'{''{'GITHUB_REF'}''}'/$GITHUB_REF}"
+                r="${r//'{''{'GITHUB_REF_NAME'}''}'/$GITHUB_REF_NAME}"
+                r="${r//'{''{'GITHUB_REPOSITORY'}''}'/$GITHUB_REPOSITORY}"
+                r="${r//'{''{'GITHUB_REPOSITORY_OWNER'}''}'/$GITHUB_REPOSITORY_OWNER}"
+                echo "RELEASE_BODY=$r" >> $GITHUB_OUTPUT
+                GOT=1
+              fi
+            fi
+          done
       - name: Release
         uses: softprops/action-gh-release@v1
         if: env.ENABLE_Simple_Release != 0
         with:
           # body_path: ${{ github.workspace }}-CHANGELOG.txt
-          body_path: RELNOTES.md
+          # body_path: RELNOTES.md
           # files: |
           #   LICENSE
           #   RELNOTES.md
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          body: |
+            ${{ steps.read_release_notes_0.outputs.RELEASE_BODY }}
 
   release-build:
     permissions: write-all # this is the FIX
