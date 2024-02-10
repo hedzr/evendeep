@@ -67,7 +67,7 @@ By default, `DeepCopy()` will copy and **merge** source into destination object.
 merged
 deeply, same to a struct.
 
-[`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L110) gives a most even scalable interface
+[`New(opts...)`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L48) gives a most even scalable interface
 than `DeepCopy`, it returns a new `DeepCopier` different to `DefaultCopyController` and you can make call
 to `DeepCopier.DeepCopy(old, new, opts...)`.
 
@@ -201,8 +201,8 @@ if it's in `ByOrdinal` mode.
 #### Customizing A Converter
 
 The customized Type/Value Converter can be applied on transforming the data from source. For more information take a
-look [`ValueConverter`](https://github.com/hedzr/evendeep/blob/master/cvts.go#L127)
-and [`ValueCopier`](https://github.com/hedzr/evendeep/blob/master/cvts.go#L133). Its take effects on checking the value
+look [`ValueConverter`](https://github.com/hedzr/evendeep/blob/master/cvts.go#L97)
+and [`ValueCopier`](https://github.com/hedzr/evendeep/blob/master/cvts.go#L103). Its take effects on checking the value
 type of target or source, or both of them.
 
 ```go
