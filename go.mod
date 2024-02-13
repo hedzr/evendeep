@@ -6,7 +6,7 @@ go 1.21
 
 // replace gopkg.in/hedzr/errors.v3 => ../../24/libs.errors
 
-//replace github.com/hedzr/go-errors/v2 => ../libs.errors
+// replace github.com/hedzr/go-errors/v2 => ../libs.errors
 
 // replace github.com/hedzr/env => ../libs.env
 
@@ -14,9 +14,9 @@ go 1.21
 
 // replace github.com/hedzr/logg => ../libs.logg
 
-//replace github.com/hedzr/logz => ../libs.logz
+// replace github.com/hedzr/logz => ../libs.logz
 
-//replace github.com/hedzr/go-utils/v2 => ../libs.utils
+// replace github.com/hedzr/go-utils/v2 => ../libs.utils
 
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
