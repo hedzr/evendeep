@@ -50,6 +50,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.0.1
+  - improved numeric <-> any converters
+
 - v1.0.0
   - upgrade to v1
     - changed log to our logg/slog
