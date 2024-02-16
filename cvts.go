@@ -209,6 +209,14 @@ func zfToStringM(in map[string]any) (out map[string]string) {
 	return
 }
 
+func zfToStringMA(in map[any]any) (out map[string]string) {
+	out = make(map[string]string, len(in))
+	for k, it := range in {
+		out[anyToString(k)] = anyToString(it)
+	}
+	return
+}
+
 func anyToStringMap(data any) (ret map[string]string) {
 	if data == nil {
 		return
@@ -219,6 +227,8 @@ func anyToStringMap(data any) (ret map[string]string) {
 		return z
 	case map[string]any:
 		return zfToStringM(z)
+	case map[any]any:
+		return zfToStringMA(z)
 	default:
 		break
 	}
@@ -301,8 +311,24 @@ func anyToBoolSlice(data any) (ret []bool) {
 		return zfToBoolS(z)
 	case []fmt.Stringer:
 		return zfToBoolS(z)
+
+	case string:
+		return zfToBoolSS(z)
+	// case fmt.Stringer:
+	// 	return zfToBoolSs(z.String())
+
 	default:
 		break
+	}
+	return
+}
+
+func zfToBoolSS(in string) (out []bool) {
+	ins := strings.TrimSpace(in)
+	if ins[0] == '[' {
+		out = parseToSlice[bool](ins[1:])
+	} else {
+		out = append(out, anyToBool(ins))
 	}
 	return
 }
@@ -345,950 +371,33 @@ func anyToBoolMap(data any) (ret map[string]bool) {
 
 func (s *Cvt) Int(data any) int64 { return anyToInt(data) }
 
-func anyToInt(data any) int64 {
-	if data == nil {
-		return 0
-	}
+func (s *Cvt) Int64Slice(data any) []int64 { return anyToIntSliceT[int64](data) }
+func (s *Cvt) Int32Slice(data any) []int32 { return anyToIntSliceT[int32](data) }
+func (s *Cvt) Int16Slice(data any) []int16 { return anyToIntSliceT[int16](data) }
+func (s *Cvt) Int8Slice(data any) []int8   { return anyToIntSliceT[int8](data) }
+func (s *Cvt) IntSlice(data any) []int     { return anyToIntSliceT[int](data) }
 
-	switch z := data.(type) {
-	case int:
-		return int64(z)
-	case int8:
-		return int64(z)
-	case int16:
-		return int64(z)
-	case int32:
-		return int64(z)
-	case int64:
-		return z
-
-	case uint:
-		return int64(z)
-	case uint8:
-		return int64(z)
-	case uint16:
-		return int64(z)
-	case uint32:
-		return int64(z)
-	case uint64:
-		if z <= uint64(math.MaxInt64) {
-			return int64(z)
-		}
-		break
-
-	case float32:
-		return int64(z)
-	case float64:
-		return int64(z)
-
-	case complex64:
-		return int64(real(z))
-	case complex128:
-		return int64(real(z))
-
-	case string:
-		return atoi(z)
-
-	case time.Duration:
-		return int64(z)
-	case time.Time:
-		return z.UnixNano()
-
-	default:
-		return atoi(fmt.Sprint(data))
-	}
-
-	// reflect approach
-	rv := reflect.ValueOf(data)
-	logz.Warn("[anyToInt]: unrecognized data type",
-		"typ", ref.Typfmtv(&rv),
-		"val", ref.Valfmt(&rv),
-	)
-	return 0
-}
+func (s *Cvt) Int64Map(data any) map[string]int64 { return anyToInt64MapT[int64](data) }
+func (s *Cvt) Int32Map(data any) map[string]int32 { return anyToInt64MapT[int32](data) }
+func (s *Cvt) Int16Map(data any) map[string]int16 { return anyToInt64MapT[int16](data) }
+func (s *Cvt) Int8Map(data any) map[string]int8   { return anyToInt64MapT[int8](data) }
+func (s *Cvt) IntMap(data any) map[string]int     { return anyToInt64MapT[int](data) }
 
 //
 
-func (s *Cvt) Int64Slice(data any) []int64 { return anyToInt64Slice(data) }
-func (s *Cvt) Int32Slice(data any) []int32 { return anyToInt32Slice(data) }
-func (s *Cvt) Int16Slice(data any) []int16 { return anyToInt16Slice(data) }
-func (s *Cvt) Int8Slice(data any) []int8   { return anyToInt8Slice(data) }
-func (s *Cvt) IntSlice(data any) []int     { return anyToIntSlice(data) }
-
-func anyToInt64Slice(data any) (ret []int64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []int64:
-		return z
-
-	case []float64:
-		return zfToInt64S(z)
-	case []float32:
-		return zfToInt64S(z)
-
-	case []int:
-		return zfToInt64S(z)
-	case []string:
-		return zfToInt64S(z)
-	case []int32:
-		return zfToInt64S(z)
-	case []int16:
-		return zfToInt64S(z)
-	case []int8:
-		return zfToInt64S(z)
-	case []uint:
-		return zfToInt64S(z)
-	case []uint64:
-		return zfToInt64S(z)
-	case []uint32:
-		return zfToInt64S(z)
-	case []uint16:
-		return zfToInt64S(z)
-	case []uint8:
-		return zfToInt64S(z)
-
-	case []bool:
-		return zfToInt64S(z)
-	case []fmt.Stringer:
-		return zfToInt64S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt32Slice(data any) (ret []int32) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []int32:
-		return z
-
-	case []float64:
-		return zfToInt32S(z)
-	case []float32:
-		return zfToInt32S(z)
-
-	case []int:
-		return zfToInt32S(z)
-	case []string:
-		return zfToInt32S(z)
-	case []int64:
-		return zfToInt32S(z)
-	case []int16:
-		return zfToInt32S(z)
-	case []int8:
-		return zfToInt32S(z)
-	case []uint:
-		return zfToInt32S(z)
-	case []uint64:
-		return zfToInt32S(z)
-	case []uint32:
-		return zfToInt32S(z)
-	case []uint16:
-		return zfToInt32S(z)
-	case []uint8:
-		return zfToInt32S(z)
-
-	case []bool:
-		return zfToInt32S(z)
-	case []fmt.Stringer:
-		return zfToInt32S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt16Slice(data any) (ret []int16) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []int16:
-		return z
-
-	case []float64:
-		return zfToInt16S(z)
-	case []float32:
-		return zfToInt16S(z)
-
-	case []int:
-		return zfToInt16S(z)
-	case []string:
-		return zfToInt16S(z)
-	case []int32:
-		return zfToInt16S(z)
-	case []int64:
-		return zfToInt16S(z)
-	case []int8:
-		return zfToInt16S(z)
-	case []uint:
-		return zfToInt16S(z)
-	case []uint64:
-		return zfToInt16S(z)
-	case []uint32:
-		return zfToInt16S(z)
-	case []uint16:
-		return zfToInt16S(z)
-	case []uint8:
-		return zfToInt16S(z)
-
-	case []bool:
-		return zfToInt16S(z)
-	case []fmt.Stringer:
-		return zfToInt16S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt8Slice(data any) (ret []int8) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []int8:
-		return z
-
-	case []float64:
-		return zfToInt8S(z)
-	case []float32:
-		return zfToInt8S(z)
-
-	case []int:
-		return zfToInt8S(z)
-	case []string:
-		return zfToInt8S(z)
-	case []int32:
-		return zfToInt8S(z)
-	case []int16:
-		return zfToInt8S(z)
-	case []int64:
-		return zfToInt8S(z)
-	case []uint:
-		return zfToInt8S(z)
-	case []uint64:
-		return zfToInt8S(z)
-	case []uint32:
-		return zfToInt8S(z)
-	case []uint16:
-		return zfToInt8S(z)
-	case []uint8:
-		return zfToInt8S(z)
-
-	case []bool:
-		return zfToInt8S(z)
-	case []fmt.Stringer:
-		return zfToInt8S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToIntSlice(data any) (ret []int) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []int:
-		return z
-
-	case []float64:
-		return zfToIntS(z)
-	case []float32:
-		return zfToIntS(z)
-
-	case []int64:
-		return zfToIntS(z)
-	case []string:
-		return zfToIntS(z)
-	case []int32:
-		return zfToIntS(z)
-	case []int16:
-		return zfToIntS(z)
-	case []int8:
-		return zfToIntS(z)
-	case []uint:
-		return zfToIntS(z)
-	case []uint64:
-		return zfToIntS(z)
-	case []uint32:
-		return zfToIntS(z)
-	case []uint16:
-		return zfToIntS(z)
-	case []uint8:
-		return zfToIntS(z)
-
-	case []bool:
-		return zfToIntS(z)
-	case []fmt.Stringer:
-		return zfToIntS(z)
-	default:
-		break
-	}
-	return
-}
-
-func zfToInt64S[T any](in []T) (out []int64) {
-	out = make([]int64, 0, len(in))
-	for _, it := range in {
-		out = append(out, anyToInt(it))
-	}
-	return
-}
-
-func zfToInt32S[T any](in []T) (out []int32) {
-	out = make([]int32, 0, len(in))
-	for _, it := range in {
-		out = append(out, int32(anyToInt(it)))
-	}
-	return
-}
-
-func zfToInt16S[T any](in []T) (out []int16) {
-	out = make([]int16, 0, len(in))
-	for _, it := range in {
-		out = append(out, int16(anyToInt(it)))
-	}
-	return
-}
-
-func zfToInt8S[T any](in []T) (out []int8) {
-	out = make([]int8, 0, len(in))
-	for _, it := range in {
-		out = append(out, int8(anyToInt(it)))
-	}
-	return
-}
-
-func zfToIntS[T any](in []T) (out []int) {
-	out = make([]int, 0, len(in))
-	for _, it := range in {
-		out = append(out, int(anyToInt(it)))
-	}
-	return
-}
-
-//
-
-func (s *Cvt) Int64Map(data any) map[string]int64 { return anyToInt64Map(data) }
-func (s *Cvt) Int32Map(data any) map[string]int32 { return anyToInt32Map(data) }
-func (s *Cvt) Int16Map(data any) map[string]int16 { return anyToInt16Map(data) }
-func (s *Cvt) Int8Map(data any) map[string]int8   { return anyToInt8Map(data) }
-func (s *Cvt) IntMap(data any) map[string]int     { return anyToIntMap(data) }
-
-func anyToInt64Map(data any) (ret map[string]int64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]int64:
-		return z
-	case map[string]any:
-		return zfToInt64M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt32Map(data any) (ret map[string]int32) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]int32:
-		return z
-	case map[string]any:
-		return zfToInt32M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt16Map(data any) (ret map[string]int16) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]int16:
-		return z
-	case map[string]any:
-		return zfToInt16M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToInt8Map(data any) (ret map[string]int8) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]int8:
-		return z
-	case map[string]any:
-		return zfToInt8M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToIntMap(data any) (ret map[string]int) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]int:
-		return z
-	case map[string]any:
-		return zfToIntM(z)
-	default:
-		break
-	}
-	return
-}
-
-func zfToInt64M(in map[string]any) (out map[string]int64) {
-	out = make(map[string]int64, len(in))
-	for k, it := range in {
-		out[k] = anyToInt(it)
-	}
-	return
-}
-
-func zfToInt32M(in map[string]any) (out map[string]int32) {
-	out = make(map[string]int32, len(in))
-	for k, it := range in {
-		out[k] = int32(anyToInt(it))
-	}
-	return
-}
-
-func zfToInt16M(in map[string]any) (out map[string]int16) {
-	out = make(map[string]int16, len(in))
-	for k, it := range in {
-		out[k] = int16(anyToInt(it))
-	}
-	return
-}
-
-func zfToInt8M(in map[string]any) (out map[string]int8) {
-	out = make(map[string]int8, len(in))
-	for k, it := range in {
-		out[k] = int8(anyToInt(it))
-	}
-	return
-}
-
-func zfToIntM(in map[string]any) (out map[string]int) {
-	out = make(map[string]int, len(in))
-	for k, it := range in {
-		out[k] = int(anyToInt(it))
-	}
-	return
-}
-
-//
-
-func (s *Cvt) Uint(data any) uint64 { return anyToUint(data) }
-
-func anyToUint(data any) uint64 {
-	if data == nil {
-		return 0
-	}
-
-	switch z := data.(type) {
-	case int:
-		return uint64(z)
-	case int8:
-		return uint64(z)
-	case int16:
-		return uint64(z)
-	case int32:
-		return uint64(z)
-	case int64:
-		return uint64(z)
-
-	case uint:
-		return uint64(z)
-	case uint8:
-		return uint64(z)
-	case uint16:
-		return uint64(z)
-	case uint32:
-		return uint64(z)
-	case uint64:
-		return z
-
-	case float32:
-		return uint64(z)
-	case float64:
-		return uint64(z)
-
-	case complex64:
-		return uint64(real(z))
-	case complex128:
-		return uint64(real(z))
-
-	case string:
-		return atou(z)
-
-	case time.Duration:
-		return uint64(z)
-	case time.Time:
-		return uint64(z.UnixNano())
-
-	default:
-		return atou(fmt.Sprint(data))
-	}
-}
-
-func atoi(v string) int64 {
-	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
-		return i
-	}
-	if f, err := strconv.ParseFloat(v, 64); err == nil {
-		return int64(f)
-	}
-	if u, err := strconv.ParseUint(v, 10, 64); err != nil {
-		return int64(u)
-	}
-	return 0
-}
-
-func atou(v string) uint64 {
-	if u, err := strconv.ParseUint(v, 10, 64); err != nil {
-		return u
-	}
-	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
-		return uint64(i)
-	}
-	if f, err := strconv.ParseFloat(v, 64); err == nil {
-		return uint64(f)
-	}
-	return 0
-}
-
-//
-
-func (s *Cvt) Uint64Slice(data any) []uint64 { return anyToUint64Slice(data) }
-func (s *Cvt) Uint32Slice(data any) []uint32 { return anyToUint32Slice(data) }
-func (s *Cvt) Uint16Slice(data any) []uint16 { return anyToUint16Slice(data) }
-func (s *Cvt) Uint8Slice(data any) []uint8   { return anyToUint8Slice(data) }
-func (s *Cvt) UintSlice(data any) []uint     { return anyToUintSlice(data) }
-
-func anyToUint64Slice(data any) (ret []uint64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []uint64:
-		return z
-
-	case []float64:
-		return zfToUint64S(z)
-	case []float32:
-		return zfToUint64S(z)
-
-	case []int:
-		return zfToUint64S(z)
-	case []string:
-		return zfToUint64S(z)
-	case []int32:
-		return zfToUint64S(z)
-	case []int16:
-		return zfToUint64S(z)
-	case []int8:
-		return zfToUint64S(z)
-	case []uint:
-		return zfToUint64S(z)
-	case []int64:
-		return zfToUint64S(z)
-	case []uint32:
-		return zfToUint64S(z)
-	case []uint16:
-		return zfToUint64S(z)
-	case []uint8:
-		return zfToUint64S(z)
-
-	case []bool:
-		return zfToUint64S(z)
-	case []fmt.Stringer:
-		return zfToUint64S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint32Slice(data any) (ret []uint32) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []uint32:
-		return z
-
-	case []float64:
-		return zfToUint32S(z)
-	case []float32:
-		return zfToUint32S(z)
-
-	case []int:
-		return zfToUint32S(z)
-	case []string:
-		return zfToUint32S(z)
-	case []int64:
-		return zfToUint32S(z)
-	case []int16:
-		return zfToUint32S(z)
-	case []int8:
-		return zfToUint32S(z)
-	case []uint:
-		return zfToUint32S(z)
-	case []uint64:
-		return zfToUint32S(z)
-	case []int32:
-		return zfToUint32S(z)
-	case []uint16:
-		return zfToUint32S(z)
-	case []uint8:
-		return zfToUint32S(z)
-
-	case []bool:
-		return zfToUint32S(z)
-	case []fmt.Stringer:
-		return zfToUint32S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint16Slice(data any) (ret []uint16) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []uint16:
-		return z
-
-	case []float64:
-		return zfToUint16S(z)
-	case []float32:
-		return zfToUint16S(z)
-
-	case []int:
-		return zfToUint16S(z)
-	case []string:
-		return zfToUint16S(z)
-	case []int32:
-		return zfToUint16S(z)
-	case []int64:
-		return zfToUint16S(z)
-	case []int8:
-		return zfToUint16S(z)
-	case []uint:
-		return zfToUint16S(z)
-	case []uint64:
-		return zfToUint16S(z)
-	case []uint32:
-		return zfToUint16S(z)
-	case []int16:
-		return zfToUint16S(z)
-	case []uint8:
-		return zfToUint16S(z)
-
-	case []bool:
-		return zfToUint16S(z)
-	case []fmt.Stringer:
-		return zfToUint16S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint8Slice(data any) (ret []uint8) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []uint8:
-		return z
-
-	case []float64:
-		return zfToUint8S(z)
-	case []float32:
-		return zfToUint8S(z)
-
-	case []int:
-		return zfToUint8S(z)
-	case []string:
-		return zfToUint8S(z)
-	case []int32:
-		return zfToUint8S(z)
-	case []int16:
-		return zfToUint8S(z)
-	case []int64:
-		return zfToUint8S(z)
-	case []uint:
-		return zfToUint8S(z)
-	case []uint64:
-		return zfToUint8S(z)
-	case []uint32:
-		return zfToUint8S(z)
-	case []uint16:
-		return zfToUint8S(z)
-	case []int8:
-		return zfToUint8S(z)
-
-	case []bool:
-		return zfToUint8S(z)
-	case []fmt.Stringer:
-		return zfToUint8S(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUintSlice(data any) (ret []uint) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []uint:
-		return z
-
-	case []float64:
-		return zfToUintS(z)
-	case []float32:
-		return zfToUintS(z)
-
-	case []int64:
-		return zfToUintS(z)
-	case []string:
-		return zfToUintS(z)
-	case []int32:
-		return zfToUintS(z)
-	case []int16:
-		return zfToUintS(z)
-	case []int8:
-		return zfToUintS(z)
-	case []int:
-		return zfToUintS(z)
-	case []uint64:
-		return zfToUintS(z)
-	case []uint32:
-		return zfToUintS(z)
-	case []uint16:
-		return zfToUintS(z)
-	case []uint8:
-		return zfToUintS(z)
-
-	case []bool:
-		return zfToUintS(z)
-	case []fmt.Stringer:
-		return zfToUintS(z)
-	default:
-		break
-	}
-	return
-}
-
-func zfToUint64S[T any](in []T) (out []uint64) {
-	out = make([]uint64, 0, len(in))
-	for _, it := range in {
-		out = append(out, anyToUint(it))
-	}
-	return
-}
-
-func zfToUint32S[T any](in []T) (out []uint32) {
-	out = make([]uint32, 0, len(in))
-	for _, it := range in {
-		out = append(out, uint32(anyToUint(it)))
-	}
-	return
-}
-
-func zfToUint16S[T any](in []T) (out []uint16) {
-	out = make([]uint16, 0, len(in))
-	for _, it := range in {
-		out = append(out, uint16(anyToUint(it)))
-	}
-	return
-}
-
-func zfToUint8S[T any](in []T) (out []uint8) {
-	out = make([]uint8, 0, len(in))
-	for _, it := range in {
-		out = append(out, uint8(anyToUint(it)))
-	}
-	return
-}
-
-func zfToUintS[T any](in []T) (out []uint) {
-	out = make([]uint, 0, len(in))
-	for _, it := range in {
-		out = append(out, uint(anyToUint(it)))
-	}
-	return
-}
-
-//
-
-func (s *Cvt) Uint64Map(data any) map[string]uint64 { return anyToUint64Map(data) }
-func (s *Cvt) Uint32Map(data any) map[string]uint32 { return anyToUint32Map(data) }
-func (s *Cvt) Uint16Map(data any) map[string]uint16 { return anyToUint16Map(data) }
-func (s *Cvt) Uint8Map(data any) map[string]uint8   { return anyToUint8Map(data) }
-func (s *Cvt) UintMap(data any) map[string]uint     { return anyToUintMap(data) }
-
-func anyToUint64Map(data any) (ret map[string]uint64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]uint64:
-		return z
-	case map[string]any:
-		return zfToUint64M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint32Map(data any) (ret map[string]uint32) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]uint32:
-		return z
-	case map[string]any:
-		return zfToUint32M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint16Map(data any) (ret map[string]uint16) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]uint16:
-		return z
-	case map[string]any:
-		return zfToUint16M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUint8Map(data any) (ret map[string]uint8) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]uint8:
-		return z
-	case map[string]any:
-		return zfToUint8M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToUintMap(data any) (ret map[string]uint) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]uint:
-		return z
-	case map[string]any:
-		return zfToUintM(z)
-	default:
-		break
-	}
-	return
-}
-
-func zfToUint64M(in map[string]any) (out map[string]uint64) {
-	out = make(map[string]uint64, len(in))
-	for k, it := range in {
-		out[k] = anyToUint(it)
-	}
-	return
-}
-
-func zfToUint32M(in map[string]any) (out map[string]uint32) {
-	out = make(map[string]uint32, len(in))
-	for k, it := range in {
-		out[k] = uint32(anyToUint(it))
-	}
-	return
-}
-
-func zfToUint16M(in map[string]any) (out map[string]uint16) {
-	out = make(map[string]uint16, len(in))
-	for k, it := range in {
-		out[k] = uint16(anyToUint(it))
-	}
-	return
-}
-
-func zfToUint8M(in map[string]any) (out map[string]uint8) {
-	out = make(map[string]uint8, len(in))
-	for k, it := range in {
-		out[k] = uint8(anyToUint(it))
-	}
-	return
-}
-
-func zfToUintM(in map[string]any) (out map[string]uint) {
-	out = make(map[string]uint, len(in))
-	for k, it := range in {
-		out[k] = uint(anyToUint(it))
-	}
-	return
-}
+func (s *Cvt) Uint(data any) uint64 { return anyToUintT[any, uint64](data) }
+
+func (s *Cvt) Uint64Slice(data any) []uint64 { return anyToUintSliceT[uint64](data) }
+func (s *Cvt) Uint32Slice(data any) []uint32 { return anyToUintSliceT[uint32](data) }
+func (s *Cvt) Uint16Slice(data any) []uint16 { return anyToUintSliceT[uint16](data) }
+func (s *Cvt) Uint8Slice(data any) []uint8   { return anyToUintSliceT[uint8](data) }
+func (s *Cvt) UintSlice(data any) []uint     { return anyToUintSliceT[uint](data) }
+
+func (s *Cvt) Uint64Map(data any) map[string]uint64 { return anyToUint64MapT[uint64](data) }
+func (s *Cvt) Uint32Map(data any) map[string]uint32 { return anyToUint64MapT[uint32](data) }
+func (s *Cvt) Uint16Map(data any) map[string]uint16 { return anyToUint64MapT[uint16](data) }
+func (s *Cvt) Uint8Map(data any) map[string]uint8   { return anyToUint64MapT[uint8](data) }
+func (s *Cvt) UintMap(data any) map[string]uint     { return anyToUint64MapT[uint](data) }
 
 //
 
@@ -1397,6 +506,9 @@ func anyToString(data any) string {
 	case complex128:
 		return complexToString(z)
 
+	case []any:
+		return fmt.Sprint(data)
+
 	default:
 		break
 	}
@@ -1414,174 +526,11 @@ func anyToString(data any) string {
 func (s *Cvt) Float64(data any) float64 { return anyToFloat[float64](data) }
 func (s *Cvt) Float32(data any) float32 { return anyToFloat[float32](data) }
 
-func anyToFloat[R Floats](data any) R {
-	if data == nil {
-		return 0
-	}
-
-	switch z := data.(type) {
-	case float64:
-		return R(z)
-	case float32:
-		return R(z)
-
-	case int:
-		return R(z)
-	case int64:
-		return R(z)
-	case int32:
-		return R(z)
-	case int16:
-		return R(z)
-	case int8:
-		return R(z)
-	case uint:
-		return R(z)
-	case uint64:
-		return R(z)
-	case uint32:
-		return R(z)
-	case uint16:
-		return R(z)
-	case uint8:
-		return R(z)
-
-	case string:
-		return R(mustParseFloat(z))
-	case fmt.Stringer:
-		return R(mustParseFloat(z.String()))
-
-	default:
-		str := fmt.Sprintf("%v", data)
-		return R(mustParseFloat(str))
-	}
-}
-
-func mustParseFloat(s string) (ret float64) {
-	ret, _ = strconv.ParseFloat(s, 64)
-	return
-}
-
 func (s *Cvt) Float64Slice(data any) []float64 { return anyToFloatSlice[float64](data) }
 func (s *Cvt) Float32Slice(data any) []float32 { return anyToFloatSlice[float32](data) }
 
-func zfToFloatS[T Floats, R Floats](in []T) (out []R) {
-	out = make([]R, 0, len(in))
-	for _, it := range in {
-		out = append(out, R(it))
-	}
-	return
-}
-
-func anyToFloatSlice[R Floats](data any) (ret []R) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case []float64:
-		return zfToFloatS[float64, R](z)
-	case []float32:
-		return zfToFloatS[float32, R](z)
-
-	case []int:
-		return zsToFloatS[int, R](z)
-	case []int64:
-		return zsToFloatS[int64, R](z)
-	case []int32:
-		return zsToFloatS[int32, R](z)
-	case []int16:
-		return zsToFloatS[int16, R](z)
-	case []int8:
-		return zsToFloatS[int8, R](z)
-	case []uint:
-		return zsToFloatS[uint, R](z)
-	case []uint64:
-		return zsToFloatS[uint64, R](z)
-	case []uint32:
-		return zsToFloatS[uint32, R](z)
-	case []uint16:
-		return zsToFloatS[uint16, R](z)
-	case []uint8:
-		return zsToFloatS[uint8, R](z)
-
-	case []string:
-		ret = make([]R, 0, len(z))
-		for _, it := range z {
-			ret = append(ret, R(mustParseFloat(it)))
-		}
-		return
-	case []fmt.Stringer:
-		ret = make([]R, 0, len(z))
-		for _, it := range z {
-			ret = append(ret, R(mustParseFloat(it.String())))
-		}
-		return
-
-	default:
-		break
-	}
-	return
-}
-
-func zsToFloatS[T Integers | Uintegers, R Floats](z []T) (ret []R) {
-	ret = make([]R, 0, len(z))
-	for _, it := range z {
-		ret = append(ret, R(int64(it)))
-	}
-	return
-}
-
 func (s *Cvt) Float64Map(data any) map[string]float64 { return anyToFloat64Map(data) }
 func (s *Cvt) Float32Map(data any) map[string]float32 { return anyToFloat32Map(data) }
-
-func anyToFloat64Map(data any) (ret map[string]float64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]float64:
-		return z
-	case map[string]any:
-		return zfToFloat64M(z)
-	default:
-		break
-	}
-	return
-}
-
-func anyToFloat32Map(data any) (ret map[string]float32) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]float32:
-		return z
-	case map[string]any:
-		return zfToFloat32M(z)
-	default:
-		break
-	}
-	return
-}
-
-func zfToFloat64M(in map[string]any) (out map[string]float64) {
-	out = make(map[string]float64, len(in))
-	for k, it := range in {
-		out[k] = anyToFloat[float64](it)
-	}
-	return
-}
-
-func zfToFloat32M(in map[string]any) (out map[string]float32) {
-	out = make(map[string]float32, len(in))
-	for k, it := range in {
-		out[k] = anyToFloat[float32](it)
-	}
-	return
-}
 
 //
 
@@ -1725,10 +674,44 @@ func anyToComplex128Map(data any) (ret map[string]complex128) {
 	}
 
 	switch z := data.(type) {
-	case map[string]complex128:
-		return z
 	case map[string]any:
 		return zfToComplex128M(z)
+
+	case map[string]bool:
+		return zfToComplex128MN(z)
+	case map[string]string:
+		return zfToComplex128MN(z)
+
+	case map[string]complex128:
+		return z // zfToComplex128MN(z)
+	case map[string]complex64:
+		return zfToComplex128MN(z)
+	case map[string]float64:
+		return zfToComplex128MN(z)
+	case map[string]float32:
+		return zfToComplex128MN(z)
+
+	case map[string]int64:
+		return zfToComplex128MN(z)
+	case map[string]int32:
+		return zfToComplex128MN(z)
+	case map[string]int16:
+		return zfToComplex128MN(z)
+	case map[string]int8:
+		return zfToComplex128MN(z)
+	case map[string]int:
+		return zfToComplex128MN(z)
+	case map[string]uint64:
+		return zfToComplex128MN(z)
+	case map[string]uint32:
+		return zfToComplex128MN(z)
+	case map[string]uint16:
+		return zfToComplex128MN(z)
+	case map[string]uint8:
+		return zfToComplex128MN(z)
+	case map[string]uint:
+		return zfToComplex128MN(z)
+
 	default:
 		break
 	}
@@ -1741,10 +724,44 @@ func anyToComplex64Map(data any) (ret map[string]complex64) {
 	}
 
 	switch z := data.(type) {
-	case map[string]complex64:
-		return z
 	case map[string]any:
 		return zfToComplex64M(z)
+
+	case map[string]bool:
+		return zfToComplex64MN(z)
+	case map[string]string:
+		return zfToComplex64MN(z)
+
+	case map[string]complex128:
+		return zfToComplex64MN(z)
+	case map[string]complex64:
+		return z // zfToComplex64MN(z)
+	case map[string]float64:
+		return zfToComplex64MN(z)
+	case map[string]float32:
+		return zfToComplex64MN(z)
+
+	case map[string]int64:
+		return zfToComplex64MN(z)
+	case map[string]int32:
+		return zfToComplex64MN(z)
+	case map[string]int16:
+		return zfToComplex64MN(z)
+	case map[string]int8:
+		return zfToComplex64MN(z)
+	case map[string]int:
+		return zfToComplex64MN(z)
+	case map[string]uint64:
+		return zfToComplex64MN(z)
+	case map[string]uint32:
+		return zfToComplex64MN(z)
+	case map[string]uint16:
+		return zfToComplex64MN(z)
+	case map[string]uint8:
+		return zfToComplex64MN(z)
+	case map[string]uint:
+		return zfToComplex64MN(z)
+
 	default:
 		break
 	}
@@ -1759,7 +776,23 @@ func zfToComplex128M(in map[string]any) (out map[string]complex128) {
 	return
 }
 
+func zfToComplex128MN[T Numerics | string | bool](in map[string]T) (out map[string]complex128) {
+	out = make(map[string]complex128, len(in))
+	for k, it := range in {
+		out[k] = anyToComplex[complex128](it)
+	}
+	return
+}
+
 func zfToComplex64M(in map[string]any) (out map[string]complex64) {
+	out = make(map[string]complex64, len(in))
+	for k, it := range in {
+		out[k] = anyToComplex[complex64](it)
+	}
+	return
+}
+
+func zfToComplex64MN[T Numerics | string | bool](in map[string]T) (out map[string]complex64) {
 	out = make(map[string]complex64, len(in))
 	for k, it := range in {
 		out[k] = anyToComplex[complex64](it)
@@ -2144,11 +1177,11 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 //nolint:lll //no why
 func (valueConverters ValueConverters) findConverters(params *Params, from, to reflect.Type, userDefinedOnly bool) (converter ValueConverter, ctx *ValueConverterContext) {
 	var yes bool
-	var min int
+	var minV int
 	if userDefinedOnly {
-		min = lenValueConverters
+		minV = lenValueConverters
 	}
-	for i := len(valueConverters) - 1; i >= min; i-- {
+	for i := len(valueConverters) - 1; i >= minV; i-- {
 		// FILO: the last added converter has the first priority
 		cvt := valueConverters[i]
 		if cvt != nil {
@@ -2164,11 +1197,11 @@ func (valueConverters ValueConverters) findConverters(params *Params, from, to r
 //nolint:lll //no why
 func (valueCopiers ValueCopiers) findCopiers(params *Params, from, to reflect.Type, userDefinedOnly bool) (copier ValueCopier, ctx *ValueConverterContext) {
 	var yes bool
-	var min int
+	var minV int
 	if userDefinedOnly {
-		min = lenValueCopiers
+		minV = lenValueCopiers
 	}
-	for i := len(valueCopiers) - 1; i >= min; i-- {
+	for i := len(valueCopiers) - 1; i >= minV; i-- {
 		// FILO: the last added converter has the first priority
 		cpr := valueCopiers[i]
 		if cpr != nil {
