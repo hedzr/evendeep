@@ -103,7 +103,7 @@ jobs:
   #
   # https://docs.github.com/en/actions/learn-github-actions/contexts#job-context
   simple-release:
-    permissions: write-all # this is the FIX
+    # permissions: write-all # this is the FIX
     runs-on: ubuntu-latest
     needs: coverage
     if: startsWith(github.ref, 'refs/tags/')            # in job.<job-id>.if, 'env' is not available !!
@@ -125,7 +125,7 @@ jobs:
       # This works on any self-hosted runner OS
       - name: Read RELNOTES.md and use it as a body of new release
         id: read_release_notes_0
-        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release != 0
+        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release != 0 && 0 # disable now
         shell: bash
         run: |
           REPO_NAME="${GITHUB_REPOSITORY##*/}"
@@ -158,6 +158,9 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         if: env.ENABLE_Simple_Release != 0
+        permissions:                   # this is the FIX
+          contents: write
+          discussions: write
         with:
           # body_path: ${{ github.workspace }}-CHANGELOG.txt
           # body_path: RELNOTES.md
@@ -168,8 +171,9 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          body: |
-            ${{ steps.read_release_notes_0.outputs.RELEASE_BODY }}
+          # body: |
+          #   ${{ steps.read_release_notes_0.outputs.RELEASE_BODY }}
+          generate_release_notes: true
 
   release-build:
     permissions: write-all # this is the FIX
@@ -408,7 +412,7 @@ jobs:
       # This works on any self-hosted runner OS
       - name: Read RELNOTES.md and use it as a body of new release
         id: read_release_notes
-        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release == 0
+        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release == 0 && 0 # disable now
         shell: bash
         run: |
           REPO_NAME="${GITHUB_REPOSITORY##*/}"
@@ -442,6 +446,9 @@ jobs:
       # This action allows you to select which files to upload to the just-tagged release. It runs on all operating systems types offered by GitHub.
       # https://github.com/svenstaro/upload-release-action
       - name: Upload binaries to release
+        permissions:                   # this is the FIX
+          contents: write
+          discussions: write
         uses: svenstaro/upload-release-action@v2
         if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Simple_Release == 0
         with:
@@ -450,8 +457,9 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
-          body: |
-            ${{ steps.read_release_notes.outputs.RELEASE_BODY }}
+          # body: |
+          #   ${{ steps.read_release_notes_0.outputs.RELEASE_BODY }}
+          generate_release_notes: true
 
 
 
