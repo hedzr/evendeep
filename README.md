@@ -50,6 +50,12 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.0.2
+  - improved bool/duration/time[Slice/Map] <-> any converters
+  - added TrimQuotes, StripQuotes
+  - improved times subpackage
+  - fixed simple-release section inside gh actions script
+
 - v1.0.1
   - improved numeric <-> any converters
 
