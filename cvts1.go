@@ -8,16 +8,41 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hedzr/evendeep/internal/tool"
 	"github.com/hedzr/evendeep/ref"
 	logz "github.com/hedzr/logg/slog"
 )
 
+func parseToMap[T any](in string) (out map[string]T) {
+	out = make(map[string]T)
+	ins := strings.TrimSpace(in)
+	if len(ins) >= 2 && ins[0] == '{' && ins[len(in)-1] == '}' {
+		a := strings.Split(ins[1:len(ins)-1], ",")
+		for _, it := range a {
+			b := strings.Split(it, ":")
+			if len(b) == 2 {
+				k := strings.TrimSpace(b[0])
+				k = strings.TrimSpace(tool.TrimQuotes(k))
+				kk := parseToAny[string](k)
+				v := strings.TrimSpace(b[1])
+				v = strings.TrimSpace(tool.TrimQuotes(v))
+				vv := parseToAny[T](v)
+				out[kk] = vv
+			}
+		}
+	}
+	return
+}
+
 func parseToSlice[T any](in string) (out []T) {
 	ins := strings.TrimSpace(in)
-	if ins[0] == '[' && ins[len(in)-1] == ']' {
-		a := strings.Split(ins[:len(ins)-1], ",")
+	if len(ins) >= 2 && ins[0] == '[' && ins[len(in)-1] == ']' {
+		a := strings.Split(ins[1:len(ins)-1], ",")
 		for _, it := range a {
-			out = append(out, parseToAny[T](it))
+			v := strings.TrimSpace(it)
+			v = strings.TrimSpace(tool.TrimQuotes(v))
+			vv := parseToAny[T](v)
+			out = append(out, vv)
 		}
 	} else {
 		out = append(out, parseToAny[T](ins))
@@ -28,6 +53,15 @@ func parseToSlice[T any](in string) (out []T) {
 func parseToAny[T any](in string) (out T) {
 	var t1 any = &out
 	switch z := t1.(type) {
+	case *[]time.Duration:
+		*z = anyToDurationSlice(in)
+	case *[]time.Time:
+		*z = anyToTimeSlice(in)
+	case *time.Duration:
+		*z = anyToDuration(in)
+	case *time.Time:
+		*z = anyToTime(in)
+
 	case *bool:
 		*z = anyToBool(in)
 	case *string:

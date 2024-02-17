@@ -16,6 +16,7 @@ import (
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/syscalls"
+	"github.com/hedzr/evendeep/internal/times"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 
@@ -326,7 +327,7 @@ func anyToBoolSlice(data any) (ret []bool) {
 func zfToBoolSS(in string) (out []bool) {
 	ins := strings.TrimSpace(in)
 	if ins[0] == '[' {
-		out = parseToSlice[bool](ins[1:])
+		out = parseToSlice[bool](ins)
 	} else {
 		out = append(out, anyToBool(ins))
 	}
@@ -357,12 +358,22 @@ func anyToBoolMap(data any) (ret map[string]bool) {
 	}
 
 	switch z := data.(type) {
+	case string:
+		return zfToBoolMM(z)
 	case map[string]bool:
 		return z
 	case map[string]any:
 		return zfToBoolM(z)
 	default:
 		break
+	}
+	return
+}
+
+func zfToBoolMM(in string) (out map[string]bool) {
+	ins := strings.TrimSpace(in)
+	if ins[0] == '{' {
+		out = parseToMap[bool](ins)
 	}
 	return
 }
@@ -890,6 +901,10 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 		}
 		return
 
+	case string:
+		ret = parseToSlice[time.Duration](z)
+	case fmt.Stringer:
+		ret = parseToSlice[time.Duration](z.String())
 	default:
 		break
 	}
@@ -897,7 +912,7 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 }
 
 func mustParseDuration(s string) (dur time.Duration) {
-	dur, _ = time.ParseDuration(s)
+	dur, _ = times.ParseDuration(s)
 	return
 }
 
@@ -917,6 +932,11 @@ func anyToDurationMap(data any) (ret map[string]time.Duration) {
 	}
 
 	switch z := data.(type) {
+	case string:
+		ret = parseToMap[time.Duration](z)
+	case fmt.Stringer:
+		ret = parseToMap[time.Duration](z.String())
+
 	case map[string]time.Duration:
 		return z
 	case map[string]string:
@@ -1074,6 +1094,11 @@ func anyToTimeSlice(data any) (ret []time.Time) {
 	case []*time.Time:
 		break // todo convert []*time.Time to []time.Time?
 
+	case string:
+		ret = parseToSlice[time.Time](z)
+	case fmt.Stringer:
+		ret = parseToSlice[time.Time](z.String())
+
 	case []int:
 		return zsToTimeS(z)
 	case []int64:
@@ -1139,6 +1164,12 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 	switch z := data.(type) {
 	case map[string]time.Time:
 		return z
+
+	case string:
+		ret = parseToMap[time.Time](z)
+	case fmt.Stringer:
+		ret = parseToMap[time.Time](z.String())
+
 	case map[string]string:
 		ret = make(map[string]time.Time, len(z))
 		for k, v := range z {
@@ -2476,7 +2507,7 @@ func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source refle
 
 		case reflect.String:
 			var dur time.Duration
-			dur, err = time.ParseDuration(source.String())
+			dur, err = times.ParseDuration(source.String())
 			if err == nil {
 				target = reflect.ValueOf(dur)
 			}
