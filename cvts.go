@@ -532,6 +532,10 @@ func anyToString(data any) string {
 		return fmt.Sprint(data)
 
 	default:
+		if k := rv.Kind(); k == reflect.String {
+			// eg: flag.stringValue (string)
+			return rv.String()
+		}
 		break
 	}
 
