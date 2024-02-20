@@ -249,6 +249,12 @@ func anyToBool(data any) bool {
 	case bool:
 		return z
 	default:
+		rv := reflect.ValueOf(data)
+		rv = ref.Rindirect(rv)
+		if k := rv.Kind(); k == reflect.Bool {
+			// eg: flag.stringValue (string)
+			return rv.Bool()
+		}
 		return toBool(anyToString(data))
 	}
 }
@@ -532,6 +538,7 @@ func anyToString(data any) string {
 		return fmt.Sprint(data)
 
 	default:
+		rv = ref.Rindirect(rv) // *string -> string
 		if k := rv.Kind(); k == reflect.String {
 			// eg: flag.stringValue (string)
 			return rv.String()
@@ -596,9 +603,9 @@ func anyToComplex[R Complexes](data any) R {
 		return R(complex(float64(z), 0))
 
 	case float64:
-		return R(complex(float64(z), 0))
+		return R(complex(z, 0))
 	case float32:
-		return R(complex(float32(z), 0))
+		return R(complex(z, 0))
 
 	case string:
 		return R(mustParseComplex(z))
@@ -606,6 +613,12 @@ func anyToComplex[R Complexes](data any) R {
 		return R(mustParseComplex(z.String()))
 
 	default:
+		rv := reflect.ValueOf(data)
+		rv = ref.Rindirect(rv) // *string -> string
+		if k := rv.Kind(); k == reflect.Complex128 || k == reflect.Complex64 {
+			// eg: flag.complexValue (complex)
+			return R(rv.Complex())
+		}
 		str := fmt.Sprintf("%v", data)
 		return R(mustParseComplex(str))
 	}

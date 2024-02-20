@@ -294,6 +294,13 @@ func anyToInt(data any) int64 {
 		return z.UnixNano()
 
 	default:
+		rv := reflect.ValueOf(data)
+		rv = ref.Rindirect(rv) // *string -> string
+		if k := rv.Kind(); k >= reflect.Uint || k <= reflect.Uint64 {
+			return int64(rv.Uint())
+		} else if k >= reflect.Int || k <= reflect.Int64 {
+			return rv.Int()
+		}
 		return atoi(fmt.Sprint(data))
 	}
 
@@ -353,6 +360,13 @@ func anyToUint(data any) uint64 {
 		return uint64(z.UnixNano())
 
 	default:
+		rv := reflect.ValueOf(data)
+		rv = ref.Rindirect(rv) // *string -> string
+		if k := rv.Kind(); k >= reflect.Uint || k <= reflect.Uint64 {
+			return rv.Uint()
+		} else if k >= reflect.Int || k <= reflect.Int64 {
+			return uint64(rv.Int())
+		}
 		return atou(fmt.Sprint(data))
 	}
 }
@@ -541,6 +555,12 @@ func anyToFloat[R Floats](data any) R {
 		return R(mustParseFloat(z.String()))
 
 	default:
+		rv := reflect.ValueOf(data)
+		rv = ref.Rindirect(rv) // *string -> string
+		if k := rv.Kind(); k == reflect.Float64 || k == reflect.Float32 {
+			// eg: flag.floatValue (float)
+			return R(rv.Float())
+		}
 		str := fmt.Sprintf("%v", data)
 		return R(mustParseFloat(str))
 	}
