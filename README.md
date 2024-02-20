@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep)
 [![Coverage Status](https://coveralls.io/repos/github/hedzr/evendeep/badge.svg?branch=master)](https://coveralls.io/github/hedzr/evendeep?branch=master)
 
-Per-field copying deeply, and comparing deeply abilities.
+This is a standard deepcopy library. It provides per-field copying deeply, and compares deeply abilities.
 
 This library is designed for making everything customizable.
 
@@ -49,6 +49,11 @@ This library is designed for making everything customizable.
     - for the v0.x versions, go1.11+ is okay.
 
 ## History
+
+- v1.1.0
+  - improved any -> string/bool/int/uint/float/complex/duration
+  - fixed toBool
+  - BREAK: toBool(3) => true. In old versions, only convert number `1` to `true`. Since v1.1.0, any non-Zero number will be converted to `true`.
 
 - v1.0.2
   - improved bool/duration/time[Slice/Map] <-> any converters
