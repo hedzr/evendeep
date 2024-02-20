@@ -923,6 +923,9 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 }
 
 func mustParseDuration(s string) (dur time.Duration) {
+	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return time.Duration(v)
+	}
 	dur, _ = times.ParseDuration(s)
 	return
 }
