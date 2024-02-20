@@ -255,7 +255,18 @@ func anyToBool(data any) bool {
 
 func toBool(s string) bool {
 	_, ok := stringToBoolMap[strings.ToLower(s)]
-	return ok
+	if ok {
+		return ok
+	}
+	u, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		i, err1 := strconv.ParseInt(s, 10, 64)
+		if err1 != nil {
+			return false
+		}
+		return i != 0
+	}
+	return u > 0
 }
 
 var stringToBoolMap = map[string]struct{}{
