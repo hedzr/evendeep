@@ -1,22 +1,20 @@
 package times
 
 import (
-	"regexp"
-	"strconv"
 	"sync"
 	"time"
 )
 
 // MustSmartParseTime parses a formatted string and returns the time value it represents.
 func MustSmartParseTime(str string) (tm time.Time) {
-	tm, _ = smartParseTime(str)
+	tm, _ = SmartParseTime(str)
 	return
 }
 
 // MustSmartParseTimePtr parses a formatted string and returns the time value it represents.
 func MustSmartParseTimePtr(str string) (tm *time.Time) {
 	var tm1 time.Time
-	tm1, _ = smartParseTime(str)
+	tm1, _ = SmartParseTime(str)
 	return &tm1
 }
 
@@ -60,10 +58,6 @@ func MustSmartParseTimePtr(str string) (tm *time.Time) {
 // differ by the actual zone offset. To avoid such problems, prefer time layouts
 // that use a numeric zone offset, or use ParseInLocation.
 func SmartParseTime(str string) (tm time.Time, err error) {
-	return smartParseTime(str)
-}
-
-func smartParseTime(str string) (tm time.Time, err error) {
 	for _, layout := range onceInitTimeFormats() {
 		if tm, err = time.Parse(layout, str); err == nil {
 			break
@@ -72,8 +66,10 @@ func smartParseTime(str string) (tm time.Time, err error) {
 	return
 }
 
-var knownDateTimeFormats []string
-var onceFormats sync.Once
+var (
+	knownDateTimeFormats []string
+	onceFormats          sync.Once
+)
 
 func onceInitTimeFormats() []string {
 	onceFormats.Do(func() {
@@ -130,109 +126,25 @@ func onceInitTimeFormats() []string {
 // AddKnownTimeFormats appends more time layouts to the trying list
 // used by SmartParseTime.
 func AddKnownTimeFormats(format ...string) {
-	a := onceInitTimeFormats()
-	a = append(a, format...)
+	onceInitTimeFormats()
+	knownDateTimeFormats = append(knownDateTimeFormats, format...)
 }
 
-// RoundTime strips small ticks from a time.Time value.
-// For example:
-//
-//	assert.True(RoundTime("h", SmartParseTime("5:11:22")), SmartParseTime("5:0:0"))
-func RoundTime(roundTo string, value time.Time) string {
-	since := time.Since(value)
-	if roundTo == "h" {
-		since -= since % time.Hour
-	}
-	if roundTo == "m" {
-		since -= since % time.Minute
-	}
-	if roundTo == "s" {
-		since -= since % time.Second
-	}
-	return since.String()
-}
-
-func shortDur(d time.Duration) string {
-	s := d.String()
-
-	// if strings.HasSuffix(s, "m0s") {
-	// 	s = s[:len(s)-2]
-	// }
-	// if strings.HasSuffix(s, "h0m") {
-	// 	s = s[:len(s)-2]
-	// }
-
-	for _, z := range []struct{ reg, rep string }{
-		{`(m?[hmnus])0[hmnus]?s?`, "$1"},
-	} {
-		re := regexp.MustCompile(z.reg)
-		s = re.ReplaceAllString(s, z.rep)
-	}
-	return s
-}
-
-func ShortDurationString(d time.Duration) string { return shortDur(d) }
-
-func DurationFromFloat(f float64) time.Duration {
-	return time.Duration(f * float64(time.Second))
-}
-
-// ParseDuration parses a duration string.
-// A duration string is a possibly signed sequence of
-// decimal numbers, each with optional fraction and a unit suffix,
-// such as "300ms", "-1.5h" or "2h45m".
-// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-func ParseDuration(s string) (dur time.Duration, err error) {
-	dur, err = time.ParseDuration(s)
-	return
-}
-
-// MustParseDuration parses a duration string.
-// A duration string is a possibly signed sequence of
-// decimal numbers, each with optional fraction and a unit suffix,
-// such as "300ms", "-1.5h" or "2h45m".
-// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-func MustParseDuration(s string) (dur time.Duration) {
-	dur, _ = time.ParseDuration(s)
-	return
-}
-
-func SmartParseInt(s string) (ret int64, err error) {
-	ret, err = strconv.ParseInt(s, 0, 64)
-	return
-}
-
-func MustSmartParseInt(s string) (ret int64) {
-	ret, _ = strconv.ParseInt(s, 0, 64)
-	return
-}
-
-func SmartParseUint(s string) (ret uint64, err error) {
-	ret, err = strconv.ParseUint(s, 0, 64)
-	return
-}
-
-func MstSmartParseUint(s string) (ret uint64) {
-	ret, _ = strconv.ParseUint(s, 0, 64)
-	return
-}
-
-func ParseFloat(s string) (ret float64, err error) {
-	ret, err = strconv.ParseFloat(s, 64)
-	return
-}
-
-func MustParseFloat(s string) (ret float64) {
-	ret, _ = strconv.ParseFloat(s, 64)
-	return
-}
-
-func ParseComplex(s string) (ret complex128, err error) {
-	ret, err = strconv.ParseComplex(s, 64)
-	return
-}
-
-func MustParseComplex(s string) (ret complex128) {
-	ret, _ = strconv.ParseComplex(s, 64)
-	return
-}
+// // RoundedSince strips small ticks from a time.Time value.
+// //
+// // For example,
+// //
+// //	assert.True(RoundTime("h", MustSmartParseTime("5:11:22")), MustSmartParseTime("5:0:0"))
+// func RoundedSince(roundTo string, value time.Time) time.Duration {
+// 	since := time.Since(value)
+// 	if roundTo == "h" {
+// 		since -= since % time.Hour
+// 	}
+// 	if roundTo == "m" {
+// 		since -= since % time.Minute
+// 	}
+// 	if roundTo == "s" {
+// 		since -= since % time.Second
+// 	}
+// 	return since
+// }
