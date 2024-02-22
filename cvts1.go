@@ -13,6 +13,7 @@ import (
 	logz "github.com/hedzr/logg/slog"
 )
 
+// parseToMap parses a string to a map
 func parseToMap[T any](in string) (out map[string]T) {
 	out = make(map[string]T)
 	ins := strings.TrimSpace(in)
@@ -34,6 +35,7 @@ func parseToMap[T any](in string) (out map[string]T) {
 	return
 }
 
+// parseToSlice parses a string to a slice
 func parseToSlice[T any](in string) (out []T) {
 	ins := strings.TrimSpace(in)
 	if len(ins) >= 2 && ins[0] == '[' && ins[len(in)-1] == ']' {
@@ -165,6 +167,16 @@ func anyToIntSliceT[T Integers](data any) (ret []T) {
 	case []string:
 		return zfToIntT[string, T](z)
 
+	case []any:
+		return zfToIntT[any, T](z)
+
+	case string:
+		return parseToSlice[T](z)
+	case fmt.Stringer:
+		return parseToSlice[T](z.String())
+	case any:
+		return parseToSlice[T](anyToString(z))
+
 	// case []fmt.Stringer:
 	// 	return zfToIntT[string,T](z)
 	default:
@@ -209,6 +221,16 @@ func anyToUintSliceT[T Uintegers](data any) (ret []T) {
 		return zfToUintT[bool, T](z)
 	case []string:
 		return zfToUintT[string, T](z)
+
+	case []any:
+		return zfToUintT[any, T](z)
+
+	case string:
+		return parseToSlice[T](z)
+	case fmt.Stringer:
+		return parseToSlice[T](z.String())
+	case any:
+		return parseToSlice[T](anyToString(z))
 
 	// case []fmt.Stringer:
 	// 	return zfToIntT[string,T](z)
@@ -287,6 +309,10 @@ func anyToInt(data any) int64 {
 
 	case string:
 		return atoi(z)
+	case fmt.Stringer:
+		return atoi(z.String())
+	case any:
+		return atoi(anyToString(z))
 
 	case time.Duration:
 		return int64(z)
@@ -353,6 +379,10 @@ func anyToUint(data any) uint64 {
 
 	case string:
 		return atou(z)
+	case fmt.Stringer:
+		return atou(z.String())
+	case any:
+		return atou(anyToString(z))
 
 	case time.Duration:
 		return uint64(z)
@@ -409,10 +439,26 @@ func zfToInt64MNT[T any, Out Integers](in map[string]T) (out map[string]Out) {
 	return
 }
 
+func zfToInt64MNTA[T any, Out Integers](in map[any]T) (out map[string]Out) {
+	out = make(map[string]Out, len(in))
+	for k, it := range in {
+		out[anyToString(k)] = anyToIntT[T, Out](it)
+	}
+	return
+}
+
 func zfToUint64MNT[T any, Out Uintegers](in map[string]T) (out map[string]Out) {
 	out = make(map[string]Out, len(in))
 	for k, it := range in {
 		out[k] = anyToUintT[T, Out](it)
+	}
+	return
+}
+
+func zfToUint64MNTA[T any, Out Uintegers](in map[any]T) (out map[string]Out) {
+	out = make(map[string]Out, len(in))
+	for k, it := range in {
+		out[anyToString(k)] = anyToUintT[T, Out](it)
 	}
 	return
 }
@@ -459,6 +505,17 @@ func anyToInt64MapT[Out Integers](data any) (ret map[string]Out) {
 
 	case map[string]any:
 		return zfToInt64MNT[any, Out](z)
+
+	case map[any]any:
+		return zfToInt64MNTA[any, Out](z)
+
+	case string:
+		return parseToMap[Out](z)
+	case fmt.Stringer:
+		return parseToMap[Out](z.String())
+	case any:
+		return parseToMap[Out](anyToString(z))
+
 	default:
 		break
 	}
@@ -507,6 +564,17 @@ func anyToUint64MapT[Out Uintegers](data any) (ret map[string]Out) {
 
 	case map[string]any:
 		return zfToUint64MNT[any, Out](z)
+
+	case map[any]any:
+		return zfToUint64MNTA[any, Out](z)
+
+	case string:
+		return parseToMap[Out](z)
+	case fmt.Stringer:
+		return parseToMap[Out](z.String())
+	case any:
+		return parseToMap[Out](anyToString(z))
+
 	default:
 		break
 	}
@@ -527,6 +595,10 @@ func anyToFloat[R Floats](data any) R {
 		return R(z)
 	case float32:
 		return R(z)
+	case complex64:
+		return R(real(z))
+	case complex128:
+		return R(real(z))
 
 	case int:
 		return R(z)
@@ -553,6 +625,8 @@ func anyToFloat[R Floats](data any) R {
 		return R(mustParseFloat(z))
 	case fmt.Stringer:
 		return R(mustParseFloat(z.String()))
+	case any:
+		return R(mustParseFloat(anyToString(z)))
 
 	default:
 		rv := reflect.ValueOf(data)
@@ -625,6 +699,19 @@ func anyToFloatSlice[R Floats](data any) (ret []R) {
 			ret = append(ret, R(mustParseFloat(it.String())))
 		}
 		return
+	case []any:
+		ret = make([]R, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, R(mustParseFloat(anyToString(it))))
+		}
+		return
+
+	case string:
+		return parseToSlice[R](z)
+	case fmt.Stringer:
+		return parseToSlice[R](z.String())
+	case any:
+		return parseToSlice[R](anyToString(z))
 
 	default:
 		break
@@ -644,49 +731,59 @@ func zsToFloatS[T Integers | Uintegers, R Floats](z []T) (ret []R) {
 
 //
 
-func anyToFloat64Map(data any) (ret map[string]float64) {
+func anyToFloat64Map[R Floats](data any) (ret map[string]R) {
 	if data == nil {
 		return
 	}
 
 	switch z := data.(type) {
 	case map[string]any:
-		return zfToFloat64M(z)
+		return zfToFloat64M[R](z)
 
 	case map[string]bool:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[bool, R](z)
 	case map[string]string:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[string, R](z)
 
 	case map[string]complex128:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[complex128, R](z)
 	case map[string]complex64:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[complex64, R](z)
 	case map[string]float64:
-		return z // zfToFloat64MN(z)
+		return zfToFloat64MN[float64, R](z)
 	case map[string]float32:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[float32, R](z)
 
 	case map[string]int64:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[int64, R](z)
 	case map[string]int32:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[int32, R](z)
 	case map[string]int16:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[int16, R](z)
 	case map[string]int8:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[int8, R](z)
 	case map[string]int:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[int, R](z)
 	case map[string]uint64:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[uint64, R](z)
 	case map[string]uint32:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[uint32, R](z)
 	case map[string]uint16:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[uint16, R](z)
 	case map[string]uint8:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[uint8, R](z)
 	case map[string]uint:
-		return zfToFloat64MN(z)
+		return zfToFloat64MN[uint, R](z)
+
+	case map[any]any:
+		return zfToFloat64MA[any, R](z)
+
+	case string:
+		return parseToMap[R](z)
+	case fmt.Stringer:
+		return parseToMap[R](z.String())
+	case any:
+		return parseToMap[R](anyToString(z))
 
 	default:
 		break
@@ -694,84 +791,76 @@ func anyToFloat64Map(data any) (ret map[string]float64) {
 	return
 }
 
-func anyToFloat32Map(data any) (ret map[string]float32) {
-	if data == nil {
-		return
-	}
+// func anyToFloat32Map(data any) (ret map[string]float32) {
+// 	if data == nil {
+// 		return
+// 	}
+//
+// 	switch z := data.(type) {
+// 	case map[string]any:
+// 		return zfToFloat32M(z)
+//
+// 	case map[string]bool:
+// 		return zfToFloat32MN(z)
+// 	case map[string]string:
+// 		return zfToFloat32MN(z)
+//
+// 	case map[string]complex128:
+// 		return zfToFloat32MN(z)
+// 	case map[string]complex64:
+// 		return zfToFloat32MN(z)
+// 	case map[string]float64:
+// 		return zfToFloat32MN(z)
+// 	case map[string]float32:
+// 		return z // zfToFloat32MN(z)
+//
+// 	case map[string]int64:
+// 		return zfToFloat32MN(z)
+// 	case map[string]int32:
+// 		return zfToFloat32MN(z)
+// 	case map[string]int16:
+// 		return zfToFloat32MN(z)
+// 	case map[string]int8:
+// 		return zfToFloat32MN(z)
+// 	case map[string]int:
+// 		return zfToFloat32MN(z)
+// 	case map[string]uint64:
+// 		return zfToFloat32MN(z)
+// 	case map[string]uint32:
+// 		return zfToFloat32MN(z)
+// 	case map[string]uint16:
+// 		return zfToFloat32MN(z)
+// 	case map[string]uint8:
+// 		return zfToFloat32MN(z)
+// 	case map[string]uint:
+// 		return zfToFloat32MN(z)
+//
+// 	default:
+// 		break
+// 	}
+// 	return
+// }
 
-	switch z := data.(type) {
-	case map[string]any:
-		return zfToFloat32M(z)
-
-	case map[string]bool:
-		return zfToFloat32MN(z)
-	case map[string]string:
-		return zfToFloat32MN(z)
-
-	case map[string]complex128:
-		return zfToFloat32MN(z)
-	case map[string]complex64:
-		return zfToFloat32MN(z)
-	case map[string]float64:
-		return zfToFloat32MN(z)
-	case map[string]float32:
-		return z // zfToFloat32MN(z)
-
-	case map[string]int64:
-		return zfToFloat32MN(z)
-	case map[string]int32:
-		return zfToFloat32MN(z)
-	case map[string]int16:
-		return zfToFloat32MN(z)
-	case map[string]int8:
-		return zfToFloat32MN(z)
-	case map[string]int:
-		return zfToFloat32MN(z)
-	case map[string]uint64:
-		return zfToFloat32MN(z)
-	case map[string]uint32:
-		return zfToFloat32MN(z)
-	case map[string]uint16:
-		return zfToFloat32MN(z)
-	case map[string]uint8:
-		return zfToFloat32MN(z)
-	case map[string]uint:
-		return zfToFloat32MN(z)
-
-	default:
-		break
+func zfToFloat64M[R Floats](in map[string]any) (out map[string]R) {
+	out = make(map[string]R, len(in))
+	for k, it := range in {
+		out[k] = anyToFloat[R](it)
 	}
 	return
 }
 
-func zfToFloat64M(in map[string]any) (out map[string]float64) {
-	out = make(map[string]float64, len(in))
+func zfToFloat64MN[T Numerics | string | bool, R Floats](in map[string]T) (out map[string]R) {
+	out = make(map[string]R, len(in))
 	for k, it := range in {
-		out[k] = anyToFloat[float64](it)
+		out[k] = anyToFloat[R](it)
 	}
 	return
 }
 
-func zfToFloat64MN[T Numerics | string | bool](in map[string]T) (out map[string]float64) {
-	out = make(map[string]float64, len(in))
+func zfToFloat64MA[T any, R Floats](in map[any]T) (out map[string]R) {
+	out = make(map[string]R, len(in))
 	for k, it := range in {
-		out[k] = anyToFloat[float64](it)
-	}
-	return
-}
-
-func zfToFloat32M(in map[string]any) (out map[string]float32) {
-	out = make(map[string]float32, len(in))
-	for k, it := range in {
-		out[k] = anyToFloat[float32](it)
-	}
-	return
-}
-
-func zfToFloat32MN[T Numerics | string | bool](in map[string]T) (out map[string]float32) {
-	out = make(map[string]float32, len(in))
-	for k, it := range in {
-		out[k] = anyToFloat[float32](it)
+		out[anyToString(k)] = anyToFloat[R](it)
 	}
 	return
 }

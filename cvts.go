@@ -188,6 +188,17 @@ func anyToStringSlice(data any) (ret []string) {
 		return zfToStringS(z)
 	case []fmt.Stringer:
 		return zfToStringS(z)
+
+	case []any:
+		return zfToStringS(z)
+
+	case string:
+		return parseToSlice[string](z)
+	case fmt.Stringer:
+		return parseToSlice[string](z.String())
+	case any:
+		return parseToSlice[string](anyToString(z))
+
 	default:
 		break
 	}
@@ -230,6 +241,14 @@ func anyToStringMap(data any) (ret map[string]string) {
 		return zfToStringM(z)
 	case map[any]any:
 		return zfToStringMA(z)
+
+	case string:
+		return parseToMap[string](z)
+	case fmt.Stringer:
+		return parseToMap[string](z.String())
+	case any:
+		return parseToMap[string](anyToString(z))
+
 	default:
 		break
 	}
@@ -248,6 +267,14 @@ func anyToBool(data any) bool {
 	switch z := data.(type) {
 	case bool:
 		return z
+
+	case string:
+		return toBool(z)
+	case fmt.Stringer:
+		return toBool(z.String())
+	case any:
+		return toBool(anyToString(z))
+
 	default:
 		rv := reflect.ValueOf(data)
 		rv = ref.Rindirect(rv)
@@ -268,7 +295,11 @@ func toBool(s string) bool {
 	if err != nil {
 		i, err1 := strconv.ParseInt(s, 10, 64)
 		if err1 != nil {
-			return false
+			f, err2 := strconv.ParseFloat(s, 64)
+			if err2 != nil {
+				return false
+			}
+			return f != 0
 		}
 		return i != 0
 	}
@@ -330,10 +361,15 @@ func anyToBoolSlice(data any) (ret []bool) {
 	case []fmt.Stringer:
 		return zfToBoolS(z)
 
+	case []any:
+		return zfToBoolS(z)
+
 	case string:
 		return zfToBoolSS(z)
-	// case fmt.Stringer:
-	// 	return zfToBoolSs(z.String())
+	case fmt.Stringer:
+		return zfToBoolSS(z.String())
+	case any:
+		return zfToBoolSS(anyToString(z))
 
 	default:
 		break
@@ -375,25 +411,31 @@ func anyToBoolMap(data any) (ret map[string]bool) {
 	}
 
 	switch z := data.(type) {
-	case string:
-		return zfToBoolMM(z)
 	case map[string]bool:
 		return z
 	case map[string]any:
 		return zfToBoolM(z)
+
+	case string:
+		return parseToMap[bool](z)
+	case fmt.Stringer:
+		return parseToMap[bool](z.String())
+	case any:
+		return parseToMap[bool](anyToString(z))
+
 	default:
 		break
 	}
 	return
 }
 
-func zfToBoolMM(in string) (out map[string]bool) {
-	ins := strings.TrimSpace(in)
-	if ins[0] == '{' {
-		out = parseToMap[bool](ins)
-	}
-	return
-}
+// func zfToBoolMM(in string) (out map[string]bool) {
+// 	ins := strings.TrimSpace(in)
+// 	if ins[0] == '{' {
+// 		out = parseToMap[bool](ins)
+// 	}
+// 	return
+// }
 
 //
 
@@ -435,10 +477,11 @@ func anyToString(data any) string {
 	if data == nil {
 		return "<nil>"
 	}
-	rv := reflect.ValueOf(data)
-	if ref.IsZero(rv) {
-		return "<zero>"
-	}
+
+	// rv := reflect.ValueOf(data)
+	// if ref.IsZero(rv) {
+	// 	return "<zero>"
+	// }
 
 	switch z := data.(type) {
 	case string:
@@ -534,24 +577,27 @@ func anyToString(data any) string {
 	case complex128:
 		return complexToString(z)
 
+	case any:
+		return fmt.Sprint(data)
+
 	case []any:
 		return fmt.Sprint(data)
 
 	default:
+		rv := reflect.ValueOf(data)
 		rv = ref.Rindirect(rv) // *string -> string
 		if k := rv.Kind(); k == reflect.String {
 			// eg: flag.stringValue (string)
 			return rv.String()
 		}
-		break
-	}
 
-	// reflect approach
-	logz.Warn("[anyToString]: unrecognized data type",
-		"typ", ref.Typfmtv(&rv),
-		"val", ref.Valfmt(&rv),
-	)
-	return ref.Valfmt(&rv)
+		// reflect approach
+		logz.Warn("[anyToString]: unrecognized data type",
+			"typ", ref.Typfmtv(&rv),
+			"val", ref.Valfmt(&rv),
+		)
+		return ref.Valfmt(&rv)
+	}
 }
 
 //
@@ -562,8 +608,8 @@ func (s *Cvt) Float32(data any) float32 { return anyToFloat[float32](data) }
 func (s *Cvt) Float64Slice(data any) []float64 { return anyToFloatSlice[float64](data) }
 func (s *Cvt) Float32Slice(data any) []float32 { return anyToFloatSlice[float32](data) }
 
-func (s *Cvt) Float64Map(data any) map[string]float64 { return anyToFloat64Map(data) }
-func (s *Cvt) Float32Map(data any) map[string]float32 { return anyToFloat32Map(data) }
+func (s *Cvt) Float64Map(data any) map[string]float64 { return anyToFloat64Map[float64](data) }
+func (s *Cvt) Float32Map(data any) map[string]float32 { return anyToFloat64Map[float32](data) }
 
 //
 
@@ -611,6 +657,9 @@ func anyToComplex[R Complexes](data any) R {
 		return R(mustParseComplex(z))
 	case fmt.Stringer:
 		return R(mustParseComplex(z.String()))
+
+	case any:
+		return R(mustParseComplex(anyToString(z)))
 
 	default:
 		rv := reflect.ValueOf(data)
@@ -690,6 +739,13 @@ func anyToComplexSlice[R Complexes](data any) (ret []R) {
 		}
 		return
 
+	case string:
+		return parseToSlice[R](z)
+	case fmt.Stringer:
+		return parseToSlice[R](z.String())
+	case any:
+		return parseToSlice[R](anyToString(z))
+
 	default:
 		break
 	}
@@ -704,52 +760,59 @@ func zsToComplexS[T Integers | Uintegers | Floats, R Complexes](z []T) (ret []R)
 	return
 }
 
-func (s *Cvt) Complex128Map(data any) map[string]complex128 { return anyToComplex128Map(data) }
-func (s *Cvt) Complex64Map(data any) map[string]complex64   { return anyToComplex64Map(data) }
+func (s *Cvt) Complex128Map(data any) map[string]complex128 { return anyToComplexMap[complex128](data) }
+func (s *Cvt) Complex64Map(data any) map[string]complex64   { return anyToComplexMap[complex64](data) }
 
-func anyToComplex128Map(data any) (ret map[string]complex128) {
+func anyToComplexMap[R Complexes](data any) (ret map[string]R) {
 	if data == nil {
 		return
 	}
 
 	switch z := data.(type) {
 	case map[string]any:
-		return zfToComplex128M(z)
+		return zfToComplex128M[R](z)
 
 	case map[string]bool:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[bool, R](z)
 	case map[string]string:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[string, R](z)
 
 	case map[string]complex128:
-		return z // zfToComplex128MN(z)
+		return zfToComplex128MN[complex128, R](z)
 	case map[string]complex64:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[complex64, R](z)
 	case map[string]float64:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[float64, R](z)
 	case map[string]float32:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[float32, R](z)
 
 	case map[string]int64:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[int64, R](z)
 	case map[string]int32:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[int32, R](z)
 	case map[string]int16:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[int16, R](z)
 	case map[string]int8:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[int8, R](z)
 	case map[string]int:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[int, R](z)
 	case map[string]uint64:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[uint64, R](z)
 	case map[string]uint32:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[uint32, R](z)
 	case map[string]uint16:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[uint16, R](z)
 	case map[string]uint8:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[uint8, R](z)
 	case map[string]uint:
-		return zfToComplex128MN(z)
+		return zfToComplex128MN[uint, R](z)
+
+	case string:
+		return parseToMap[R](z)
+	case fmt.Stringer:
+		return parseToMap[R](z.String())
+	case any:
+		return parseToMap[R](anyToString(z))
 
 	default:
 		break
@@ -757,84 +820,18 @@ func anyToComplex128Map(data any) (ret map[string]complex128) {
 	return
 }
 
-func anyToComplex64Map(data any) (ret map[string]complex64) {
-	if data == nil {
-		return
-	}
-
-	switch z := data.(type) {
-	case map[string]any:
-		return zfToComplex64M(z)
-
-	case map[string]bool:
-		return zfToComplex64MN(z)
-	case map[string]string:
-		return zfToComplex64MN(z)
-
-	case map[string]complex128:
-		return zfToComplex64MN(z)
-	case map[string]complex64:
-		return z // zfToComplex64MN(z)
-	case map[string]float64:
-		return zfToComplex64MN(z)
-	case map[string]float32:
-		return zfToComplex64MN(z)
-
-	case map[string]int64:
-		return zfToComplex64MN(z)
-	case map[string]int32:
-		return zfToComplex64MN(z)
-	case map[string]int16:
-		return zfToComplex64MN(z)
-	case map[string]int8:
-		return zfToComplex64MN(z)
-	case map[string]int:
-		return zfToComplex64MN(z)
-	case map[string]uint64:
-		return zfToComplex64MN(z)
-	case map[string]uint32:
-		return zfToComplex64MN(z)
-	case map[string]uint16:
-		return zfToComplex64MN(z)
-	case map[string]uint8:
-		return zfToComplex64MN(z)
-	case map[string]uint:
-		return zfToComplex64MN(z)
-
-	default:
-		break
+func zfToComplex128M[R Complexes](in map[string]any) (out map[string]R) {
+	out = make(map[string]R, len(in))
+	for k, it := range in {
+		out[k] = anyToComplex[R](it)
 	}
 	return
 }
 
-func zfToComplex128M(in map[string]any) (out map[string]complex128) {
-	out = make(map[string]complex128, len(in))
+func zfToComplex128MN[T Numerics | string | bool, Out Complexes](in map[string]T) (out map[string]Out) {
+	out = make(map[string]Out, len(in))
 	for k, it := range in {
-		out[k] = anyToComplex[complex128](it)
-	}
-	return
-}
-
-func zfToComplex128MN[T Numerics | string | bool](in map[string]T) (out map[string]complex128) {
-	out = make(map[string]complex128, len(in))
-	for k, it := range in {
-		out[k] = anyToComplex[complex128](it)
-	}
-	return
-}
-
-func zfToComplex64M(in map[string]any) (out map[string]complex64) {
-	out = make(map[string]complex64, len(in))
-	for k, it := range in {
-		out[k] = anyToComplex[complex64](it)
-	}
-	return
-}
-
-func zfToComplex64MN[T Numerics | string | bool](in map[string]T) (out map[string]complex64) {
-	out = make(map[string]complex64, len(in))
-	for k, it := range in {
-		out[k] = anyToComplex[complex64](it)
+		out[k] = anyToComplex[Out](it)
 	}
 	return
 }
@@ -877,6 +874,8 @@ func anyToDuration(data any) time.Duration {
 		return mustParseDuration(z)
 	case fmt.Stringer:
 		return mustParseDuration(z.String())
+	case any:
+		return mustParseDuration(anyToString(z))
 
 	default:
 		str := fmt.Sprintf("%v", data)
@@ -916,6 +915,18 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 	case []uint8:
 		return zsToDurationS(z)
 
+	case []bool:
+		return zsToDurationSB(z)
+
+	case []float32:
+		return zsToDurationSB(z)
+	case []float64:
+		return zsToDurationSB(z)
+	case []complex64:
+		return zsToDurationSB(z)
+	case []complex128:
+		return zsToDurationSB(z)
+
 	case []string:
 		ret = make([]time.Duration, 0, len(z))
 		for _, it := range z {
@@ -928,11 +939,19 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 			ret = append(ret, mustParseDuration(it.String()))
 		}
 		return
+	case []any:
+		ret = make([]time.Duration, 0, len(z))
+		for _, it := range z {
+			ret = append(ret, mustParseDuration(anyToString(it)))
+		}
+		return
 
 	case string:
 		ret = parseToSlice[time.Duration](z)
 	case fmt.Stringer:
 		ret = parseToSlice[time.Duration](z.String())
+	case any:
+		return parseToSlice[time.Duration](anyToString(z))
 	default:
 		break
 	}
@@ -955,6 +974,14 @@ func zsToDurationS[T Integers | Uintegers](z []T) (ret []time.Duration) {
 	return
 }
 
+func zsToDurationSB[T bool | Floats | Complexes](z []T) (ret []time.Duration) {
+	ret = make([]time.Duration, 0, len(z))
+	for _, it := range z {
+		ret = append(ret, time.Duration(anyToInt(it)))
+	}
+	return
+}
+
 func (s *Cvt) DurationMap(data any) map[string]time.Duration { return anyToDurationMap(data) }
 
 func anyToDurationMap(data any) (ret map[string]time.Duration) {
@@ -963,10 +990,6 @@ func anyToDurationMap(data any) (ret map[string]time.Duration) {
 	}
 
 	switch z := data.(type) {
-	case string:
-		ret = parseToMap[time.Duration](z)
-	case fmt.Stringer:
-		ret = parseToMap[time.Duration](z.String())
 
 	case map[string]time.Duration:
 		return z
@@ -988,6 +1011,19 @@ func anyToDurationMap(data any) (ret map[string]time.Duration) {
 			ret[k] = anyToDuration(v)
 		}
 		return
+	case map[any]any:
+		ret = make(map[string]time.Duration, len(z))
+		for k, v := range z {
+			ret[anyToString(k)] = anyToDuration(v)
+		}
+		return
+
+	case string:
+		ret = parseToMap[time.Duration](z)
+	case fmt.Stringer:
+		ret = parseToMap[time.Duration](z.String())
+	case any:
+		return parseToMap[time.Duration](anyToString(z))
 
 	default:
 		break
@@ -1031,15 +1067,69 @@ func anyToTime(data any) (tm time.Time) {
 	case uint8:
 		return time.Unix(int64(z), 0)
 
+	case bool:
+		return time.Unix(anyToInt(z), 0)
+	case float64:
+		return TimestampFromFloat64(z)
+	case float32:
+		return TimestampFromFloat64(float64(z))
+	case complex128:
+		return TimestampFromFloat64(real(z))
+	case complex64:
+		return TimestampFromFloat64(float64(real(z)))
+
 	case string:
 		return mustSmartParseTime(z)
 	case fmt.Stringer:
 		return mustSmartParseTime(z.String())
+	case any:
+		return mustSmartParseTime(anyToString(z))
 
 	default:
 		str := fmt.Sprintf("%v", data)
 		return mustSmartParseTime(str)
 	}
+}
+
+// // readFiletime reads a Windows Filetime struct and converts it to a
+// // time.Time value with a UTC timezone.
+// func readFiletime(reader io.Reader) (*time.Time, error) {
+// 	var filetime syscall.Filetime
+// 	err := binary.Read(reader, binary.LittleEndian, &filetime.LowDateTime)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	err = binary.Read(reader, binary.LittleEndian, &filetime.HighDateTime)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	t := time.Unix(0, filetime.Nanoseconds()).UTC()
+// 	return &t, nil
+// }
+
+func timeToFloat(t time.Time) float64 {
+	// If time.Time is the empty value, UnixNano will return
+	// the farthest back timestamp a float can represent,
+	// which is some large negative value.
+	// We compromise and call it zero.
+	if t.IsZero() {
+		return 0
+	}
+	return float64(t.UnixNano()) / 1e9
+}
+
+// TimestampFromFloat64 returns a Timestamp equal to the given
+// float64, assuming it too is an unix timestamp.
+//
+// The float64 is interpreted as number of seconds, with everything
+// after the decimal indicating milliseconds, microseconds, and
+// nanoseconds
+func TimestampFromFloat64(ts float64) time.Time {
+	sec, dec := math.Modf(ts)
+	return time.Unix(int64(sec), int64(dec*(1e9)))
+	// secs := int64(ts)
+	// nsecs := int64((ts - float64(secs)) * 1e9)
+	// return time.Unix(secs, nsecs)
 }
 
 // mustSmartParseTime parses a formatted string and returns the time value it represents.
@@ -1125,11 +1215,6 @@ func anyToTimeSlice(data any) (ret []time.Time) {
 	case []*time.Time:
 		break // todo convert []*time.Time to []time.Time?
 
-	case string:
-		ret = parseToSlice[time.Time](z)
-	case fmt.Stringer:
-		ret = parseToSlice[time.Time](z.String())
-
 	case []int:
 		return zsToTimeS(z)
 	case []int64:
@@ -1171,6 +1256,13 @@ func anyToTimeSlice(data any) (ret []time.Time) {
 		}
 		return
 
+	case string:
+		return parseToSlice[time.Time](z)
+	case fmt.Stringer:
+		return parseToSlice[time.Time](z.String())
+	case any:
+		return parseToSlice[time.Time](anyToString(z))
+
 	default:
 		break
 	}
@@ -1196,11 +1288,6 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 	case map[string]time.Time:
 		return z
 
-	case string:
-		ret = parseToMap[time.Time](z)
-	case fmt.Stringer:
-		ret = parseToMap[time.Time](z.String())
-
 	case map[string]string:
 		ret = make(map[string]time.Time, len(z))
 		for k, v := range z {
@@ -1219,6 +1306,19 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 			ret[k] = anyToTime(v)
 		}
 		return
+	case map[any]any:
+		ret = make(map[string]time.Time, len(z))
+		for k, v := range z {
+			ret[anyToString(k)] = anyToTime(v)
+		}
+		return
+
+	case string:
+		return parseToMap[time.Time](z)
+	case fmt.Stringer:
+		return parseToMap[time.Time](z.String())
+	case any:
+		return parseToMap[time.Time](anyToString(z))
 
 	default:
 		break
