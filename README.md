@@ -50,6 +50,11 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.1.1
+  - improved any <-> any converters
+  - updated internal times subpackage
+  - more tests, docs
+
 - v1.1.0
   - improved any -> string/bool/int/uint/float/complex/duration
   - fixed toBool
