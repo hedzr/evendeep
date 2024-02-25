@@ -322,9 +322,14 @@ func anyToInt(data any) int64 {
 	default:
 		rv := reflect.ValueOf(data)
 		rv = ref.Rindirect(rv) // *string -> string
-		if k := rv.Kind(); k >= reflect.Uint || k <= reflect.Uint64 {
+		if k := rv.Kind(); k == reflect.Bool {
+			if rv.Bool() {
+				return 1
+			}
+			return 0
+		} else if k >= reflect.Uint && k <= reflect.Uint64 {
 			return int64(rv.Uint())
-		} else if k >= reflect.Int || k <= reflect.Int64 {
+		} else if k >= reflect.Int && k <= reflect.Int64 {
 			return rv.Int()
 		}
 		return atoi(fmt.Sprint(data))
@@ -392,9 +397,14 @@ func anyToUint(data any) uint64 {
 	default:
 		rv := reflect.ValueOf(data)
 		rv = ref.Rindirect(rv) // *string -> string
-		if k := rv.Kind(); k >= reflect.Uint || k <= reflect.Uint64 {
+		if k := rv.Kind(); k == reflect.Bool {
+			if rv.Bool() {
+				return 1
+			}
+			return 0
+		} else if k >= reflect.Uint && k <= reflect.Uint64 {
 			return rv.Uint()
-		} else if k >= reflect.Int || k <= reflect.Int64 {
+		} else if k >= reflect.Int && k <= reflect.Int64 {
 			return uint64(rv.Int())
 		}
 		return atou(fmt.Sprint(data))
