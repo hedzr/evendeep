@@ -1,7 +1,11 @@
 package flags
 
 import (
+	"reflect"
+
 	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/ref"
+	"github.com/hedzr/evendeep/typ"
 
 	"testing"
 )
@@ -138,4 +142,96 @@ func TestFlags2(t *testing.T) {
 			t.Fatalf("expect isGroupedFlagOK(NoOmitTarget) test ok")
 		}
 	})
+}
+
+func TestFlagsNew(t *testing.T) {
+	f := New()
+	t.Logf("f: %v", f)
+
+	f = New(cms.SliceCopy)
+	t.Logf("f: %v / %v", f, f.StringEx())
+
+	f2 := f.Clone()
+	t.Logf("f2: %v / %v", f2, f2.StringEx())
+}
+
+//
+
+func TestFieldTags_Parse(t *testing.T) {
+	t.Run("test fieldTags parse", subtestParse)
+	// t.Run("test fieldTags flags tests", subtestFlagTests)
+}
+
+type AFT struct {
+	flat01 *int `copy:",flat"`
+
+	flags   Flags `copy:",cleareq"`                                        //nolint:unused,structcheck //test only
+	wouldBe int   `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test only
+
+	ignored01 int `copy:"-"`
+}
+
+func prepareAFT() (a AFT, expects []Flags) {
+	expects = []Flags{
+		// flat01
+		{cms.Flat: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
+		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		// {cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+
+		// ignored01
+		{cms.Ignore: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
+		{cms.ByOrdinal: true, cms.ByName: true},
+	}
+
+	return
+}
+
+func subtestParse(t *testing.T) {
+	a, expects := prepareAFT()
+
+	// c := newCopier()
+
+	v := reflect.ValueOf(&a)
+	v = ref.Rindirect(v)
+
+	for i := 0; i < v.NumField(); i++ {
+		fld := v.Type().Field(i)
+
+		f, nameConvertRules := Parse(fld.Tag, "copy")
+
+		if !isFlagExists(f, cms.Ignore) {
+			t.Logf("%q flags: %v [without ignore] | %v: %v, %v -> %v", fld.Tag,
+				nameConvertRules, nameConvertRules.Valid(), nameConvertRules.IsIgnored(),
+				nameConvertRules.FromName(), nameConvertRules.ToName(),
+			)
+		} else {
+			t.Logf("%q flags: %v [ignore] | %v: %v, %v -> %v", fld.Tag,
+				nameConvertRules, nameConvertRules.Valid(), nameConvertRules.IsIgnored(),
+				nameConvertRules.FromName(), nameConvertRules.ToName(),
+			)
+		}
+		testDeepEqual(t.Errorf, f, expects[i])
+	}
+}
+
+func isFlagExists(f Flags, ftf cms.CopyMergeStrategy) bool {
+	if f == nil {
+		return false
+	}
+	return f[ftf]
+}
+
+func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) {
+	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
+	// switch kind:=a.Kind();kind {
+	// case reflect.Map:
+	// case reflect.Slice:
+	// }
+
+	if !reflect.DeepEqual(got, expect) {
+		printer("FAIL: expecting %v but got %v", expect, got)
+	}
 }

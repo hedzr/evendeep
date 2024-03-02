@@ -20,4 +20,6 @@ func TestFLog(t *testing.T) {
 	logz.Tracef("hello trace")
 
 	Log("but again")
+
+	Log("child-enabled: %v", ChildLogEnabled())
 }
