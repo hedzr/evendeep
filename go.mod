@@ -22,12 +22,12 @@ go 1.21
 
 require (
 	github.com/hedzr/is v0.5.15
-	github.com/hedzr/logg v0.5.9
+	github.com/hedzr/logg v0.5.11
 	gopkg.in/hedzr/errors.v3 v3.3.1
 )
 
 require (
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.20.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
