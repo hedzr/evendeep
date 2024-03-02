@@ -50,6 +50,11 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.1.3
+  - fixed any->int/uint
+  - upgraded deps
+  - more tests
+
 - v1.1.1
   - improved any <-> any converters
   - updated internal times subpackage
