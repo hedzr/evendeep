@@ -22,7 +22,7 @@ env:
   ENABLE_DOCKER: 0
   ENABLE_Apps_Building: 1
   ENABLE_FULL_ARCHes_TEST: 0
-  ENABLE_Coveralls_Sender: 0
+  ENABLE_Coveralls_Sender: 1
   ENABLE_Simple_Release: 1    # simple (1), or normal (0): build+docker+brew+release
   ENABLE_Homebrew: 0
   #HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -94,7 +94,8 @@ jobs:
       # notifies coveralls that all test jobs are finished
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1
-        if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Coveralls_Sender != 0
+        # if: startsWith(github.ref, 'refs/tags/v') && env.ENABLE_Coveralls_Sender != 0
+        if: env.ENABLE_Coveralls_Sender != 0
         with:
           path-to-profile: profile.cov
           parallel: true
