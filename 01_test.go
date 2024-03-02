@@ -2,6 +2,7 @@ package evendeep
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"reflect"
 	"runtime"
@@ -118,7 +119,6 @@ func TestUnexported(t *testing.T) {
 }
 
 func TestTm00(t *testing.T) {
-
 	timeFloat := 13572223.479231686
 	sec, dec := math.Modf(timeFloat)
 	tm := time.Unix(int64(sec), int64(dec*(1e9)))
@@ -129,7 +129,6 @@ func TestTm00(t *testing.T) {
 }
 
 func TestValueValid(t *testing.T) {
-
 	var ival int
 	var pival *int
 	type A struct {
@@ -161,4 +160,23 @@ func TestValueValid(t *testing.T) {
 	b = true
 	v = reflect.ValueOf(b)
 	t.Logf("ival: %v (%v), isvalid/isnil/iszero: %v/%v/%v", ref.Valfmt(&v), ref.Typfmtv(&v), v.IsValid(), ref.IsNil(v), ref.IsZero(v))
+}
+
+func TestDbgLog_ChildLogEnabled(t *testing.T) {
+	t.Logf("child-enabled: %v", dbglog.ChildLogEnabled())
+
+	cl := dbglog.CaptureLog(t)
+	defer cl.Release()
+	if w, ok := cl.(io.Writer); ok {
+		w.Write([]byte("hello"))
+	}
+
+	dbglog.SetLogEnabled()
+	t.Logf("child-enabled: %v", dbglog.ChildLogEnabled())
+
+	cl2 := dbglog.NewCaptureLog(t)
+	defer cl2.Release()
+
+	dbglog.SetLogDisabled()
+	t.Logf("child-enabled: %v", dbglog.ChildLogEnabled())
 }

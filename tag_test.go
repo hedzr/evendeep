@@ -67,19 +67,20 @@ func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
 		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck //test
 		converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck //test
-		wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
+		wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
 	}
 	var a AFS1
+
 	v := reflect.ValueOf(&a)
 	v = ref.Rindirect(v)
-	sf, _ := v.Type().FieldByName("wouldbe")
+	sf, _ := v.Type().FieldByName("wouldBe")
 	sf0, _ := v.Type().FieldByName("flags")
 	sf1, _ := v.Type().FieldByName("converter")
 
 	var ft fieldTags
 	ft.Parse(sf.Tag, "")
-	ft.Parse(sf0.Tag, "") // entering 'continue' branch
-	ft.Parse(sf1.Tag, "") // entering 'delete' branch
+	ft.Parse(sf0.Tag, "copy") // entering 'continue' branch
+	ft.Parse(sf1.Tag, "")     // entering 'delete' branch
 
 	var z *fieldTags
 	z.isFlagExists(cms.SliceCopy)
