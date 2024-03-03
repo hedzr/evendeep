@@ -144,7 +144,12 @@ func IsMap(v any) bool {
 		return false
 	}
 
-	rv := reflect.ValueOf(v)
+	var rv reflect.Value
+	if vv, ok := v.(reflect.Value); ok {
+		rv = vv
+	} else {
+		rv = reflect.ValueOf(v)
+	}
 	tv := Rdecodetypesimple(rv.Type())
 	return tv.Kind() == reflect.Map
 }
@@ -155,7 +160,12 @@ func IsSlice(v any) bool {
 		return false
 	}
 
-	rv := reflect.ValueOf(v)
+	var rv reflect.Value
+	if vv, ok := v.(reflect.Value); ok {
+		rv = vv
+	} else {
+		rv = reflect.ValueOf(v)
+	}
 	tv := Rdecodetypesimple(rv.Type())
 	return tv.Kind() == reflect.Slice
 }
@@ -168,7 +178,14 @@ func SliceAppend(vv ...any) (ret any) {
 		if !IsSlice(v) {
 			continue
 		}
-		vo := reflect.ValueOf(v)
+
+		var vo reflect.Value
+		if vv, ok := v.(reflect.Value); ok {
+			vo = vv
+		} else {
+			vo = reflect.ValueOf(v)
+		}
+
 		if i == 0 {
 			rv = reflect.MakeSlice(vo.Type(), 0, vo.Len())
 		}
@@ -187,15 +204,24 @@ func SliceMerge(vv ...any) (ret any) {
 		if !IsSlice(v) {
 			continue
 		}
-		vo := reflect.ValueOf(v)
+
+		var vo reflect.Value
+		if vv, ok := v.(reflect.Value); ok {
+			vo = vv
+		} else {
+			vo = reflect.ValueOf(v)
+		}
+
 		if i == 0 {
 			// elt = vo.Type().Elem()
 			rv = reflect.MakeSlice(vo.Type(), 0, vo.Len())
 		}
 		for k := 0; k < vo.Len(); k++ {
 			ve, found := vo.Index(k), false
-			for d := 0; d < rv.Len(); d++ {
-				if found = reflect.DeepEqual(ve, rv.Index(d)); found {
+			for j := 0; j < rv.Len(); j++ {
+				vf := rv.Index(j)
+				a, b := ve.Interface(), vf.Interface()
+				if found = reflect.DeepEqual(a, b); found {
 					break
 				}
 			}
