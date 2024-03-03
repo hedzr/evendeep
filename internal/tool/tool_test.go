@@ -65,6 +65,10 @@ func TestReverseSlice(t *testing.T) {
 	ss = []int{8, 9, 7, 3, 5}
 	tool.ReverseAnySlice(ss)
 	t.Logf("ss: %v", ss)
+
+	st := []string{"H", "K"}
+	tool.ReverseStringSlice(st)
+	t.Logf("st: %v", st)
 }
 
 func TestInspectStruct(t *testing.T) {
@@ -72,8 +76,22 @@ func TestInspectStruct(t *testing.T) {
 	tool.InspectStruct(reflect.ValueOf(&a4))
 }
 
-func prepareDataA4() *A4 {
+func TestFindInSlice(t *testing.T) {
+	a4 := []int{7, 11, 17}
+	v := reflect.ValueOf(a4)
+	t.Log(tool.FindInSlice(v, 7, 0))
+	t.Log(tool.FindInSlice(v, 1, 0))
+}
 
+func TestEqualClassical(t *testing.T) {
+	a3 := []int{11, 7, 17}
+	a4 := []int{7, 11, 17}
+	v := reflect.ValueOf(a4)
+	v2 := reflect.ValueOf(a3)
+	t.Log(tool.EqualClassical(v, v2))
+}
+
+func prepareDataA4() *A4 {
 	a4 := &A4{
 		A3: &A3{
 			A2: &A2{
