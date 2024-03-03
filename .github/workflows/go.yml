@@ -165,18 +165,18 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: env.ENABLE_Simple_Release != 0
         with:
+          generate_release_notes: true
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
           # body_path: ${{ github.workspace }}-CHANGELOG.txt
           # body_path: RELNOTES.md
           # files: |
           #   LICENSE
           #   RELNOTES.md
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
           # body: |
           #   ${{ steps.read_release_notes_0.outputs.RELEASE_BODY }}
-          generate_release_notes: true
 
   release-build:
     permissions: write-all             # this is the FIX
