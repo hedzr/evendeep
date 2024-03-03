@@ -61,7 +61,13 @@ func isEmptyStructDeeply(v reflect.Value) (yes bool) {
 		return
 	}
 	ve := reflect.New(v.Type()).Elem()
-	inf := newInfo(WithTreatEmptyStructPtrAsNilPtr(true))
+	inf := newInfo(
+		WithTreatEmptyStructPtrAsNilPtr(true),
+		WithStripPointerAtFirst(true),
+		WithCompareDifferentTypeStructs(true),
+		WithCompareDifferentSizeArrays(false),
+		WithIgnoreUnmatchedFields(false),
+	)
 	dbglog.Log(" isEmptyStructDeeply(v): %+v", ref.Valfmt(&v))
 	dbglog.Log("          the empty obj: %+v", ref.Valfmt(&ve))
 	yes = inf.diff(v, ve)

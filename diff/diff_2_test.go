@@ -1,14 +1,11 @@
-package diff_test
+package diff
 
 import (
-	"github.com/hedzr/evendeep/diff"
-	"github.com/hedzr/evendeep/diff/testdata" //nolint:typecheck
-	"github.com/hedzr/evendeep/ref"
-	"github.com/hedzr/evendeep/typ"
-
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/hedzr/evendeep/diff/testdata"
+	"github.com/hedzr/evendeep/typ"
 )
 
 type testStruct struct {
@@ -38,12 +35,12 @@ type testCase struct {
 	a, b  typ.Any
 	diff  string
 	equal bool
-	opt   diff.Opt
+	opt   Opt
 }
 
 func checkTestCases(t *testing.T, testData []testCase) {
 	for i, td := range testData {
-		dif, equal := diff.New(td.a, td.b, td.opt)
+		dif, equal := New(td.a, td.b, td.opt)
 		if dif.String() != td.diff {
 			t.Errorf("%d. PrettyDiff(%#v, %#v) diff = %#v; not %#v", i, td.a, td.b, dif.String(), td.diff)
 			continue
@@ -57,23 +54,11 @@ func checkTestCases(t *testing.T, testData []testCase) {
 		// for cov test
 		dif.ForAdded(func(key string, val typ.Any) {})
 		dif.ForRemoved(func(key string, val typ.Any) {})
-		dif.ForModified(func(key string, val diff.Update) {})
+		dif.ForModified(func(key string, val Update) {})
+		if cc, ok := dif.(interface{ Clone() *info }); ok {
+			_ = cc.Clone()
+		}
 	}
-}
-
-type timeComparer struct{}
-
-func (c *timeComparer) Match(typ reflect.Type) bool {
-	return typ.String() == "time.Time"
-}
-
-func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff.Path) (equal bool) {
-	aTime := lhs.Interface().(time.Time) //nolint:errcheck //no need
-	bTime := rhs.Interface().(time.Time) //nolint:errcheck //no need
-	if equal = aTime.Equal(bTime); !equal {
-		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: ref.Typfmtvlite(&lhs)})
-	}
-	return
 }
 
 func TestPrettyDiff(t *testing.T) {
@@ -83,7 +68,7 @@ func TestPrettyDiff(t *testing.T) {
 			[]int{9, 3, 0},
 			"",
 			true,
-			diff.WithSliceOrderedComparison(true),
+			WithSliceOrderedComparison(true),
 		},
 
 		{
@@ -91,7 +76,7 @@ func TestPrettyDiff(t *testing.T) {
 			[]typ.Any{9, 3, 0},
 			"",
 			true,
-			diff.WithSliceOrderedComparison(true),
+			WithSliceOrderedComparison(true),
 		},
 
 		{
@@ -100,14 +85,14 @@ func TestPrettyDiff(t *testing.T) {
 			// "modified:  = false\n",
 			"modified:  = false (bool) (Old: true)\n",
 			false,
-			diff.WithComparer(&timeComparer{}),
+			WithComparer(&timeComparer{}),
 		},
 		{
 			true,
 			0,
 			"modified:  = <zero> (int) (Old: true)\n",
 			false,
-			diff.WithIgnoredFields(),
+			WithIgnoredFields(),
 		},
 		{
 			[]int{0, 1, 2},
@@ -145,7 +130,7 @@ func TestPrettyDiff(t *testing.T) {
 			"added: [\"c\"] = 3\nmodified: [\"b\"] = 4 (int) (Old: 2)\nremoved: [\"a\"] = 1\n",
 			// "added: [\"c\"] = 3\nmodified: [\"b\"] = 4\nremoved: [\"a\"] = 1\n",
 			false,
-			diff.WithSliceOrderedComparison(false),
+			WithSliceOrderedComparison(false),
 		},
 		{
 			// about two slices with different size
@@ -156,8 +141,8 @@ func TestPrettyDiff(t *testing.T) {
 			"added: .C.[1] = 2\nmodified: .b = 3 (int) (Old: 2)\n",
 			// "added: .C[1] = 2\nmodified: .b = 3\n",
 			false,
-			// diff.WithSliceOrderedComparison(false),
-			diff.WithCompareDifferentSizeArrays(false),
+			// WithSliceOrderedComparison(false),
+			WithCompareDifferentSizeArrays(false),
 		},
 		{
 			testStruct{1, 3, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, [3]int{4, 5, 6}},
@@ -165,7 +150,7 @@ func TestPrettyDiff(t *testing.T) {
 			"modified: .C.[0] = 42 (int) (Old: <zero>)\nmodified: .C.[1] = 43 (int) (Old: 1)\nmodified: .C.[2] = 44 (int) (Old: 2)\nmodified: .C.[10] = 45 (int) (Old: 10)\nmodified: .C.[11] = 46 (int) (Old: 11)\n",
 			// "modified: .C[0] = 42\nmodified: .C[1] = 43\nmodified: .C[2] = 44\nmodified: .C[10] = 45\nmodified: .C[11] = 46\n",
 			false,
-			diff.WithSliceOrderedComparison(false),
+			WithSliceOrderedComparison(false),
 		},
 		{
 			nil,
@@ -268,13 +253,13 @@ func TestIgnoreTag(t *testing.T) {
 	s1 := ignoreStruct{1, 1, [3]int{1, 2, 3}, [3]int{4, 5, 6}}
 	s2 := ignoreStruct{2, 1, [3]int{1, 8, 3}, [3]int{4, 5, 6}}
 
-	dif, equal := diff.New(s1, s2)
+	dif, equal := New(s1, s2)
 	if !equal {
 		t.Errorf("Expected structs to be equal. Diff:\n%s", dif.PrettyPrint())
 	}
 
 	s2 = ignoreStruct{2, 2, [3]int{1, 8, 3}, [3]int{4, 9, 6}}
-	dif, equal = diff.New(s1, s2)
+	dif, equal = New(s1, s2)
 	if equal {
 		t.Errorf("Expected structs NOT to be equal.")
 	}
@@ -300,12 +285,12 @@ func TestIgnoreStructFieldOption(t *testing.T) {
 		Y: "y",
 	}
 
-	dif, equal := diff.New(a, b, diff.WithIgnoredFields("X"))
+	dif, equal := New(a, b, WithIgnoredFields("X"))
 	if !equal {
 		t.Errorf("Expected structs to be equal. Diff:\n%s", dif)
 	}
 
-	dif, equal = diff.New(a, b, diff.WithIgnoredFields("Y"))
+	dif, equal = New(a, b, WithIgnoredFields("Y"))
 	if equal {
 		t.Errorf("Expected structs NOT to be equal.")
 	}
