@@ -50,34 +50,9 @@ This library is designed for making everything customizable.
 
 ## History
 
-- v1.1.3
-  - fixed any->int/uint
-  - upgraded deps
+- v1.1.5
+  - upgraded deps - security patches
   - more tests
-
-- v1.1.1
-  - improved any <-> any converters
-  - updated internal times subpackage
-  - more tests, docs
-
-- v1.1.0
-  - improved any -> string/bool/int/uint/float/complex/duration
-  - fixed toBool
-  - BREAK: toBool(3) => true. In old versions, only convert number `1` to `true`. Since v1.1.0, any non-Zero number will be converted to `true`.
-
-- v1.0.2
-  - improved bool/duration/time[Slice/Map] <-> any converters
-  - added TrimQuotes, StripQuotes
-  - improved times subpackage
-  - fixed simple-release section inside gh actions script
-
-- v1.0.1
-  - improved numeric <-> any converters
-
-- v1.0.0
-  - upgrade to v1
-    - changed log to our logg/slog
-    - fixed bugs found and improved performances
 
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 

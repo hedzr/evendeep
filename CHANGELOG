@@ -1,5 +1,9 @@
 # HISTORY
 
+- v1.1.5
+  - upgraded deps
+  - more tests
+
 - v1.1.3
   - fixed any->int/uint
   - upgraded deps
