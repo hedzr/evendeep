@@ -50,6 +50,9 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.1.6
+  - upgraded deps
+
 - v1.1.5
   - upgraded deps - security patches
   - more tests
