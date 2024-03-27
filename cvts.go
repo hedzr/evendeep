@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
@@ -2036,6 +2037,54 @@ func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, 
 	return
 }
 
+func toExportedName(s string) string {
+	if s != "" {
+		a := wordSplitter(s)
+		for i, word := range a {
+			a[i] = makeCapitalize1st(word)
+		}
+		var r []rune
+		for _, word := range a {
+			r = append(r, word...)
+		}
+		return string(r)
+	}
+	return s
+}
+
+func wordSplitter(s string) (result [][]rune) {
+	runes := []rune(s)
+	var word []rune
+	for i, r := range runes {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				result = append(result, word)
+			}
+			word = nil
+		} else if r == '-' || r == '_' {
+			if i > 0 {
+				result = append(result, word)
+			}
+			word = nil
+			continue
+		}
+		word = append(word, r)
+	}
+	if len(word) > 0 {
+		result = append(result, word)
+	}
+	return
+}
+
+func makeCapitalize1st(r []rune) (ret []rune) {
+	if len(r) > 0 {
+		ret = append(ret, unicode.ToUpper(r[0]))
+		ret = append(ret, r[1:]...)
+		return
+	}
+	return r
+}
+
 //nolint:lll,gocognit //keep it
 func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
 	cc := ctx.controller
@@ -2086,10 +2135,21 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			}
 		}
 
+		const tryForExportedFieldName = true
+
 		// use the key.(string) as the target struct field name
 		tsf, ok := targetType.FieldByName(ks)
 		if !ok {
-			continue
+			var Ks string
+			if tryForExportedFieldName {
+				if Ks = toExportedName(ks); Ks != ks {
+					tsf, ok = targetType.FieldByName(Ks)
+				}
+			}
+			if !ok {
+				continue
+			}
+			ks = Ks
 		}
 
 		fld := target.FieldByName(ks)

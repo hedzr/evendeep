@@ -998,3 +998,20 @@ func newValueConverterContextForTest(c *cpController) *ValueConverterContext {
 	}
 	return &ValueConverterContext{newParams(withOwnersSimple(c, nil))}
 }
+
+func TestToExportedName(t *testing.T) {
+	for i, c := range []struct {
+		src    string
+		expect string
+	}{
+		{"IGotInternAtGeeksForGeeks", "IGotInternAtGeeksForGeeks"},
+		{"iGotInternAtGeeksForGeeks", "IGotInternAtGeeksForGeeks"},
+		{"i-got-intern-at-geeks-for-geeks", "IGotInternAtGeeksForGeeks"},
+		{"i_got_intern_at_geeks_for_geeks", "IGotInternAtGeeksForGeeks"},
+	} {
+		actual := toExportedName(c.src)
+		if actual != c.expect {
+			t.Fatalf("%5d. expert %q -> %q but got %q", i, c.src, c.expect, actual)
+		}
+	}
+}
