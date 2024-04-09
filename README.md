@@ -4,8 +4,8 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hedzr/store)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/evendeep.svg?label=release)](https://github.com/hedzr/evendeep/releases)
 [![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
-[![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep) <!--
-[![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep) -->
+[![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep) `<!--
+[![codecov](https://codecov.io/gh/hedzr/evendeep/branch/master/graph/badge.svg)](https://codecov.io/gh/hedzr/evendeep) -->`
 [![Coverage Status](https://coveralls.io/repos/github/hedzr/evendeep/badge.svg?branch=master)](https://coveralls.io/github/hedzr/evendeep?branch=master)
 
 This is a standard deepcopy library. It provides per-field copying deeply, and compares deeply abilities.
@@ -19,15 +19,18 @@ This library is designed for making everything customizable.
 - unexported values (optional), ...
 - circular references immunization
 - fully customizable
+
   - user-defined value/type converters/transformers
   - user-defined field to field name converting rule via struct Tag
 - easily apply different strategies
+
   - basic strategies are: copy-n-merge, clone,
   - strategies per struct field:
-      `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
-      `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
-      `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
+    `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
+    `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
+    `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
 - copy fields by name or ordinal
+
   - field to field
   - field to method, method to field
   - value to function (as input), function result to value
@@ -36,28 +39,32 @@ This library is designed for making everything customizable.
   - User-defined extractor/getter on various source
   - User-defined setter for struct or map target (if mapkey is string)
   - ...
-
 - The deep series
+
   - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L48),
     or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L32)
   - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L63)
   - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/deepequal.go#L12)
   - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/deepdiff.go#L13)
-
 - Compatibilities
+
   - Run for Go Modules and Generics enable, and log/slog present (go1.21+ since v1)
     - since v1, `debug/buildinfo` requires go1.18+, `log/slog` wants go1.21+.
     - for the v0.x versions, go1.11+ is okay.
 
 ## History
 
-- v1.1.6
+- v1.1.9
+
+  - security patch
+- v1.1.8
+
+  - improved errors.v3 - prevent attach itself into nested container
   - upgraded deps
+- v1.1.7
 
-- v1.1.5
-  - upgraded deps - security patches
-  - more tests
-
+  - improved map -> struct, the lower-case map key names will be mapping to camel-case to match the corresponding export field names.
+  - upgraded deps
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
 ## Usages
@@ -424,8 +431,8 @@ func TestStructWithNameConversions(t *testing.T) {
 The available tag names are (Almost newest, see its
 in [flags/cms/copymergestrategy.go](https://github.com/hedzr/evendeep/blob/master/flags/cms/copymergestrategy.go#L23)):
 
-| Tag name           | Flags                   | Detail                                           |
-|--------------------|-------------------------|--------------------------------------------------|
+| Tag name             | Flags                     | Detail                                           |
+| -------------------- | ------------------------- | ------------------------------------------------ |
 | `-`                | `cms.Ignore`            | field will be ignored                            |
 | `std` (*)          | `cms.Default`           | reserved                                         |
 | `must`             | `cms.Must`              | reserved                                         |
@@ -445,7 +452,7 @@ in [flags/cms/copymergestrategy.go](https://github.com/hedzr/evendeep/blob/maste
 | `slicemerge`       | `cms.SliceMerge`        | merge with order-insensitive                     |
 | `mapcopy`          | `cms.MapCopy`           | copy elem by key                                 |
 | `mapmerge`         | `cms.MapMerge`          | merge map deeply                                 |
-| ...                |                         |                                                  |
+| ...                  |                           |                                                  |
 
 > `*`: the flag is on by default.
 
@@ -548,11 +555,11 @@ call `reflect.DeepEqual` explicitly.
 
 These features had been planning but still on ice.
 
-- [x] Name converting and mapping for `cms.ByOrdinal` (`*`) mode: a universal `name converter` can be applied in copying
+- [X] Name converting and mapping for `cms.ByOrdinal` (`*`) mode: a universal `name converter` can be applied in copying
   field to field.
 - [ ] *Use SourceExtractor and TargetSetter together (might be impossible)*
 - [ ] More builtin converters (*might not be a requisite*)
-- [x] Handle circular pointer (DONE)
+- [X] Handle circular pointer (DONE)
 
 Issue me if you wanna put it or them on the table.
 

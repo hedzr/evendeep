@@ -1,5 +1,8 @@
 # HISTORY
 
+- v1.1.9
+  - security patch
+
 - v1.1.8
   - improved errors.v3 - prevent attach itself into nested container
   - upgraded deps
