@@ -21,7 +21,7 @@ func (n sliceIndex) String() string {
 }
 
 type mapKey struct {
-	Key interface{}
+	Key interface{} //nolint:revive
 }
 
 func (n mapKey) String() string {

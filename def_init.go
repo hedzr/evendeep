@@ -2,8 +2,10 @@ package evendeep
 
 import "sync"
 
-var onceInitRoutines sync.Once                                    //nolint:gochecknoglobals //i know that
-var otherRoutines = []func(){initConverters, initGlobalOperators} //nolint:gochecknoglobals //i know that
+var (
+	onceInitRoutines sync.Once                                       //nolint:gochecknoglobals //i know that
+	otherRoutines    = []func(){initConverters, initGlobalOperators} //nolint:gochecknoglobals //i know that
+)
 
 func init() { //nolint:gochecknoinits //don't
 	onceInitRoutines.Do(func() {

@@ -18,7 +18,7 @@ type FF interface {
 }
 
 func TestFlagsRevert(t *testing.T) {
-	var saved = evendeep.DefaultCopyController.Flags().Clone()
+	saved := evendeep.DefaultCopyController.Flags().Clone()
 	evendeep.DefaultCopyController.Flags().WithFlags(cms.SliceCopyAppend)
 	evendeep.DefaultCopyController.SetFlags(saved)
 
@@ -30,7 +30,6 @@ func TestFlagsRevert(t *testing.T) {
 }
 
 func TestWithXXX(t *testing.T) {
-
 	copier := evendeep.NewForTest()
 
 	type AA struct {
@@ -42,22 +41,19 @@ func TestWithXXX(t *testing.T) {
 	}
 
 	t.Run("string to duration", func(t *testing.T) {
-
 		var dur time.Duration
-		var src = "9h71ms"
-		// var svv = reflect.ValueOf(src)
-		// var tvv = reflect.ValueOf(&dur) // .Elem()
+		src := "9h71ms"
+		// svv := reflect.ValueOf(src)
+		// tvv := reflect.ValueOf(&dur) // .Elem()
 
 		err := copier.CopyTo(src, &dur)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
 		t.Logf("res: %v", dur)
-
 	})
 
 	t.Run("ignore names test", func(t *testing.T) {
-
 		src1 := &AA{TestString: "well", X: "ok"}
 		tgt1 := &BB{X: "no"}
 		err := copier.CopyTo(src1, &tgt1)
@@ -68,11 +64,9 @@ func TestWithXXX(t *testing.T) {
 		if tgt1.X != src1.X {
 			t.Fatalf("err: after 'TestString' field was ignored, AA.X should be copied as BB.X")
 		}
-
 	})
 
 	t.Run("non-ignore names test", func(t *testing.T) {
-
 		copier = evendeep.New()
 
 		src1 := &AA{TestString: "well", X: "ok"}
@@ -85,7 +79,6 @@ func TestWithXXX(t *testing.T) {
 			t.Fatalf("err: if 'TestString' field was not ignored, AA.TestString should be copied as BB.X")
 		}
 		t.Logf("res bb: %+v", tgt1)
-
 	})
 
 	t.Run("ignore field test", func(t *testing.T) {
@@ -116,7 +109,6 @@ func TestWithXXX(t *testing.T) {
 		if tgt1.Y != src1.Y {
 			t.Fatalf("err: 'Y' field should be copied.")
 		}
-
 	})
 
 	t.Run("ignore field test - no sync advance", func(t *testing.T) {
@@ -142,11 +134,9 @@ func TestWithXXX(t *testing.T) {
 		if tgt1.Y != src1.Y {
 			t.Fatalf("err: 'Y' field should be copied.")
 		}
-
 	})
 
 	t.Run("earlier valid test", func(t *testing.T) {
-
 		var from *AA
 		var to *BB
 		ret := evendeep.DeepCopy(from, &to)
@@ -160,11 +150,9 @@ func TestWithXXX(t *testing.T) {
 
 		ret = evendeep.MakeClone(nil)
 		t.Logf("ret = %v", ret)
-
 	})
 
 	t.Run("return error test", func(t *testing.T) {
-
 		type AAA struct {
 			X1 string `copy:"-"`
 			X2 string `copy:",-"`
@@ -183,9 +171,7 @@ func TestWithXXX(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-
 	})
-
 }
 
 func TestIgnoreSourceField(t *testing.T) {
@@ -266,7 +252,6 @@ func TestDeepCopyGenerally(t *testing.T) {
 		ret = evendeep.New().CopyTo(&x1, &x2, evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 		testIfBadCopy(t, x1, *x2, ret, "NewDeepCopier().CopyTo() - DeepCopy x1 -> x2", true)
 	})
-
 }
 
 func TestDeepCopy(t *testing.T) {
@@ -281,9 +266,9 @@ func TestDeepCopy(t *testing.T) {
 		C *string
 	}
 
-	var aa = AA{A: true, B: 16, C: helloString}
+	aa := AA{A: true, B: 16, C: helloString}
 	var bb BB
-	var ret = evendeep.DeepCopy(aa, &bb,
+	ret := evendeep.DeepCopy(aa, &bb,
 		evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
 	t.Logf("ret = %v", ret)
 	// ret = &{0 16 &"hello"}
@@ -299,9 +284,9 @@ func TestMakeClone(t *testing.T) {
 		C string
 	}
 
-	var aa = AA{A: true, B: 16, C: helloString}
-	var ret = evendeep.MakeClone(aa)
-	var aaCopy = ret.(AA)
+	aa := AA{A: true, B: 16, C: helloString}
+	ret := evendeep.MakeClone(aa)
+	aaCopy := ret.(AA)
 	t.Logf("ret = %v", aaCopy)
 	// ret = {true 16 hello}
 }
@@ -318,7 +303,7 @@ func TestNew(t *testing.T) {
 		C *string
 	}
 
-	var aa = AA{A: true, B: 16, C: helloString}
+	aa := AA{A: true, B: 16, C: helloString}
 	var bb BB
 	var ret typ.Any = evendeep.New().CopyTo(aa, &bb,
 		evendeep.WithIgnoreNames("Shit", "Memo", "Name"))
@@ -342,9 +327,9 @@ func TestWithIgnoreNames(t *testing.T) {
 		C *string
 	}
 
-	var aa = AA{A: true, B: 16, C: helloString, D: worldString}
+	aa := AA{A: true, B: 16, C: helloString, D: worldString}
 	var bb BB
-	var ret = evendeep.DeepCopy(aa, &bb,
+	ret := evendeep.DeepCopy(aa, &bb,
 		evendeep.WithIgnoreNames("C*"),
 		evendeep.WithSyncAdvancing(false),
 		evendeep.WithByOrdinalStrategyOpt,
@@ -369,14 +354,12 @@ func TestWithIgnoreNames(t *testing.T) {
 }
 
 func TestPlainCopyFuncField(t *testing.T) {
-
 	type AA struct {
 		Fn func()
 	}
 
 	t.Run("copy func field", func(t *testing.T) {
-
-		var a = AA{func() {
+		a := AA{func() {
 			println("yes")
 		}}
 		var b AA
@@ -390,7 +373,6 @@ func TestPlainCopyFuncField(t *testing.T) {
 		} else {
 			t.Fatalf("bad")
 		}
-
 	})
 
 	type BB struct {
@@ -398,8 +380,7 @@ func TestPlainCopyFuncField(t *testing.T) {
 	}
 
 	t.Run("copy private func field", func(t *testing.T) {
-
-		var a = BB{func() {
+		a := BB{func() {
 			println("yes")
 		}}
 		var b BB
@@ -413,7 +394,6 @@ func TestPlainCopyFuncField(t *testing.T) {
 		} else {
 			t.Fatalf("bad")
 		}
-
 	})
 
 	type CC struct {
@@ -421,14 +401,13 @@ func TestPlainCopyFuncField(t *testing.T) {
 	}
 
 	t.Run("copy private func field (complex)", func(t *testing.T) {
-		var a = CC{func(i1, i2 int) (i3 string) {
+		a := CC{func(i1, i2 int) (i3 string) {
 			return fmt.Sprintf("%v+%v", i1, i2)
 		}}
 
-		var v = reflect.ValueOf(&a)
-		var vf = v.Elem().Field(0)
-		var vft = vf.Type()
+		v := reflect.ValueOf(&a)
+		vf := v.Elem().Field(0)
+		vft := vf.Type()
 		t.Logf("out: %v, %v", vft.NumOut(), vft.Out(0))
 	})
-
 }

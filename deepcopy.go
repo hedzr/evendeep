@@ -1,12 +1,12 @@
 package evendeep
 
 import (
+	"reflect"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
-
-	"reflect"
 )
 
 // New gets a new instance of DeepCopier (the underlying
@@ -30,7 +30,7 @@ import (
 //
 //	err := evendeep.New().CopyTo(src, &tgt)
 func New(opts ...Opt) DeepCopier {
-	var c = newDeepCopier()
+	c := newDeepCopier()
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -121,7 +121,7 @@ var (
 // (SliceMerge and MapMerge).
 func NewFlatDeepCopier(opts ...Opt) DeepCopier {
 	// lazyInitRoutines()
-	var c = newCopier()
+	c := newCopier()
 	c.flags = flags.New()
 	for _, opt := range opts {
 		opt(c)

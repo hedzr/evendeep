@@ -82,8 +82,11 @@ func TestCvt_String(t *testing.T) {
 		{map[any]any{8.2: 2.72, 1: uint64(128), true: false}, `{"8.2":2.72,"1":128,"true":false}`},
 
 		{times.MustSmartParseTime("2013-1-29 3:13:59.71026508"), "2013-01-29T03:13:59.71026508Z"},
-		{times.MustParseDuration("1d13h2m19s743ms892ns"),
-			37*time.Hour + 2*time.Minute + 19*time.Second + 743*time.Millisecond + 892*time.Nanosecond},
+
+		{
+			times.MustParseDuration("1d13h2m19s743ms892ns"),
+			37*time.Hour + 2*time.Minute + 19*time.Second + 743*time.Millisecond + 892*time.Nanosecond,
+		},
 
 		{"", ""},
 		{nil, "<nil>"},
@@ -336,8 +339,10 @@ func TestCvt_Time(t *testing.T) {
 		{[]any{8.2, 1, true}, zeroTime},
 		{map[any]any{8.2: 2.72, 1: uint64(128), true: false}, zeroTime},
 
-		{times.MustSmartParseTime("2013-1-29 3:13:59.71026508"),
-			times.MustSmartParseTime("2013-1-29 3:13:59.71026508")},
+		{
+			times.MustSmartParseTime("2013-1-29 3:13:59.71026508"),
+			times.MustSmartParseTime("2013-1-29 3:13:59.71026508"),
+		},
 		{times.MustParseDuration("1d13h2m19s743ms892ns"), zeroTime},
 
 		{"", zeroTime},

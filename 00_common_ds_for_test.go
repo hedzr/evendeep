@@ -79,7 +79,7 @@ type X2 struct {
 	G          chan bool
 	H          chan int
 	I          func()
-	J          interface{}
+	J          interface{} //nolint:revive
 	K          *X0
 	L          unsafe.Pointer
 	M          unsafe.Pointer

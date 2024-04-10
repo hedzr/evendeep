@@ -4,14 +4,14 @@ import (
 	"reflect"
 	"unsafe"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 	logz "github.com/hedzr/logg/slog"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
 type cpController struct {
@@ -124,7 +124,7 @@ func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error
 	return
 }
 
-func (c *cpController) copyToInternal( //nolint:gocognit //yes, it is an integrated logic
+func (c *cpController) copyToInternal( //nolint:revive,gocognit //yes, it is an integrated logic
 	params *Params, from, to reflect.Value,
 	cb copyfn,
 ) (err error) {
@@ -224,6 +224,7 @@ func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (pr
 			}
 		}
 	}
+	_ = to
 	return
 }
 
@@ -235,6 +236,7 @@ func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to re
 		to.Set(reflect.ValueOf(dc1.DeepCopy()))
 		processed = true
 	}
+	_ = params
 	return
 }
 
@@ -272,7 +274,7 @@ func (c *cpController) SetFlags(f flags.Flags) { c.flags = f }
 //
 //	defer c.SaveFlagsAndRestore()()
 func (c *cpController) SaveFlagsAndRestore() func() {
-	var saved = c.flags.Clone()
+	saved := c.flags.Clone()
 	return func() {
 		c.flags = saved
 	}

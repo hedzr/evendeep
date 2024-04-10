@@ -66,11 +66,10 @@ func DecodeZigZagInt(b []byte) (r int64, ate int) {
 		if b1&0x80 == 0 {
 			r += int64(uint64(b1)) << sh
 			break
-		} else {
-			r += int64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
-			sh += 7
-			ate++
 		}
+		r += int64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
+		sh += 7
+		ate++
 	}
 	ate++
 	return
@@ -85,11 +84,10 @@ func DecodeZigZagUint(b []byte) (r uint64, ate int) {
 		if b1&0x80 == 0 {
 			r += uint64(b1) << sh
 			break
-		} else {
-			r += uint64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
-			sh += 7
-			ate++
 		}
+		r += uint64(b1&0x7f) << sh //nolint:gomnd //bitwise calculating here
+		sh += 7
+		ate++
 	}
 	ate++
 	return

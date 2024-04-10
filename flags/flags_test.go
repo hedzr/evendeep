@@ -2,12 +2,11 @@ package flags
 
 import (
 	"reflect"
+	"testing"
 
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
-
-	"testing"
 )
 
 func subtest1(t *testing.T) {
@@ -41,7 +40,7 @@ func subtest2(t *testing.T) {
 	}
 }
 
-func subtest3(t *testing.T) {
+func subtest3(t *testing.T) { //nolint:revive
 	flags := newFlags()
 
 	for _, coll := range mKnownStrategyGroup {
@@ -68,13 +67,15 @@ func TestFlags_testGroupedFlag(t *testing.T) {
 
 	t.Run("parse nonexisted flag", func(t *testing.T) {
 		cms.Default.Parse("??")
+		t.Log()
 	})
 	t.Run("stringify nonexisted flag", func(t *testing.T) {
 		println(cms.CopyMergeStrategy(99999).String())
+		t.Log()
 	})
 }
 
-func TestFlags1(t *testing.T) {
+func TestFlags1(t *testing.T) { //nolint:revive
 	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
@@ -106,7 +107,7 @@ func TestFlags1(t *testing.T) {
 	})
 }
 
-func TestFlags2(t *testing.T) {
+func TestFlags2(t *testing.T) { //nolint:revive
 	lazyInitFieldTagsFlags()
 
 	t.Run("normal flags", func(t *testing.T) {
@@ -163,22 +164,25 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flat01 *int `copy:",flat"`
+	flat01 *int `copy:",flat"` //nolint:revive,unused
 
-	flags   Flags `copy:",cleareq"`                                        //nolint:unused,structcheck //test only
-	wouldBe int   `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test only
+	flags   Flags `copy:",cleareq"`                                        //nolint:revive,unused,structcheck //test only
+	wouldBe int   `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:revive,unused,structcheck //test only
 
-	ignored01 int `copy:"-"`
+	ignored01 int `copy:"-"` //nolint:revive,unused
 }
 
-func prepareAFT() (a AFT, expects []Flags) {
+func prepareAFT() (a AFT, expects []Flags) { //nolint:revive,unparam
 	expects = []Flags{
 		// flat01
 		{cms.Flat: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
 
 		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		// {cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+
+		// {cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true,
+		//	cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
+		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true}, //nolint:revive,lll
 
 		// ignored01
 		{cms.Ignore: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
@@ -224,7 +228,7 @@ func isFlagExists(f Flags, ftf cms.CopyMergeStrategy) bool {
 	return f[ftf]
 }
 
-func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) {
+func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) { //nolint:revive
 	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
 	// switch kind:=a.Kind();kind {
 	// case reflect.Map:

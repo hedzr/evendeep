@@ -74,10 +74,12 @@ func withFlags(flagsList ...cms.CopyMergeStrategy) paramsOpt { //nolint:unused /
 	}
 }
 
-func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:unused //future code
+func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint:revive,unparam //future code
 	return func(p *Params) {
 		p.controller = c
-		ownerParams.addChildParams(p)
+		if ownerParams != nil {
+			ownerParams.addChildParams(p)
+		}
 	}
 }
 
@@ -246,6 +248,7 @@ func (params *Params) processUnexportedField(target, newval reflect.Value) (proc
 
 func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type) {
 	params.srcType = st
+	_ = ownerParams
 	// if kind := st.Kind(); kind == reflect.Struct {
 	// 	// idx := index
 	// 	// if ownerParams != nil {
@@ -269,6 +272,7 @@ func (params *Params) parseSourceStruct(ownerParams *Params, st reflect.Type) {
 
 func (params *Params) parseTargetStruct(ownerParams *Params, tt reflect.Type) {
 	params.dstType = tt
+	_ = ownerParams
 	// if kind := tt.Kind(); kind == reflect.Struct {
 	// 	// idx := index
 	// 	// if ownerParams != nil {

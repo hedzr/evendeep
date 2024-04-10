@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/internal/syscalls"
 	"github.com/hedzr/evendeep/ref"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
 // rForBool transform bool -> string.
@@ -105,7 +105,7 @@ func rToInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base int, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) {
 			var ival int64
 			ival, err = strconv.ParseInt(str, base, bitSize)
 			if err == nil {
@@ -161,7 +161,7 @@ func rToUInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, 
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base int, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) {
 			var ival uint64
 			ival, err = strconv.ParseUint(str, base, bitSize)
 			if err == nil {
@@ -237,7 +237,7 @@ func rToFloat(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base int, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) {
 			var fval float64
 			fval, err = strconv.ParseFloat(str, bitSize)
 			if err == nil {
@@ -304,7 +304,7 @@ func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base int, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) {
 			var cval complex128
 			if str[0] != '(' {
 				str = "(" + str
@@ -324,8 +324,8 @@ func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 	return
 }
 
-func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
-	converter func(str string, base int, bitSize int) (ret reflect.Value, err error),
+func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int, //nolint:unparam
+	converter func(str string, int, bitSize int) (ret reflect.Value, err error),
 ) (ret reflect.Value, err error) {
 	if !v.IsValid() || ref.IsNil(v) || ref.IsZero(v) {
 		ret = reflect.Zero(desiredType)
@@ -357,7 +357,7 @@ func toTypeConverter(v reflect.Value, desiredType reflect.Type, base int,
 	return
 }
 
-func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target reflect.Value, processed bool, err error) {
+func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target reflect.Value, processed bool, err error) { //nolint:unparam
 	val := source.Interface()
 	if ss, ok := val.(interface{ String() string }); ok {
 		nv := ss.String()
@@ -428,7 +428,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 	return
 }
 
-//nolint:unused,deadcode,lll //reserved
+//nolint:unparam,unused,deadcode,lll //reserved
 func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
@@ -453,10 +453,11 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 			}
 		}
 	}
+	_ = ctx
 	return
 }
 
-//nolint:unused,deadcode,lll //reserved
+//nolint:unparam,unused,deadcode,lll //reserved
 func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
@@ -480,10 +481,11 @@ func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 			}
 		}
 	}
+	_ = ctx
 	return
 }
 
-//nolint:unused,deadcode,lll //reserved
+//nolint:unparam,unused,deadcode,lll //reserved
 func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	ec := errors.New("cannot transform item into map")
 	defer ec.Defer(&err)
@@ -502,6 +504,8 @@ func rToMap(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desi
 			}
 		}
 	}
+
+	_, _ = ctx, fromFuncType
 
 	// for i := 0; i < fromFuncType.NumOut(); i++ {
 	//	if i >= len(sources) {
@@ -535,6 +539,7 @@ func rSetMapValue(ix int, target, key, srcVal reflect.Value, sTyp, dTyp reflect.
 		err = errors.New("cannot set map[%v] since transforming/converting failed: %v -> %v",
 			ref.Valfmt(&key), ref.Valfmt(&srcVal), ref.Valfmt(&dstval))
 	}
+	_ = ix
 	return
 }
 
@@ -557,12 +562,13 @@ func nameToMapKey(name string, mapType reflect.Type) (key reflect.Value, err err
 //nolint:unused,deadcode,lll //reserved
 func rToStruct(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
 	// result (source) -> struct (target)
-
+	_, _, _, _ = ctx, source, fromFuncType, desiredType
 	return
 }
 
 //nolint:unused,deadcode,lll //reserved
 func rToFunc(ctx *ValueConverterContext, source reflect.Value, fromFuncType, desiredType reflect.Type) (target reflect.Value, err error) {
+	_, _, _, _ = ctx, source, fromFuncType, desiredType
 	return
 }
 
@@ -620,7 +626,7 @@ func durationToString(dur time.Duration) string {
 //
 
 func bytesToString(data []byte) string {
-	var b = make([]byte, 0, 3+len(data)*4)
+	b := make([]byte, 0, 3+len(data)*4)
 	b = append(b, data...)
 	b = append(b, []byte(" [")...)
 	for i := 0; i < len(data); {
@@ -634,7 +640,7 @@ func bytesToString(data []byte) string {
 }
 
 func intSliceToString[T Integers](val IntSlice[T]) string {
-	var b = make([]byte, 0, len(val)*8) // 8: assume integer need 8 runes
+	b := make([]byte, 0, len(val)*8) // 8: assume integer need 8 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -647,7 +653,7 @@ func intSliceToString[T Integers](val IntSlice[T]) string {
 }
 
 func uintSliceToString[T Uintegers](val UintSlice[T]) string {
-	var b = make([]byte, 0, len(val)*8) // 8: assume unsigned integer need 8 runes
+	b := make([]byte, 0, len(val)*8) // 8: assume unsigned integer need 8 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -660,7 +666,7 @@ func uintSliceToString[T Uintegers](val UintSlice[T]) string {
 }
 
 func floatSliceToString[T Floats](val FloatSlice[T]) string {
-	var b = make([]byte, 0, len(val)*16+2) // 8: assume floats need 16 runes
+	b := make([]byte, 0, len(val)*16+2) // 8: assume floats need 16 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -673,7 +679,7 @@ func floatSliceToString[T Floats](val FloatSlice[T]) string {
 }
 
 func complexSliceToString[T Complexes](val ComplexSlice[T]) string {
-	var b = make([]byte, 0, len(val)*32+2) // 8: assume complex need 32 runes
+	b := make([]byte, 0, len(val)*32+2) // 8: assume complex need 32 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -700,7 +706,7 @@ func complexSliceToString[T Complexes](val ComplexSlice[T]) string {
 // }
 
 func stringSliceToString(val []string) string {
-	var b = make([]byte, 0, len(val)*32+2) // 8: assume integer need 32 runes
+	b := make([]byte, 0, len(val)*32+2) // 8: assume integer need 32 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -713,7 +719,7 @@ func stringSliceToString(val []string) string {
 }
 
 func boolSliceToString(val []bool) string {
-	var b = make([]byte, 0, len(val)*8) // 8: assume bool need 5 runes
+	b := make([]byte, 0, len(val)*8) // 8: assume bool need 5 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -726,7 +732,7 @@ func boolSliceToString(val []bool) string {
 }
 
 func timeSliceToString(val []time.Time) string {
-	var b = make([]byte, 0, len(val)*32+2) // 8: assume time need 24 runes
+	b := make([]byte, 0, len(val)*32+2) // 8: assume time need 24 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -739,7 +745,7 @@ func timeSliceToString(val []time.Time) string {
 }
 
 func durationSliceToString(val []time.Duration) string {
-	var b = make([]byte, 0, len(val)*16+2) // 8: assume duration need 16 runes
+	b := make([]byte, 0, len(val)*16+2) // 8: assume duration need 16 runes
 	b = append(b, []byte("[")...)
 	for i := range val {
 		if i > 0 {
@@ -782,10 +788,15 @@ type Numerics interface {
 }
 
 type IntSlice[T Integers] []T
+
 type UintSlice[T Uintegers] []T
+
 type FloatSlice[T Floats] []T
+
 type ComplexSlice[T Complexes] []T
+
 type StringSlice[T string] []T
+
 type BoolSlice[T bool] []T
 
 type Slice[T Integers | Uintegers | Floats] []T

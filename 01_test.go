@@ -11,12 +11,12 @@ import (
 	"time"
 	"unsafe"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/internal/cl"
 	"github.com/hedzr/evendeep/ref"
 	logz "github.com/hedzr/logg/slog"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
 // TestLogNormal _
@@ -31,11 +31,13 @@ func TestLogNormal(t *testing.T) {
 	logz.Trace("hello trace")
 
 	dbglog.Log("but again")
+
+	t.Log()
 }
 
 // TestErrorsTmpl _
 func TestErrorsTmpl(t *testing.T) {
-	var errTmpl = errors.New("expecting %v but got %v")
+	errTmpl := errors.New("expecting %v but got %v")
 
 	var err error
 	err = errTmpl.FormatWith("789", "123")
@@ -65,7 +67,7 @@ func TestErrorsIs(t *testing.T) {
 
 func TestSliceLen(t *testing.T) {
 	var str []string
-	var v = reflect.ValueOf(&str)
+	v := reflect.ValueOf(&str)
 
 	// make value to adopt element's type - in this case string type
 
@@ -92,7 +94,7 @@ func TestSliceLen(t *testing.T) {
 }
 
 func TestUnexported(t *testing.T) {
-	var s = struct{ foo int }{42}
+	s := struct{ foo int }{42}
 	var i int
 
 	rs := reflect.ValueOf(&s).Elem() // s, but writable
@@ -165,9 +167,9 @@ func TestValueValid(t *testing.T) {
 func TestDbgLog_ChildLogEnabled(t *testing.T) {
 	t.Logf("child-enabled: %v", dbglog.ChildLogEnabled())
 
-	cl := dbglog.CaptureLog(t)
-	defer cl.Release()
-	if w, ok := cl.(io.Writer); ok {
+	caplog := dbglog.CaptureLog(t)
+	defer caplog.Release()
+	if w, ok := caplog.(io.Writer); ok {
 		w.Write([]byte("hello"))
 	}
 

@@ -16,7 +16,7 @@ func FormatComplex(c complex128, fmt byte, prec, bitSize int) string {
 	if bitSize != 64 && bitSize != 128 {
 		panic("invalid bitSize")
 	}
-	bitSize >>= 1 // complex64 uses float32 internally
+	bitSize >>= 1 //nolint:revive // complex64 uses float32 internally
 
 	// Check if imaginary part has a sign. If not, add one.
 	im := strconv.FormatFloat(imag(c), fmt, prec, bitSize)

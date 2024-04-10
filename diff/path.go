@@ -14,9 +14,9 @@ func (dp Path) String() string {
 	var sb strings.Builder
 	for _, p := range dp.parts {
 		if sb.Len() > 0 {
-			sb.WriteRune('.')
+			_, _ = sb.WriteRune('.')
 		}
-		sb.WriteString(p.String())
+		_, _ = sb.WriteString(p.String())
 	}
 	return sb.String()
 }

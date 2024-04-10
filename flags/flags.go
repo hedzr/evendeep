@@ -39,23 +39,22 @@ func (flags Flags) String() string {
 	for fx, ok := range flags {
 		if ok {
 			if sb.Len() > 0 {
-				sb.WriteRune(',')
+				_, _ = sb.WriteRune(',')
 			}
-			sb.WriteString(fx.String())
+			_, _ = sb.WriteString(fx.String())
 		}
 	}
 
-	sbfinal.WriteRune('[')
-	sbfinal.WriteString(sb.String())
-	sbfinal.WriteRune(']')
+	_, _ = sbfinal.WriteRune('[')
+	_, _ = sbfinal.WriteString(sb.String())
+	_, _ = sbfinal.WriteRune(']')
 
 	return sbfinal.String()
 }
 
-func (flags Flags) StringEx() string {
+func (flags Flags) StringEx() string { //nolint:revive
 	var sb, sbfinal strings.Builder
-	var cache = make(Flags)
-
+	cache := make(Flags)
 	for fx, ok := range flags {
 		if ok {
 			cache[fx] = ok
@@ -78,14 +77,14 @@ func (flags Flags) StringEx() string {
 
 	for _, fx := range keys {
 		if sb.Len() > 0 {
-			sb.WriteRune(',')
+			_, _ = sb.WriteRune(',')
 		}
-		sb.WriteString((cms.CopyMergeStrategy(fx)).String())
+		_, _ = sb.WriteString((cms.CopyMergeStrategy(fx)).String())
 	}
 
-	sbfinal.WriteRune('[')
-	sbfinal.WriteString(sb.String())
-	sbfinal.WriteRune(']')
+	_, _ = sbfinal.WriteRune('[')
+	_, _ = sbfinal.WriteString(sb.String())
+	_, _ = sbfinal.WriteRune(']')
 
 	return sbfinal.String()
 }
@@ -120,10 +119,9 @@ func (flags Flags) IsFlagOK(ftf cms.CopyMergeStrategy) bool {
 	return false
 }
 
-func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMergeStrategy) { //nolint:lll,unused //i know that
+func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMergeStrategy) { //nolint:revive,lll,unused //i know that
 	var ok, val bool
 	result = cms.InvalidStrategy
-
 	if val, ok = flags[ftf]; ok && val {
 		result = ftf
 		return
@@ -162,8 +160,7 @@ func (flags Flags) testGroupedFlag(ftf cms.CopyMergeStrategy) (result cms.CopyMe
 	return
 }
 
-func (flags Flags) leader(ff cms.CopyMergeStrategy,
-	vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
+func (flags Flags) leader(ff cms.CopyMergeStrategy, vm map[cms.CopyMergeStrategy]struct{}) (leader cms.CopyMergeStrategy) {
 	leader = cms.InvalidStrategy
 	if _, ok1 := mKnownFieldTagFlagsConflictLeaders[ff]; ok1 {
 		leader = ff
@@ -182,7 +179,7 @@ func (flags Flags) leader(ff cms.CopyMergeStrategy,
 // group (such as map-copy and map-merge), and, any of the group is
 // not exists (either map-copy and map-merge), IsGroupedFlagOK will
 // report true just like map-copy was in Flags.
-func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) { //nolint:gocognit //i know that
+func (flags Flags) IsGroupedFlagOK(ftf ...cms.CopyMergeStrategy) (ok bool) { //nolint:revive,gocognit //i know that
 	if flags != nil {
 		for _, ff := range ftf {
 			if _, ok = flags[ff]; ok {
@@ -282,7 +279,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 	flags = New()
 
 	if tagName == "" {
-		tagName = "copy"
+		tagName = "copy" //nolint:revive
 	}
 
 	tags := s.Get(tagName)
@@ -327,6 +324,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 
 // NameConvertRule wraps the rule with string representations into a struct.
 type NameConvertRule string
+
 type nameConvertRule struct {
 	Valid     bool
 	IsIgnored bool

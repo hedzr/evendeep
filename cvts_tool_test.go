@@ -65,7 +65,6 @@ func TestForBool(t *testing.T) {
 }
 
 func TestToBool(t *testing.T) {
-
 	for _, vi := range []typ.Any{
 		false,
 		0,
@@ -111,7 +110,6 @@ func TestToBool(t *testing.T) {
 			t.Fatalf("for %v (%v) toBool failed", vi, ref.Typfmtv(&v2))
 		}
 	}
-
 }
 
 func TestForInteger(t *testing.T) {
@@ -139,7 +137,6 @@ func TestForInteger(t *testing.T) {
 	if x := rForInteger(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
-
 }
 
 func TestToInteger(t *testing.T) {
@@ -289,7 +286,6 @@ func TestForFloat(t *testing.T) {
 	if x := rForFloat(v1).Interface(); x != "0" {
 		t.Fatalf("failed, x = %v", x)
 	}
-
 }
 
 func TestToFloat(t *testing.T) {
@@ -344,7 +340,6 @@ func TestForComplex(t *testing.T) {
 	if x := rForComplex(v1).Interface(); x != "(0+0i)" {
 		t.Fatalf("failed, x = %v", x)
 	}
-
 }
 
 func TestToComplex(t *testing.T) {
@@ -388,7 +383,7 @@ func TestBytesBufferConverter_Transform(t *testing.T) {
 	}
 }
 
-func TestToStringConverter_Transform(t *testing.T) {
+func TestToStringConverter_Transform(t *testing.T) { //nolint:revive
 	var bbc toStringConverter
 	tgtType := reflect.TypeOf((*string)(nil)).Elem()
 
@@ -423,7 +418,7 @@ func TestToStringConverter_Transform(t *testing.T) {
 			t.Fatalf("convert failed, want %q but got %q", exp, x)
 		}
 
-		var tgtstr = "1"
+		tgtstr := "1"
 		tgt = reflect.ValueOf(&tgtstr).Elem()
 		dbglog.Log("target/; %v %v", ref.Valfmt(&tgt), ref.Typfmtv(&tgt))
 		err = bbc.CopyTo(nil, svv, tgt)
@@ -443,8 +438,8 @@ func TestToStringConverter_Transform(t *testing.T) {
 	type sss struct {
 		string
 	}
-	var sss1 = sss{"hello"}
-	var exp = "{hello}"
+	sss1 := sss{"hello"}
+	exp := "{hello}"
 
 	svv := reflect.ValueOf(sss1)
 	// src := rdecodesimple(svv)
@@ -470,7 +465,7 @@ var tgtTypes = map[reflect.Kind]reflect.Type{
 	reflect.Uintptr:    reflect.TypeOf((*uintptr)(nil)).Elem(),
 }
 
-func TestFromStringConverter_Transform(t *testing.T) {
+func TestFromStringConverter_Transform(t *testing.T) { //nolint:revive
 	var bbc fromStringConverter
 
 	for src, tgtm := range map[string]map[reflect.Kind]typ.Any{
@@ -507,19 +502,17 @@ func TestFromStringConverter_Transform(t *testing.T) {
 			}
 		}
 	}
-
 }
 
-func TestToDurationConverter_Transform(t *testing.T) {
+func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 	var bbc fromStringConverter
-	var dur = 3 * time.Second
-
-	var v = reflect.ValueOf(dur)
+	dur := 3 * time.Second
+	v := reflect.ValueOf(dur)
 	t.Logf("dur: %v (%v, kind: %v, name: %v, pkgpath: %v)", dur, ref.Typfmtv(&v), v.Kind(), v.Type().Name(), v.Type().PkgPath())
 
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
 
-	var src typ.Any = int64(13 * time.Hour)
+	src := typ.Any(int64(13 * time.Hour))
 	svv := reflect.ValueOf(src)
 	tgt, err := bbc.Transform(nil, svv, tgtType)
 	if err != nil {
@@ -528,7 +521,6 @@ func TestToDurationConverter_Transform(t *testing.T) {
 	t.Logf("res: %v (%v)", tgt.Interface(), ref.Typfmtv(&tgt))
 
 	t.Run("toDurationConverter = pre", func(t *testing.T) {
-
 		for ix, cas := range []struct {
 			src, tgt, expect typ.Any
 		}{
@@ -536,8 +528,8 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			{"9h71ms", &dur, 9*time.Hour + 71*time.Millisecond},
 			{int64(13 * time.Hour), &dur, 13 * time.Hour},
 		} {
-			var c = newDeepCopier()
-			// var ctx = newValueConverterContextForTest(c)
+			c := newDeepCopier()
+			// ctx := newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
 			err = c.CopyTo(cas.src, cas.tgt)
 			// tgt, err = bbc.Transform(ctx, svv, tgtType)
@@ -549,13 +541,11 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			}
 			t.Logf("res #%d: %v", ix, dur)
 		}
-
 	})
 
 	//
 
 	t.Run("fromDurationConverter - normal test", func(t *testing.T) {
-
 		inttyp := reflect.TypeOf((*int)(nil)).Elem()
 		int64typ := reflect.TypeOf((*int64)(nil)).Elem()
 		stringtyp := reflect.TypeOf((*string)(nil)).Elem()
@@ -573,8 +563,8 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			{13 * time.Hour, &dur, true, booltyp},
 			{0 * time.Hour, &dur, false, booltyp},
 		} {
-			var c = newDeepCopier()
-			var ctx = newValueConverterContextForTest(c)
+			c := newDeepCopier()
+			ctx := newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
 			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err = fdc.Transform(ctx, svv, cas.desiredType)
@@ -586,13 +576,11 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
-
 	})
 
 	//
 
 	t.Run("toDurationConverter - normal test", func(t *testing.T) {
-
 		var tdc toDurationConverter
 
 		for ix, cas := range []struct {
@@ -604,8 +592,8 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			{false, &dur, 0 * time.Second},
 			{true, &dur, 1 * time.Nanosecond},
 		} {
-			var c = newDeepCopier()
-			var ctx = newValueConverterContextForTest(c)
+			c := newDeepCopier()
+			ctx := newValueConverterContextForTest(c)
 			svv = reflect.ValueOf(cas.src)
 			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err = tdc.Transform(ctx, svv, tgtType)
@@ -617,7 +605,6 @@ func TestToDurationConverter_Transform(t *testing.T) {
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
-
 	})
 
 	// var c = newDeepCopier()
@@ -669,16 +656,14 @@ func TestToDurationConverter_Transform(t *testing.T) {
 
 func TestToDurationConverter_fallback(t *testing.T) {
 	var tdfs toDurationConverter
-	var dur = 3 * time.Second
-	var v = reflect.ValueOf(&dur)
+	dur := 3 * time.Second
+	v := reflect.ValueOf(&dur)
 	_ = tdfs.fallback(v)
 	t.Logf("dur: %v", dur)
 }
 
-func TestToTimeConverter_Transform(t *testing.T) {
-
+func TestToTimeConverter_Transform(t *testing.T) { //nolint:revive
 	t.Run("fromTimeConverter - normal test", func(t *testing.T) {
-
 		inttyp := reflect.TypeOf((*int)(nil)).Elem()
 		int64typ := reflect.TypeOf((*int64)(nil)).Elem()
 		stringtyp := reflect.TypeOf((*string)(nil)).Elem()
@@ -698,11 +683,11 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			{"2001-02-03 04:05:06.078912", &dur, int64(981173106), int64typ},
 			{"2001-02-03 04:05:06.078912", &dur, float64(981173106.078912), floattyp},
 		} {
-			var c = newDeepCopier()
-			var ctx = newValueConverterContextForTest(c)
-			var tm, err = time.Parse("2006-01-02 15:04:05.000000", cas.src)
+			c := newDeepCopier()
+			ctx := newValueConverterContextForTest(c)
+			tm, err := time.Parse("2006-01-02 15:04:05.000000", cas.src)
 			t.Logf("%q parsed: %v (%v)", cas.src, tm, err)
-			var svv = reflect.ValueOf(tm)
+			svv := reflect.ValueOf(tm)
 			// err = c.CopyTo(cas.src, cas.tgt)
 			tgt, err := ftc.Transform(ctx, svv, cas.desiredType)
 			if err != nil {
@@ -713,11 +698,9 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
 		}
-
 	})
 
 	t.Run("toTimeConverter - normal test", func(t *testing.T) {
-
 		var tdc toTimeConverter
 		var tm time.Time
 		layout := "2006-01-02 15:04:05.999999999Z07:00"
@@ -732,11 +715,11 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			{int64(981173106), &tm, "2001-02-03 04:05:06Z"},
 			{float64(981173106.078912), &tm, "2001-02-03 04:05:06.078912019Z"},
 		} {
-			var c = newDeepCopier()
-			var ctx = newValueConverterContextForTest(c)
-			var svv = reflect.ValueOf(cas.src)
+			c := newDeepCopier()
+			ctx := newValueConverterContextForTest(c)
+			svv := reflect.ValueOf(cas.src)
 			// err = c.CopyTo(cas.src, cas.tgt)
-			var tgt, err = tdc.Transform(ctx, svv, tgtType)
+			tgt, err := tdc.Transform(ctx, svv, tgtType)
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
@@ -746,16 +729,15 @@ func TestToTimeConverter_Transform(t *testing.T) {
 			}
 			t.Logf("res #%d: %v (%v)", ix, got, ref.Typfmt(tgt.Type()))
 		}
-
 	})
 }
 
 func TestFromStringConverter_defaultTypes(t *testing.T) {
 	var fss fromStringConverter
-	var src = "987"
-	var dst = 3.3
-	var svv = reflect.ValueOf(src)
-	var dvv = reflect.ValueOf(&dst)
+	src := "987"
+	dst := 3.3
+	svv := reflect.ValueOf(src)
+	dvv := reflect.ValueOf(&dst)
 
 	ctx := newValueConverterContextForTest(newDeepCopier())
 	ret, err := fss.convertToOrZeroTarget(ctx, svv, dvv.Type().Elem())
@@ -768,10 +750,10 @@ func TestFromStringConverter_defaultTypes(t *testing.T) {
 func TestFromStringConverter_postCopyTo(t *testing.T) {
 	var fss fromStringConverter
 
-	var src = "987"
-	var dst = 3.3
-	var svv = reflect.ValueOf(src)
-	var dvv = reflect.ValueOf(&dst)
+	src := "987"
+	dst := 3.3
+	svv := reflect.ValueOf(src)
+	dvv := reflect.ValueOf(&dst)
 
 	c := newDeepCopier().withFlags(cms.ClearIfInvalid)
 	ctx := newValueConverterContextForTest(c)
@@ -784,17 +766,17 @@ func TestFromStringConverter_postCopyTo(t *testing.T) {
 
 func TestToStringConverter_postCopyTo(t *testing.T) {
 	var fss toStringConverter
-	var src = struct {
+	src := struct {
 		fval float64
 	}{3.3}
-	var dst = struct {
+	dst := struct {
 		fval string
 	}{}
-	var svv = reflect.ValueOf(&src)
-	var dvv = reflect.ValueOf(&dst)
-	var sf1 = ref.Rindirect(svv).Field(0)
-	var df1 = ref.Rindirect(dvv).Field(0)
-	// var sft = reflect.TypeOf(src).Field(0)
+	svv := reflect.ValueOf(&src)
+	dvv := reflect.ValueOf(&dst)
+	sf1 := ref.Rindirect(svv).Field(0)
+	df1 := ref.Rindirect(dvv).Field(0)
+	// sft := reflect.TypeOf(src).Field(0)
 
 	ctx := &ValueConverterContext{
 		Params: &Params{
@@ -825,8 +807,10 @@ func TestToStringConverter_postCopyTo(t *testing.T) {
 	t.Logf("ret: %v (%v)", dst, ref.Typfmtv(&dvv))
 }
 
-type si1 struct{}
-type si2 struct{}
+type (
+	si1 struct{}
+	si2 struct{}
+)
 
 func (*si2) String() string { return "i2" }
 
@@ -888,8 +872,8 @@ func TestFromFuncConverterAlongMainEntry(t *testing.T) {
 		Bv int
 	}
 
-	var a1 = A1{func() (int, error) { return 3, nil }}
-	var b1 = B1{1}
+	a1 := A1{func() (int, error) { return 3, nil }}
+	b1 := B1{1}
 
 	// test for fromFuncConverter along Copy -> cpController.findConverters
 	Copy(&a1, &b1)
@@ -914,16 +898,16 @@ func TestFromFuncConverter(t *testing.T) {
 		C *C
 		B bool
 	}
-	var a0 = A{
+	a0 := A{
 		func() C { return C{7, true} },
 		func() bool { return false },
 	}
-	var b0 = B{nil, true}
-	var b1 = B{&C{7, true}, false}
+	b0 := B{nil, true}
+	b1 := B{&C{7, true}, false}
 
 	var boolTgt bool
-	var intTgt = 1
-	var stringTgt = "world"
+	intTgt := 1
+	stringTgt := "world"
 
 	lazyInitRoutines()
 
@@ -939,13 +923,15 @@ func TestFromFuncConverter(t *testing.T) {
 
 		// {func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
 
-		{func() A { return a0 },
+		{
+			func() A { return a0 },
 			&b0,
 			b1,
 			nil,
 		},
 
-		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
+		{
+			func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
 			&map[string]interface{}{"k": 1, "hello": "bob"},
 			map[string]interface{}{"hello": "world", "k": 1},
 			nil,

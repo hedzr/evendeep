@@ -5,17 +5,17 @@ import (
 	"reflect"
 	"testing"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
 	logz "github.com/hedzr/logg/slog"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
-func HelperAssertYes(t *testing.T, b bool, expect, got typ.Any) { //nolint:thelper
+func HelperAssertYes(t *testing.T, b bool, expect, got typ.Any) { //nolint:revive,thelper
 	if !b {
 		t.Fatalf("expecting %v but got %v", expect, got)
 	}
@@ -56,7 +56,7 @@ func TestNewForTest(t *testing.T) {
 		WithStringMarshaller(nil),
 	)
 
-	var a = 1
+	a := 1
 	var b int
 	if err := copier.CopyTo(a, &b); err != nil {
 		t.Error("bad")
@@ -68,19 +68,20 @@ func NewForTest() DeepCopier {
 	var copier DeepCopier
 
 	lazyInitRoutines()
-	var c1 = newCopier()
+
+	c1 := newCopier()
 	WithStrategies(cms.SliceMerge, cms.MapMerge)(c1)
-	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceMerge, cms.MapMerge, cms.OmitIfEmpty, cms.Default) == false {
+	if !c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceMerge, cms.MapMerge, cms.OmitIfEmpty, cms.Default) {
 		logz.Panic("except flag set with optional values but not matched, 1")
 	}
 	c1 = newDeepCopier()
 	WithStrategies(cms.SliceCopyAppend, cms.MapCopy)(c1)
-	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopyAppend, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
+	if !c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopyAppend, cms.MapCopy, cms.OmitIfEmpty, cms.Default) {
 		logz.Panic("except flag set with optional values but not matched, 2")
 	}
 	c1 = newCloner()
 	WithStrategies(cms.SliceCopy)(c1)
-	if c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopy, cms.MapCopy, cms.OmitIfEmpty, cms.Default) == false {
+	if !c1.flags.IsAnyFlagsOK(cms.ByOrdinal, cms.SliceCopy, cms.MapCopy, cms.OmitIfEmpty, cms.Default) {
 		logz.Panic("except flag set with optional values but not matched, 3")
 	}
 
@@ -197,7 +198,7 @@ func DefaultDeepCopyTestRunner(ix int, tc TestCase, opts ...Opt) func(t *testing
 }
 
 // runTestCases _
-func runTestCases(t *testing.T, cases ...TestCase) {
+func runTestCases(t *testing.T, cases ...TestCase) { //nolint:unused
 	for ix, tc := range cases {
 		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description),
 			DefaultDeepCopyTestRunner(ix, tc)) {
@@ -207,7 +208,7 @@ func runTestCases(t *testing.T, cases ...TestCase) {
 }
 
 // runTestCasesWithOpts _
-func runTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
+func runTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) { //nolint:unused
 	for ix, tc := range cases {
 		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), DefaultDeepCopyTestRunner(ix, tc, opts...)) {
 			break
@@ -216,10 +217,12 @@ func runTestCasesWithOpts(t *testing.T, cases []TestCase, opts ...Opt) {
 }
 
 func DoTestCasesVerifier(t *testing.T) Verifier {
+	t.Log()
 	return func(src, dst, expect typ.Any, e error) (err error) {
 		a, b := reflect.ValueOf(dst), reflect.ValueOf(expect)
 		aa, _ := ref.Rdecode(a)
 		bb, _ := ref.Rdecode(b)
+		_, _ = src, dst
 		av, bv := aa.Interface(), bb.Interface()
 		logz.Print("mismatched",
 			logz.Group("expect", "bv", bv, "typ", ref.Typfmtv(&bb), "t", aa.Type()),
@@ -231,7 +234,7 @@ func DoTestCasesVerifier(t *testing.T) Verifier {
 			diff.WithStripPointerAtFirst(true),
 		)
 		if !equal {
-			fmt.Println(dif)
+			_, _ = fmt.Println(dif)
 			err = errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif).WithErrors(e)
 			return
 		}

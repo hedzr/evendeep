@@ -1,14 +1,13 @@
 package evendeep
 
 import (
+	"reflect"
 	"strconv"
+	"testing"
 
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
-
-	"reflect"
-	"testing"
 )
 
 func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) {
@@ -25,7 +24,7 @@ func testDeepEqual(printer func(msg string, args ...interface{}), got, expect ty
 
 func TestTestDeepEqual(t *testing.T) {
 	// defer dbglog.NewCaptureLog(t).Release()
-	var mm = []map[string]bool{
+	mm := []map[string]bool{
 		nil, nil,
 	}
 
@@ -40,13 +39,12 @@ func TestTestDeepEqual(t *testing.T) {
 }
 
 func TestCopyChan(t *testing.T) {
-
 	c := newCopier()
 	// params := newParams(withOwnersSimple(c, nil))
 
 	var err error
-	var so = make(chan struct{})
 	var to chan struct{}
+	so := make(chan struct{})
 
 	err = copyChan(c, nil, reflect.ValueOf(so), reflect.ValueOf(&to))
 	if err != nil {
@@ -67,6 +65,7 @@ func TestCopyUnsafePointer(t *testing.T) {
 	// var to int
 	// reflect.NewAt()
 	// copyUnsafePointer(c, from, to)
+	t.Log()
 }
 
 func TestCopySlice_differModes(t *testing.T) {
@@ -77,12 +76,12 @@ func TestCopySlice_differModes(t *testing.T) {
 
 	// flags.LazyInitFieldTagsFlags()
 
-	var so = []int{9, 77}
-	var to = []int{}
+	so := []int{9, 77}
+	to := []int{}
 	var err error
 
-	var src = reflect.ValueOf(&so)
-	var tgt = reflect.ValueOf(&to)
+	src := reflect.ValueOf(&so)
+	tgt := reflect.ValueOf(&to)
 
 	err = copySlice(c, params, ref.Rdecodesimple(src), ref.Rdecodesimple(tgt))
 	if err != nil {
@@ -153,7 +152,6 @@ func TestCopySlice_differModes(t *testing.T) {
 		t.Logf("tgt = %v", to)
 		testDeepEqual(t.Errorf, to, []int{3, 77, 2, 15})
 	}
-
 }
 
 func TestCopySlice_mergeMode(t *testing.T) {
@@ -162,12 +160,12 @@ func TestCopySlice_mergeMode(t *testing.T) {
 	c := newCopier().withFlags(cms.SliceMerge, cms.MapMerge)
 	params := newParams(withOwnersSimple(c, nil))
 
-	var so = []int{9, 77}
-	var to = []int{}
+	so := []int{9, 77}
+	to := []int{}
 	var err error
 
-	var src = reflect.ValueOf(&so)
-	var tgt = reflect.ValueOf(&to)
+	src := reflect.ValueOf(&so)
+	tgt := reflect.ValueOf(&to)
 
 	err = copySlice(c, params, ref.Rdecodesimple(src), ref.Rdecodesimple(tgt))
 	if err != nil {
@@ -186,7 +184,6 @@ func TestCopySlice_mergeMode(t *testing.T) {
 		t.Logf("tgt = %v", to)
 		testDeepEqual(t.Errorf, to, []int{2, 77, 9})
 	}
-
 }
 
 func TestCopyArray(t *testing.T) {
@@ -195,12 +192,12 @@ func TestCopyArray(t *testing.T) {
 	c := newCopier().withFlags()
 	params := newParams(withOwnersSimple(c, nil))
 
-	var so = [3]int{9, 77, 13}
-	var to = [5]int{}
+	so := [3]int{9, 77, 13}
+	to := [5]int{}
 	var err error
 
-	var src = reflect.ValueOf(&so)
-	var tgt = reflect.ValueOf(&to)
+	src := reflect.ValueOf(&so)
+	tgt := reflect.ValueOf(&to)
 
 	err = copyArray(c, nil, src, tgt)
 	if err != nil {
@@ -227,19 +224,18 @@ func TestCopyArray(t *testing.T) {
 		t.Logf("tgt = %v", to2)
 		testDeepEqual(t.Errorf, to2, [2]int{9, 77})
 	}
-
 }
 
 func TestCopyStructSlice(t *testing.T) {
-
+	t.Log()
 }
 
-func TestPointerOfPre(t *testing.T) {
+func TestPointerOfPre(t *testing.T) { //nolint:revive
 	type A struct {
 		A int
 	}
-	var a = &A{9}
-	var b = &a
+	a := &A{9}
+	b := &a
 	t.Logf("a = %v, %p", a, a)
 	t.Logf("b = %v", b)
 	av := reflect.ValueOf(a)
@@ -248,10 +244,10 @@ func TestPointerOfPre(t *testing.T) {
 	np := reflect.New(av.Type())
 	t.Logf("np = %v, typ = %v", ref.Valfmt(&np), ref.Typfmtv(&np))
 
-	typ := av.Type() // type of *A
-	val := reflect.New(typ)
+	typ1 := av.Type() // type of *A
+	val := reflect.New(typ1)
 	valElem := val.Elem()
-	ptr, _ := newFromType(typ.Elem())
+	ptr, _ := newFromType(typ1.Elem())
 	valElem.Set(ptr)
 	t.Logf("ptr = %+v", *(val.Interface().(**A)))
 

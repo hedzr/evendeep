@@ -1,9 +1,9 @@
 package flags
 
 import (
-	"github.com/hedzr/evendeep/flags/cms"
-
 	"sync"
+
+	"github.com/hedzr/evendeep/flags/cms"
 )
 
 // lazyInitFieldTagsFlags initialize something.
@@ -40,7 +40,7 @@ func lazyInitFieldTagsFlags() {
 	})
 }
 
-func conflictsAdd(ss ...string) {
+func conflictsAdd(ss ...string) { //nolint:revive
 	// ss := strings.Split(s, ",")
 	if mKnownFieldTagFlagsConflict == nil {
 		mKnownFieldTagFlagsConflict = make(map[cms.CopyMergeStrategy]map[cms.CopyMergeStrategy]struct{})
@@ -64,11 +64,13 @@ func conflictsAdd(ss ...string) {
 	}
 }
 
-var onceFieldTagsEquip sync.Once //nolint:gochecknoglobals //i know that
+var (
+	onceFieldTagsEquip sync.Once //nolint:gochecknoglobals //i know that
 
-// var mKnownFieldTagFlags map[fieldTagFlag]struct{}
+	//  mKnownFieldTagFlags map[fieldTagFlag]struct{}
 
-var mKnownFieldTagFlagsConflict map[cms.CopyMergeStrategy]map[cms.CopyMergeStrategy]struct{} //nolint:lll,gochecknoglobals //i know that
-var mKnownFieldTagFlagsConflictLeaders map[cms.CopyMergeStrategy]struct{}                    //nolint:lll,gochecknoglobals //i know that
-var mKnownStrategyGroup []cms.CopyMergeStrategies                                            //nolint:lll,unused,gochecknoglobals //i know that
+	mKnownFieldTagFlagsConflict        map[cms.CopyMergeStrategy]map[cms.CopyMergeStrategy]struct{} //nolint:lll,gochecknoglobals //i know that
+	mKnownFieldTagFlagsConflictLeaders map[cms.CopyMergeStrategy]struct{}                           //nolint:lll,gochecknoglobals //i know that
+	mKnownStrategyGroup                []cms.CopyMergeStrategies                                    //nolint:lll,unused,gochecknoglobals //i know that
 // the toggleable radio groups
+)

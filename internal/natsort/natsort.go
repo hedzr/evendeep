@@ -69,17 +69,17 @@ func Less(str1, str2 string) bool {
 	return len(str1) < len(str2)
 }
 
-func digitsLess(str1, str2 string, idx1, idx2 int) bool {
+func digitsLess(str1, str2 string, idx1, idx2 int) bool { //nolint:revive
 	// Eat zeros.
-	for ; idx1 < len(str1) && str1[idx1] == '0'; idx1++ {
+	for ; idx1 < len(str1) && str1[idx1] == '0'; idx1++ { //nolint:revive
 	}
-	for ; idx2 < len(str2) && str2[idx2] == '0'; idx2++ {
+	for ; idx2 < len(str2) && str2[idx2] == '0'; idx2++ { //nolint:revive
 	}
 	// Eat all digits.
 	nonZero1, nonZero2 := idx1, idx2
-	for ; idx1 < len(str1) && isdigit(str1[idx1]); idx1++ {
+	for ; idx1 < len(str1) && isdigit(str1[idx1]); idx1++ { //nolint:revive
 	}
-	for ; idx2 < len(str2) && isdigit(str2[idx2]); idx2++ {
+	for ; idx2 < len(str2) && isdigit(str2[idx2]); idx2++ { //nolint:revive
 	}
 	// If lengths of numbers with non-zero prefix differ, the shorter
 	// one is less.

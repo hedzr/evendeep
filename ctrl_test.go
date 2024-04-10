@@ -13,15 +13,14 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/hedzr/evendeep/ref"
+	"gopkg.in/hedzr/errors.v3"
 
 	"github.com/hedzr/evendeep"
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/flags/cms"
+	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
 const (
@@ -169,7 +168,6 @@ func TestDeepCopyableSource(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-
 	// var dInt = 9
 	// var dStr = worldString
 
@@ -248,16 +246,14 @@ func TestSimple(t *testing.T) {
 	} {
 		t.Run(evendeep.RunTestCasesWith(&tc)) // nolint:gosec // G601: Implicit memory aliasing in for loop
 	}
-
 }
 
 func TestTypeConvert(t *testing.T) {
-
-	var i9 = 9
-	var i5 = 5
-	var ui6 = uint(6)
+	var i9 int = 9
+	var i5 int = 5
+	var ui6 uint = 6
 	var i64 int64 = 10
-	var f64 = 9.1
+	var f64 float64 = 9.1
 
 	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
@@ -324,20 +320,19 @@ func TestTypeConvert(t *testing.T) {
 }
 
 func TestTypeConvert2Slice(t *testing.T) {
-
-	var i9 = 9
-	var i5 = 5
+	var i9 int = 9
+	var i5 int = 5
 	// var ui6 = uint(6)
 	// var i64 int64 = 10
 	// var f64 float64 = 9.1
 
 	// slice
 
-	var si64 = []int64{9}
-	var si = []int{9}
-	var sui = []uint{9}
-	var sf64 = []float64{9.1}
-	var sc128 = []complex128{9.1}
+	var si64 []int64 = []int64{9}
+	var si []int = []int{9}
+	var sui []uint = []uint{9}
+	var sf64 []float64 = []float64{9.1}
+	var sc128 []complex128 = []complex128{9.1}
 
 	opts := []evendeep.Opt{
 		evendeep.WithStrategies(cms.SliceMerge),
@@ -454,7 +449,7 @@ func TestTypeConvert3Func(t *testing.T) {
 	}
 
 	i1 := 0
-	b1 := func(i []int) (int, error) { i1 = i[0] * 2; return i1, nil }
+	b1 := func(i []int) (int, error) { i1 = i[0] * 2; return i1, nil } //nolint:unparam
 	// var e1 error
 	b2 := func(i int) (int, error) {
 		if i > 0 {
@@ -511,13 +506,12 @@ func TestErrorCodeIs(t *testing.T) {
 }
 
 func TestStructStdlib(t *testing.T) {
-
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm1 := time.Date(1979, 1, 29, 13, 3, 49, 19730313, timeZone2)
 	var tgt time.Time
 	var dur time.Duration
-	var dur1 = 13*time.Second + 3*time.Nanosecond
+	var dur1 time.Duration = 13*time.Second + 3*time.Nanosecond
 	var bb, bb1 bytes.Buffer
 	bb1.WriteString("hellp world")
 	var b, be []byte
@@ -570,7 +564,6 @@ func TestStructStdlib(t *testing.T) {
 	} {
 		t.Run(evendeep.RunTestCasesWith(&tc)) // nolint:gosec // G601: Implicit memory aliasing in for loop
 	}
-
 }
 
 func TestStructSimple(t *testing.T) {
@@ -580,7 +573,7 @@ func TestStructSimple(t *testing.T) {
 	var a [2]string
 	a[0] = aHelloString
 	a[1] = aWorldString
-	var a3 = [3]string{aHelloString, aWorldString}
+	a3 := [3]string{aHelloString, aWorldString}
 
 	x0 := evendeep.X0{}
 	x1 := evendeep.X1{
@@ -659,7 +652,6 @@ func TestStructSimple(t *testing.T) {
 }
 
 func TestStructEmbedded(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
@@ -725,7 +717,6 @@ func TestStructEmbedded(t *testing.T) {
 }
 
 func TestStructToSliceOrMap(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -749,7 +740,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 	var slice1 []evendeep.User
 	var slice2 []*evendeep.User
 
-	var map1 = make(map[string]typ.Any)
+	map1 := make(map[string]typ.Any)
 
 	expect1 := evendeep.User{
 		Name:      "Bob",
@@ -813,7 +804,8 @@ func TestStructToSliceOrMap(t *testing.T) {
 				}),
 				evendeep.WithMergeStrategyOpt,
 				evendeep.WithAutoExpandStructOpt,
-				evendeep.WithAutoNewForStructFieldOpt},
+				evendeep.WithAutoNewForStructFieldOpt,
+			},
 			nil,
 		),
 
@@ -896,7 +888,7 @@ func TestStructWithTargetSetter_struct2struct(t *testing.T) {
 	}
 
 	setStructByName := func(s reflect.Value, fld string, val reflect.Value) {
-		var f = s.FieldByName(fld)
+		f := s.FieldByName(fld)
 		if f.IsValid() {
 			if val.Type().ConvertibleTo(f.Type()) {
 				f.Set(val.Convert(f.Type()))
@@ -979,7 +971,7 @@ func TestStructWithTargetSetter_map2struct(t *testing.T) {
 	}
 
 	setStructByName := func(s reflect.Value, fldName string, value reflect.Value) {
-		var f = s.FieldByName(fldName)
+		f := s.FieldByName(fldName)
 		if f.IsValid() {
 			if value.Type().ConvertibleTo(f.Type()) {
 				dbglog.Log("struct.%q <- %v", fldName, ref.Valfmt(&value))
@@ -1060,7 +1052,7 @@ func TestStructWithCmsByNameStrategy(t *testing.T) {
 	}
 
 	src := &aS{A: 6, b: true, C: helloString}
-	var tgt = bS{Z: 1}
+	tgt := bS{Z: 1}
 
 	// use ByName strategy,
 	// use copyFunctionResultsToTarget
@@ -1085,7 +1077,7 @@ func TestStructWithNameConversions(t *testing.T) {
 	}
 
 	src := &srcS{A: 6, B: true, C: helloString}
-	var tgt = dstS{A1: 1}
+	tgt := dstS{A1: 1}
 
 	// use ByName strategy,
 	err := evendeep.New().CopyTo(src, &tgt, evendeep.WithByNameStrategyOpt)
@@ -1100,7 +1092,6 @@ func TestStructWithNameConverter(t *testing.T) {
 }
 
 func TestSliceSimple(t *testing.T) {
-
 	tgt := []float32{3.1, 4.5, 9.67}
 	itgt := []int{13, 5}
 
@@ -1127,7 +1118,6 @@ func TestSliceSimple(t *testing.T) {
 }
 
 func TestSliceTypeConvert(t *testing.T) {
-
 	// tgt := []float32{3.1, 4.5, 9.67}
 	// itgt := []int{13, 5}
 	stgt := []string{"-", "2.718280076980591"}
@@ -1200,7 +1190,6 @@ func TestSliceTypeConvert(t *testing.T) {
 }
 
 func TestMapSimple(t *testing.T) {
-
 	src := map[int64]float64{7: 0, 3: 7.18}
 	tgt := map[int]float32{1: 3.1, 2: 4.5, 3: 9.67}
 	exp := map[int]float32{1: 3.1, 2: 4.5, 3: 7.18, 7: 0}
@@ -1228,7 +1217,6 @@ func TestMapSimple(t *testing.T) {
 }
 
 func TestMapAndStruct(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -1353,7 +1341,6 @@ func TestMapAndStruct(t *testing.T) {
 }
 
 func TestMapToString(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -1389,8 +1376,8 @@ func TestMapToString(t *testing.T) {
 	var s3 evendeep.Employee2
 	var str1 string
 
-	// var map1 = make(map[string]interface{})
-	var map1 = map[string]interface{}{
+	// map1 := make(map[string]interface{})
+	map1 := map[string]interface{}{
 		"Name":      "Bob",
 		"Birthday":  tm,
 		"Age":       24,
@@ -1428,7 +1415,8 @@ func TestMapToString(t *testing.T) {
 					return json.MarshalIndent(v, "", "  ")
 				}),
 				evendeep.WithMergeStrategyOpt,
-				evendeep.WithAutoExpandStructOpt},
+				evendeep.WithAutoExpandStructOpt,
+			},
 			nil,
 		),
 
@@ -1454,8 +1442,7 @@ func TestMapToString(t *testing.T) {
 }
 
 func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) {
-
-	t.Logf("checking result ...")
+	t.Logf("checking result ... %v, %v", result, title)
 
 	// if diff := deep.Equal(src, tgt); diff == nil {
 	//	return
@@ -1546,7 +1533,7 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 func TestExample1(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var src = evendeep.Employee2{
+	src := evendeep.Employee2{
 		Base: evendeep.Base{
 			Name:      "Bob",
 			Birthday:  &tm,
@@ -1588,7 +1575,7 @@ type MyTypeToStringConverter struct{}
 // Uncomment this line if you wanna take a ValueCopier implementation too:
 // func (c *MyTypeToStringConverter) CopyTo(ctx *evendeep.ValueConverterContext, source, target reflect.Value) (err error) { return }
 
-func (c *MyTypeToStringConverter) Transform(ctx *evendeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *MyTypeToStringConverter) Transform(ctx *evendeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:lll
 	if source.IsValid() && targetType.Kind() == reflect.String {
 		var str string
 		if str, err = evendeep.FallbackToBuiltinStringMarshalling(source); err == nil {
@@ -1609,7 +1596,7 @@ func (c *MyTypeToStringConverter) Match(params *evendeep.Params, source, target 
 }
 
 func TestExample2(t *testing.T) {
-	var myData = MyType{I: 9}
+	myData := MyType{I: 9}
 	var dst string
 	c := evendeep.NewForTest()
 	_ = c.CopyTo(myData, &dst,
@@ -1632,13 +1619,12 @@ func TestExample2(t *testing.T) {
 	if dst1 != `{"I":9}` {
 		t.Fatalf("bad 2, got %v", dst)
 	}
-
 }
 
 func TestExample3(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = evendeep.User{
+	originRec := evendeep.User{
 		Name:      "Bob",
 		Birthday:  &tm,
 		Age:       24,
@@ -1649,8 +1635,8 @@ func TestExample3(t *testing.T) {
 		Valid:     true,
 	}
 	var newRecord evendeep.User
-	var t0 = time.Unix(0, 0)
-	var expectRec = evendeep.User{Name: "Barbara", Birthday: &t0, Attr: &evendeep.Attr{}}
+	t0 := time.Unix(0, 0)
+	expectRec := evendeep.User{Name: "Barbara", Birthday: &t0, Attr: &evendeep.Attr{}}
 
 	_ = evendeep.New().CopyTo(originRec, &newRecord)
 	t.Logf("newRecord: %v", newRecord)
@@ -1667,14 +1653,13 @@ func TestExample3(t *testing.T) {
 		t.Fatalf("bad, got %v | %v", newRecord, newRecord.Birthday.Nanosecond())
 	}
 	t.Logf("newRecord: %v", newRecord)
-
 }
 
 func TestExample4(t *testing.T) {
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	attr := &evendeep.Attr{Attrs: []string{helloString, worldString}}
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
-	var originRec = evendeep.User{
+	originRec := evendeep.User{
 		Name:      "Bob",
 		Birthday:  &tm,
 		Age:       24,
@@ -1684,10 +1669,12 @@ func TestExample4(t *testing.T) {
 		Attr:      attr,
 		Valid:     true,
 	}
-	var dstRecord = new(evendeep.User)
-	var t0 = time.Unix(0, 0)
-	var emptyRecord = evendeep.User{Name: "Barbara", Birthday: &t0}
-	var expectRecord = &evendeep.User{Name: "Barbara", Birthday: &t0,
+	dstRecord := new(evendeep.User)
+	t0 := time.Unix(0, 0)
+	emptyRecord := evendeep.User{Name: "Barbara", Birthday: &t0}
+	expectRecord := &evendeep.User{
+		Name:      "Barbara",
+		Birthday:  &t0,
 		Age:       24,
 		EmployeID: 7,
 		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
@@ -1695,7 +1682,7 @@ func TestExample4(t *testing.T) {
 		Attr:      attr,
 		Valid:     true,
 	}
-	// var expectRecordZero = evendeep.User{Name: "Barbara", Birthday: &t0,
+	// expectRecordZero := evendeep.User{Name: "Barbara", Birthday: &t0,
 	// 	// Image: []byte{95, 27, 43, 66, 0, 21, 210},
 	// 	Attr: &evendeep.Attr{},
 	// 	// Attr:  &evendeep.Attr{Attrs: []string{"hello", worldString},

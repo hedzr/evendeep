@@ -295,7 +295,6 @@ func anyToInt(data any) int64 {
 		if z <= uint64(math.MaxInt64) {
 			return int64(z)
 		}
-		break
 
 	case float32:
 		return int64(z)
@@ -307,17 +306,17 @@ func anyToInt(data any) int64 {
 	case complex128:
 		return int64(real(z))
 
+	case time.Duration:
+		return int64(z)
+	case time.Time:
+		return z.UnixNano()
+
 	case string:
 		return atoi(z)
 	case fmt.Stringer:
 		return atoi(z.String())
 	case any:
 		return atoi(anyToString(z))
-
-	case time.Duration:
-		return int64(z)
-	case time.Time:
-		return z.UnixNano()
 
 	default:
 		rv := reflect.ValueOf(data)
@@ -382,17 +381,17 @@ func anyToUint(data any) uint64 {
 	case complex128:
 		return uint64(real(z))
 
+	case time.Duration:
+		return uint64(z)
+	case time.Time:
+		return uint64(z.UnixNano())
+
 	case string:
 		return atou(z)
 	case fmt.Stringer:
 		return atou(z.String())
 	case any:
 		return atou(anyToString(z))
-
-	case time.Duration:
-		return uint64(z)
-	case time.Time:
-		return uint64(z.UnixNano())
 
 	default:
 		rv := reflect.ValueOf(data)
@@ -657,7 +656,7 @@ func mustParseFloat(s string) (ret float64) {
 
 //
 
-func zfToFloatS[T Floats, R Floats](in []T) (out []R) {
+func zfToFloatS[T, R Floats](in []T) (out []R) {
 	out = make([]R, 0, len(in))
 	for _, it := range in {
 		out = append(out, R(it))

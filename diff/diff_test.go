@@ -1,14 +1,14 @@
 package diff_test
 
 import (
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/diff/testdata" //nolint:typecheck
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
-
-	"reflect"
-	"testing"
-	"time"
 )
 
 type testStruct struct {
@@ -55,28 +55,34 @@ func checkTestCases(t *testing.T, testData []testCase) {
 		t.Logf("%d passed. PrettyDiff(%#v, %#v).", i, td.a, td.b)
 
 		// for cov test
-		dif.ForAdded(func(key string, val typ.Any) {})
-		dif.ForRemoved(func(key string, val typ.Any) {})
-		dif.ForModified(func(key string, val diff.Update) {})
+		dif.ForAdded(func(key string, val typ.Any) {})        //nolint:revive
+		dif.ForRemoved(func(key string, val typ.Any) {})      //nolint:revive
+		dif.ForModified(func(key string, val diff.Update) {}) //nolint:revive
 	}
 }
 
 type timeComparer struct{}
 
-func (c *timeComparer) Match(typ reflect.Type) bool {
-	return typ.String() == "time.Time"
+func (c *timeComparer) Match(typToMatch reflect.Type) bool { //nolint:revive
+	return typToMatch.String() == "time.Time"
 }
 
 func (c *timeComparer) Equal(ctx diff.Context, lhs, rhs reflect.Value, path diff.Path) (equal bool) {
-	aTime := lhs.Interface().(time.Time) //nolint:errcheck //no need
-	bTime := rhs.Interface().(time.Time) //nolint:errcheck //no need
+	var aTime, bTime time.Time
+	var ok bool
+	if aTime, ok = lhs.Interface().(time.Time); !ok {
+		return
+	}
+	if bTime, ok = rhs.Interface().(time.Time); !ok {
+		return
+	}
 	if equal = aTime.Equal(bTime); !equal {
 		ctx.PutModified(ctx.PutPath(path), diff.Update{Old: aTime.String(), New: bTime.String(), Typ: ref.Typfmtvlite(&lhs)})
 	}
 	return
 }
 
-func TestPrettyDiff(t *testing.T) {
+func TestPrettyDiff(t *testing.T) { //nolint:revive
 	testData := []testCase{
 		{
 			[]int{3, 0, 9},
@@ -162,7 +168,7 @@ func TestPrettyDiff(t *testing.T) {
 		{
 			testStruct{1, 3, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, [3]int{4, 5, 6}},
 			testStruct{1, 3, []int{42, 43, 44, 3, 4, 5, 6, 7, 8, 9, 45, 46, 12}, [3]int{4, 5, 6}},
-			"modified: .C.[0] = 42 (int) (Old: <zero>)\nmodified: .C.[1] = 43 (int) (Old: 1)\nmodified: .C.[2] = 44 (int) (Old: 2)\nmodified: .C.[10] = 45 (int) (Old: 10)\nmodified: .C.[11] = 46 (int) (Old: 11)\n",
+			"modified: .C.[0] = 42 (int) (Old: <zero>)\nmodified: .C.[1] = 43 (int) (Old: 1)\nmodified: .C.[2] = 44 (int) (Old: 2)\nmodified: .C.[10] = 45 (int) (Old: 10)\nmodified: .C.[11] = 46 (int) (Old: 11)\n", //nolint:revive,lll
 			// "modified: .C[0] = 42\nmodified: .C[1] = 43\nmodified: .C[2] = 44\nmodified: .C[10] = 45\nmodified: .C[11] = 46\n",
 			false,
 			diff.WithSliceOrderedComparison(false),
@@ -258,10 +264,10 @@ func TestPrettyDiffRecursive(t *testing.T) {
 // }
 
 type ignoreStruct struct {
-	A int `diff:"ignore"`
-	a int
+	A int    `diff:"ignore"`
+	a int    //nolint:revive
 	B [3]int `diff:"-"`
-	b [3]int
+	b [3]int //nolint:revive
 }
 
 func TestIgnoreTag(t *testing.T) {

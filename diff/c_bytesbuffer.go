@@ -14,15 +14,21 @@ func (c *bytesBufferComparer) Match(typ reflect.Type) bool {
 }
 
 func (c *bytesBufferComparer) Equal(ctx Context, lhs, rhs reflect.Value, path Path) (equal bool) {
-	a := lhs.Interface().(bytes.Buffer) //nolint:errcheck //no need
-	b := rhs.Interface().(bytes.Buffer) //nolint:errcheck //no need
+	var a, b bytes.Buffer
+	var ok bool
+	if a, ok = lhs.Interface().(bytes.Buffer); !ok {
+		return
+	}
+	if b, ok = rhs.Interface().(bytes.Buffer); !ok {
+		return
+	}
 	if equal = c.equal(a.Bytes(), b.Bytes()); !equal {
 		ctx.PutModified(ctx.PutPath(path), Update{Old: a.String(), New: b.String(), Typ: ref.Typfmtvlite(&lhs)})
 	}
 	return
 }
 
-func (c *bytesBufferComparer) equal(a, b []byte) bool {
+func (c *bytesBufferComparer) equal(a, b []byte) bool { //nolint:revive
 	if len(a) != len(b) {
 		return false
 	}

@@ -150,7 +150,7 @@ func BenchmarkLess(b *testing.B) {
 }
 
 // Get 1000 arrays of 10000-string-arrays (less if -short is specified).
-func testSet(seed int) [][]string {
+func testSet(seed int) [][]string { //nolint:revive,unparam
 	gen := &generator{
 		src: rand.New(rand.NewSource( // nolint:gosec //yes,just for test
 			int64(seed),
@@ -205,6 +205,6 @@ func (g *generator) NextString() (str string) {
 }
 
 func (g *generator) randchartostring() string {
-	var runes = []rune{rune('a' + g.src.Intn(16))} // nolint:govet //yes
+	runes := []rune{rune('a' + g.src.Intn(16))} // nolint:govet //yes
 	return string(runes)
 }

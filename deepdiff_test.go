@@ -1,10 +1,10 @@
 package evendeep
 
 import (
+	"testing"
+
 	"github.com/hedzr/evendeep/diff"
 	"github.com/hedzr/evendeep/typ"
-
-	"testing"
 )
 
 func TestDeepDiff(t *testing.T) {

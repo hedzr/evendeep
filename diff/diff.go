@@ -95,7 +95,7 @@ func (d *info) String() string { return d.PrettyPrint() }
 
 // - Diff
 
-func (d *info) PrettyPrint() string {
+func (d *info) PrettyPrint() string { //nolint:revive
 	var lines []string
 	if d != nil {
 		d.forMap(d.added, func(key string, val typ.Any) {
@@ -206,7 +206,7 @@ func (d *info) diff(lhs, rhs typ.Any) bool {
 	return d.diffv(lv, rv, path)
 }
 
-func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
+func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) { //nolint:revive
 	var processed bool
 
 	lvv, rvv := lv.IsValid(), rv.IsValid()
@@ -228,7 +228,7 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 		return
 	}
 
-	var kind = lv.Kind()
+	kind := lv.Kind()
 
 	if equal, processed = d.testvisited(lv, rv, lvt, path, kind); processed {
 		return
@@ -245,7 +245,7 @@ func (d *info) diffv(lv, rv reflect.Value, path Path) (equal bool) {
 	return d.diffw(lv, rv, lvt, path, kind)
 }
 
-func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equal, processed bool) {
+func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equal, processed bool) { //nolint:revive
 	if !lvv && !rvv {
 		return true, true
 	}
@@ -261,8 +261,10 @@ func (d *info) testinvalid(lv, rv reflect.Value, lvv, rvv bool, path Path) (equa
 	return
 }
 
-func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
-	kind reflect.Kind) (equal, processed bool) {
+func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type,
+	path Path,
+	kind reflect.Kind,
+) (equal, processed bool) {
 	if lv.CanAddr() && rv.CanAddr() &&
 		ref.KindIs(kind, reflect.Array, reflect.Map, reflect.Slice, reflect.Struct) {
 		addr1 := unsafe.Pointer(lv.UnsafeAddr())
@@ -282,10 +284,12 @@ func (d *info) testvisited(lv, rv reflect.Value, typ1 reflect.Type, path Path,
 		// Remember for later.
 		d.visited[v] = true
 	}
+	_ = path
 	return
 }
 
-func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) {
+func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal, processed bool) { //nolint:revive
+	_ = typ1
 	switch kind { //nolint:exhaustive //no need
 	case reflect.Map, reflect.Ptr, reflect.Func, reflect.Chan, reflect.Slice:
 		ln, rn := ref.IsNil(lv), ref.IsNil(rv)
@@ -311,7 +315,8 @@ func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind 
 			} else if kind == reflect.Struct && d.treatEmptyStructPtrAsNil {
 				if ln && isEmptyStruct(rv) {
 					return true, true
-				} else if rn && isEmptyStruct(lv) {
+				}
+				if rn && isEmptyStruct(lv) {
 					return true, true
 				}
 			}
@@ -322,8 +327,7 @@ func (d *info) testnil(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind 
 	return
 }
 
-func (d *info) testcomparer(lv, rv reflect.Value, typ1 reflect.Type,
-	path Path) (equal, processed bool) { //nolint:nonamedreturns //i do
+func (d *info) testcomparer(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal, processed bool) {
 	var c Comparer
 	if c, processed = d.findComparer(typ1); processed {
 		equal = c.Equal(d, lv, rv, path)
@@ -340,7 +344,7 @@ func (d *info) findComparer(typ1 reflect.Type) (c Comparer, ok bool) {
 	return
 }
 
-func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal bool) {
+func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind reflect.Kind) (equal bool) { //nolint:revive
 	switch kind { //nolint:exhaustive //no
 	case reflect.Array:
 		equal = d.diffArray(lv, rv, path)
@@ -377,7 +381,7 @@ func (d *info) diffw(lv, rv reflect.Value, typ1 reflect.Type, path Path, kind re
 	return
 }
 
-func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) {
+func (d *info) diffArray(lv, rv reflect.Value, path Path) (equal bool) { //nolint:revive
 	ll, rl := lv.Len(), rv.Len()
 	equal = true
 	for i := 0; i < tool.MinInt(ll, rl); i++ {
@@ -467,7 +471,7 @@ func (d *info) diffMap(lv, rv reflect.Value, path Path) (equal bool) {
 	return
 }
 
-func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal bool) {
+func (d *info) diffStruct(lv, rv reflect.Value, typ1 reflect.Type, path Path) (equal bool) { //nolint:revive
 	equal = true
 	for i := 0; i < typ1.NumField(); i++ {
 		index := []int{i}
@@ -506,7 +510,7 @@ func (d *info) compareArrayDifferSizes(lv, rv reflect.Value, path Path) (equal b
 	return d.diffArray(lv, rv, path)
 }
 
-func (d *info) compareStructFields(lv, rv reflect.Value, path Path) (equal bool) {
+func (d *info) compareStructFields(lv, rv reflect.Value, path Path) (equal bool) { //nolint:revive
 	for i, lt, rt := 0, lv.Type(), rv.Type(); i < lv.NumField(); i++ {
 		// fldval := lv.Field(i)
 		fldtyp := lt.Field(i)

@@ -61,7 +61,7 @@ func (rec tableRecT) ShouldIgnore() bool {
 }
 
 func (table *fieldsTableT) isReservedPackage(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
-	n := typ.PkgPath()
+	n, _, _ := typ.PkgPath(), field, kind
 	return packageisreserved(n) // ignore golang stdlib, such as "io", "runtime", ...
 }
 
@@ -345,6 +345,7 @@ func setToZeroForArray(arrayValue *reflect.Value, typ reflect.Type, kind reflect
 		vt, vk := v.Type(), v.Kind()
 		setToZeroAs(&v, vt, vk)
 	}
+	_, _ = typ, kind
 }
 
 func setToZeroForStruct(structValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
@@ -352,6 +353,7 @@ func setToZeroForStruct(structValue *reflect.Value, typ reflect.Type, kind refle
 		fv := structValue.Field(i)
 		setToZero(&fv)
 	}
+	_, _ = typ, kind
 }
 
 func (s *fieldAccessorT) Set(v reflect.Value) {
@@ -755,6 +757,7 @@ func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bo
 
 //nolint:lll //keep it
 func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRecT, srcStructField *reflect.StructField) (acc accessor, ok bool) {
+	_ = params
 	checkSourceTypeIsSettable := func(srcStructField *reflect.StructField) (tk reflect.Kind, ok bool) {
 		if srcStructField == nil {
 			return reflect.Invalid, true

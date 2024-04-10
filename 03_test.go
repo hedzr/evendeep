@@ -5,13 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hedzr/evendeep/ref"
+	"gopkg.in/hedzr/errors.v3"
 
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/internal/tool"
-
-	"gopkg.in/hedzr/errors.v3"
+	"github.com/hedzr/evendeep/ref"
 )
 
 func TestRegisterInitRoutines(t *testing.T) {
@@ -23,18 +22,17 @@ func TestRegisterInitRoutines(t *testing.T) {
 
 // TestCpChan _
 func TestCpChan(t *testing.T) {
-	var val = make(chan int, 10)
+	val := make(chan int, 10)
 	vv := reflect.ValueOf(&val)
 	vi := reflect.Indirect(vv)
 	value := reflect.MakeChan(vi.Type(), vi.Cap())
 	t.Logf("%v (len: %v),  vv.len: %v", value.Interface(), value.Cap(), vi.Cap())
 
 	var sval chan string
-	var strVal = reflect.ValueOf(&sval)
+	strVal := reflect.ValueOf(&sval)
 	indirectStr := reflect.Indirect(strVal)
 	svalue := reflect.MakeChan(indirectStr.Type(), 1024)
 	t.Logf("Type : [%v] \nCapacity : [%v]", svalue.Kind(), svalue.Cap())
-
 }
 
 // func TestVisibleFields(t *testing.T) {
@@ -51,7 +49,6 @@ func TestInspectStruct(t *testing.T) {
 }
 
 func TestParamsBasics(t *testing.T) {
-
 	t.Run("basics 1", func(t *testing.T) {
 		// p1 := newParams() // nolint:ineffassign
 		p1 := newParams(withOwnersSimple(nil, nil))
@@ -86,12 +83,10 @@ func TestParamsBasics(t *testing.T) {
 			}
 			testDeepEqual(t.Errorf, fldTags.flags, expects[i])
 		}
-
 	})
 }
 
 func TestParamsBasics3(t *testing.T) {
-
 	t.Run("basics 3", func(t *testing.T) {
 		// p1 := newParams() // nolint:ineffassign
 		p1 := newParams(withOwnersSimple(nil, nil))
@@ -100,9 +95,9 @@ func TestParamsBasics3(t *testing.T) {
 		defer p2.revoke()
 
 		type AFS1 struct {
-			flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck //test
-			converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck //test
-			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
+			flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:revive,unused,structcheck //test
+			converter *ValueConverter `copy:",ignore"`                                         //nolint:revive,unused,structcheck //test
+			wouldbe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:revive,unused,structcheck //test
 		}
 		var a AFS1
 		v := reflect.ValueOf(&a)
@@ -168,8 +163,8 @@ func TestPtrCopy(t *testing.T) {
 	type AAA struct {
 		P1 *int `copy:",flat"`
 	}
-	var a, b = 1, 2
-	var pa, pb = &AAA{&a}, &AAA{&b}
+	a, b := 1, 2
+	pa, pb := &AAA{&a}, &AAA{&b}
 	Copy(pa, pb)
 	t.Logf("pb.P1: %v", *pb.P1)
 	if *pb.P1 != a {
@@ -177,7 +172,7 @@ func TestPtrCopy(t *testing.T) {
 	}
 }
 
-func TestDeferCatchers(t *testing.T) {
+func TestDeferCatchers(t *testing.T) { //nolint:revive
 	type AAA struct {
 		X1 string `copy:"-"`
 		X2 string `copy:",-"`

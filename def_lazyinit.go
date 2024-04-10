@@ -5,9 +5,11 @@ import (
 	"sync"
 )
 
-var onceLazyInitRoutines sync.Once         //nolint:gochecknoglobals //i know that
-var copyToRoutines map[reflect.Kind]copyfn //nolint:gochecknoglobals //i know that
-var otherLazyRoutines []func()             //nolint:gochecknoglobals //i know that
+var (
+	onceLazyInitRoutines sync.Once               //nolint:gochecknoglobals //i know that
+	copyToRoutines       map[reflect.Kind]copyfn //nolint:gochecknoglobals //i know that
+	otherLazyRoutines    []func()                //nolint:gochecknoglobals //i know that
+)
 
 type copyfn func(c *cpController, params *Params, from, to reflect.Value) (err error)
 

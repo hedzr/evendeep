@@ -31,13 +31,13 @@ func TestBytesBufferComparer_Equal(t *testing.T) {
 
 type ctxS struct{}
 
-func (c *ctxS) PutAdded(k string, v typ.Any) {}
+func (c *ctxS) PutAdded(k string, v typ.Any) {} //nolint:revive
 
-func (c *ctxS) PutRemoved(k string, v typ.Any) {}
+func (c *ctxS) PutRemoved(k string, v typ.Any) {} //nolint:revive
 
-func (c *ctxS) PutModified(k string, v Update) {}
+func (c *ctxS) PutModified(k string, v Update) {} //nolint:revive
 
-func (c *ctxS) PutPath(path Path, parts ...PathPart) string { return "" }
+func (c *ctxS) PutPath(path Path, parts ...PathPart) string { return "" } //nolint:revive
 
 func TestIsEmptyObject(t *testing.T) {
 	var a int
@@ -75,7 +75,7 @@ func TestIsEmptyObject(t *testing.T) {
 
 func TestIsEmptyStruct(t *testing.T) {
 	type aS struct {
-		a int
+		a int //nolint:revive,unused
 	}
 
 	var a aS

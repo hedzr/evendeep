@@ -11,7 +11,7 @@ var (
 	Randtool = &randomizer{}
 
 	hundred    = big.NewInt(100)                                         //nolint:unused,deadcode,varcheck //test
-	seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec //G404: Use of weak random number generator (math/rand instead of crypto/rand)
+	seededRand = mrand.New(mrand.NewSource(time.Now().UTC().UnixNano())) //nolint:gosec,revive,lll //G404: Use of weak random number generator (math/rand instead of crypto/rand)
 	mu         sync.Mutex
 )
 
@@ -75,8 +75,8 @@ func (r *randomizer) NextFloat64() float64 {
 func (r *randomizer) NextStringSimple(n int) string {
 	b := make([]byte, n)
 	for i := 0; i < n; i++ {
-		n := seededRand.Intn(90-65) + 65
-		b[i] = byte(n) // 'a' .. 'z'
+		n := seededRand.Intn(90-65) + 65 //nolint:revive
+		b[i] = byte(n)                   // 'a' .. 'z'
 	}
 	return string(b)
 }

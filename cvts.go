@@ -13,6 +13,8 @@ import (
 	"time"
 	"unicode"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
@@ -20,10 +22,7 @@ import (
 	"github.com/hedzr/evendeep/internal/times"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
-
 	logz "github.com/hedzr/logg/slog"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
 const timeConstString = "time"
@@ -88,9 +87,11 @@ func initConverters() {
 	lenValueConverters, lenValueCopiers = len(defValueConverters), len(defValueCopiers)
 }
 
-var defValueConverters ValueConverters      //nolint:gochecknoglobals //i know that
-var defValueCopiers ValueCopiers            //nolint:gochecknoglobals //i know that
-var lenValueConverters, lenValueCopiers int //nolint:gochecknoglobals //i know that
+var (
+	defValueConverters                  ValueConverters //nolint:gochecknoglobals //i know that
+	defValueCopiers                     ValueCopiers    //nolint:gochecknoglobals //i know that
+	lenValueConverters, lenValueCopiers int             //nolint:gochecknoglobals //i know that
+)
 
 func defaultValueConverters() ValueConverters { return defValueConverters }
 func defaultValueCopiers() ValueCopiers       { return defValueCopiers }
@@ -578,10 +579,10 @@ func anyToString(data any) string {
 	case complex128:
 		return complexToString(z)
 
-	case any:
+	case []any:
 		return fmt.Sprint(data)
 
-	case []any:
+	case any:
 		return fmt.Sprint(data)
 
 	default:
@@ -682,7 +683,7 @@ func mustParseComplex(s string) (ret complex128) {
 func (s *Cvt) Complex128Slice(data any) []complex128 { return anyToComplexSlice[complex128](data) }
 func (s *Cvt) Complex64Slice(data any) []complex64   { return anyToComplexSlice[complex64](data) }
 
-func zfToComplexS[T Complexes, R Complexes](in []T) (out []R) {
+func zfToComplexS[T, R Complexes](in []T) (out []R) {
 	out = make([]R, 0, len(in))
 	for _, it := range in {
 		out = append(out, R(it))
@@ -853,7 +854,7 @@ func anyToDuration(data any) time.Duration {
 	case int:
 		return time.Duration(int64(z))
 	case int64:
-		return time.Duration(int64(z))
+		return time.Duration(int64(z)) //nolint:unconvert
 	case int32:
 		return time.Duration(int64(z))
 	case int16:
@@ -1050,7 +1051,7 @@ func anyToTime(data any) (tm time.Time) {
 	case int:
 		return time.Unix(int64(z), 0)
 	case int64:
-		return time.Unix(int64(z), 0)
+		return time.Unix(int64(z), 0) //nolint:unconvert
 	case int32:
 		return time.Unix(int64(z), 0)
 	case int16:
@@ -1108,7 +1109,7 @@ func anyToTime(data any) (tm time.Time) {
 // 	return &t, nil
 // }
 
-func timeToFloat(t time.Time) float64 {
+func timeToFloat(t time.Time) float64 { //nolint:unused
 	// If time.Time is the empty value, UnixNano will return
 	// the farthest back timestamp a float can represent,
 	// which is some large negative value.
@@ -1148,8 +1149,10 @@ func smartParseTime(str string) (tm time.Time, err error) {
 	return
 }
 
-var knownDateTimeFormats []string
-var onceFormats sync.Once
+var (
+	knownDateTimeFormats []string
+	onceFormats          sync.Once
+)
 
 func onceInitTimeFormats() []string {
 	onceFormats.Do(func() {
@@ -1549,7 +1552,7 @@ func (c *cvtbase) checkTargetLite(ctx *ValueConverterContext, target reflect.Val
 		return
 	}
 	processed = ref.IsZero(target) && ctx.isGroupedFlagOKDeeply(cms.OmitIfTargetZero)
-
+	_ = targetType
 	return
 }
 
@@ -1557,7 +1560,7 @@ func (c *cvtbase) checkTargetLite(ctx *ValueConverterContext, target reflect.Val
 
 type toConverterBase struct{ cvtbase }
 
-func (c *toConverterBase) fallback(target reflect.Value) (err error) {
+func (c *toConverterBase) fallback(target reflect.Value) (err error) { //nolint:unparam
 	tgtType := reflect.TypeOf((*time.Duration)(nil)).Elem()
 	ref.Rindirect(target).Set(reflect.Zero(tgtType))
 	return
@@ -1572,7 +1575,9 @@ func (c *fromConverterBase) CopyTo(ctx *ValueConverterContext, source, target re
 }
 
 func (c *fromConverterBase) Transform(ctx *ValueConverterContext,
-	source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	source reflect.Value,
+	targetType reflect.Type,
+) (target reflect.Value, err error) {
 	panic("not impl")
 }
 
@@ -1630,7 +1635,9 @@ func (c *fromConverterBase) postCopyTo(ctx *ValueConverterContext, source, targe
 }
 
 func (c *fromConverterBase) convertToOrZeroTarget(ctx *ValueConverterContext,
-	source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	source reflect.Value,
+	targetType reflect.Type,
+) (target reflect.Value, err error) { //nolint:unparam
 	if ref.CanConvert(&source, targetType) {
 		nv := source.Convert(targetType)
 		target = nv
@@ -1648,7 +1655,7 @@ func (c *fromConverterBase) convertToOrZeroTarget(ctx *ValueConverterContext,
 
 type toStringConverter struct{ toConverterBase }
 
-func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *toStringConverter) postCopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:unparam
 	if source.IsValid() {
 		if ref.CanConvert(&source, target.Type()) {
 			nv := source.Convert(target.Type())
@@ -1696,8 +1703,10 @@ func (c *toStringConverter) CopyTo(ctx *ValueConverterContext, source, target re
 }
 
 // Transform will transform source type (bool, int, ...) to target string.
-func (c *toStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value,
-	targetType reflect.Type) (target reflect.Value, err error) {
+func (c *toStringConverter) Transform(ctx *ValueConverterContext,
+	source reflect.Value,
+	targetType reflect.Type,
+) (target reflect.Value, err error) {
 	if source.IsValid() {
 		// var processed bool
 		// if processed, target, err = ctx.Preprocess(source, targetType, c); processed {
@@ -1758,7 +1767,7 @@ func canMarshalling(source reflect.Value) (mtd reflect.Value, yes bool) {
 }
 
 // FallbackToBuiltinStringMarshalling exposes the builtin string
-// marshalling mechanism for your customized ValueConverter or
+// marshaling mechanism for your customized ValueConverter or
 // ValueCopier.
 func FallbackToBuiltinStringMarshalling(source reflect.Value) (str string, err error) {
 	return doMarshalling(source)
@@ -1986,8 +1995,8 @@ func (c *fromMapConverter) Transform(ctx *ValueConverterContext, source reflect.
 }
 
 //nolint:lll,gocognit //keep it
-func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, target reflect.Value, targetType reflect.Type) (err error) {
-	cc := ctx.controller
+func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, target reflect.Value, targetType reflect.Type) (err error) { //nolint:unparam
+	cc, _, _ := ctx.controller, target, targetType
 
 	preSetter := func(value reflect.Value, names ...string) (processed bool, err error) {
 		if cc.targetSetter != nil {
@@ -2003,7 +2012,7 @@ func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, 
 		return
 	}
 
-	var ec = errors.New("map -> struct errors")
+	ec := errors.New("map -> struct errors")
 	defer ec.Defer(&err)
 
 	keys := source.MapKeys()
@@ -2103,7 +2112,7 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 		return
 	}
 
-	var ec = errors.New("map -> struct errors")
+	ec := errors.New("map -> struct errors")
 	defer ec.Defer(&err)
 
 	target = reflect.New(targetType).Elem()
@@ -2213,7 +2222,7 @@ func (c *fromMapConverter) Match(params *Params, source, target reflect.Type) (c
 //
 // By default, these entities should NOT be copied from one to another
 // one. So our default actions are empty.
-type fromSyncPkgConverter struct{ fromConverterBase }
+type fromSyncPkgConverter struct{ fromConverterBase } //nolint:unused
 
 //nolint:lll //keep it
 func (c *fromSyncPkgConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
@@ -2221,16 +2230,19 @@ func (c *fromSyncPkgConverter) Match(params *Params, source, target reflect.Type
 	if yes = source.Kind() == reflect.Struct && strings.HasPrefix(source.String(), "sync."); yes {
 		ctx = &ValueConverterContext{params}
 		dbglog.Log("    src: %v, tgt: %v | Matched", source, target)
-	} else {
+		// } else {
 		// dbglog.Log("    src: %v, tgt: %v", source, target)
 	}
 	return
 }
+
 func (c *fromSyncPkgConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	_, _, _ = ctx, source, target
 	return
 }
 
 func (c *fromSyncPkgConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+	_, _, _ = ctx, source, target
 	return
 }
 
@@ -2292,9 +2304,10 @@ func (c *fromBytesBufferConverter) Match(params *Params, source, target reflect.
 	if yes = source.Kind() == reflect.Struct && source.String() == "bytes.Buffer"; yes {
 		ctx = &ValueConverterContext{params}
 		dbglog.Log("    src: %v, tgt: %v | Matched", source, target)
-	} else {
+		// } else {
 		// dbglog.Log("    src: %v, tgt: %v", source, target)
 	}
+	_, _ = source, target
 	return
 }
 
@@ -2895,7 +2908,7 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 	sourceType := source.Type()
 	var presetInArgsLen int
 	var ok bool
-	var controllerIsValid = ctx != nil && ctx.Params != nil && ctx.Params.controller != nil
+	controllerIsValid := ctx != nil && ctx.Params != nil && ctx.Params.controller != nil
 	if controllerIsValid {
 		presetInArgsLen = len(ctx.controller.funcInputs)
 	}

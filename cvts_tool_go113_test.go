@@ -7,13 +7,13 @@ import (
 	"reflect"
 	"testing"
 
+	"gopkg.in/hedzr/errors.v3"
+
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/ref"
-
-	"gopkg.in/hedzr/errors.v3"
 )
 
-func TestFromFuncConverterGo113AndHigher(t *testing.T) {
+func TestFromFuncConverterGo113AndHigher(t *testing.T) { //nolint:revive
 	fn0 := func() string { return "hello" }
 
 	type C struct {
@@ -28,16 +28,16 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) {
 		C *C
 		B bool
 	}
-	var a0 = A{
+	a0 := A{
 		func() C { return C{7, true} },
 		func() bool { return false },
 	}
-	var b0 = B{nil, true}
-	var b1 = B{&C{7, true}, false}
+	b0 := B{nil, true}
+	b1 := B{&C{7, true}, false}
 
 	var boolTgt bool
-	var intTgt = 1
-	var stringTgt = "world"
+	intTgt := 1
+	stringTgt := "world"
 
 	lazyInitRoutines()
 
@@ -51,20 +51,22 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) {
 
 		// {func() ([2]int, error) { return [2]int{2, 3}, nil }, &[2]int{1}, [2]int{2, 3}},
 
-		{func() A { return a0 },
+		{
+			func() A { return a0 },
 			&b0,
 			b1,
 			nil,
 		},
 
-		{func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
-			&map[string]interface{}{"k": 1, "hello": "bob"},
-			map[string]interface{}{"hello": "world", "k": 1},
+		{
+			func() map[string]interface{} { return map[string]interface{}{"hello": "world"} }, //nolint:revive
+			&map[string]interface{}{"k": 1, "hello": "bob"},                                   //nolint:revive
+			map[string]interface{}{"hello": "world", "k": 1},                                  //nolint:revive
 			nil,
 		},
 
 		{func() string { return "hello" }, &stringTgt, "hello", nil},
-		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet}, // string -> number, implicit converting will be tried, and failure if it's really not a number
+		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet}, //nolint:revive,lll // string -> number, implicit converting will be tried, and failure if it's really not a number
 		{func() string { return "789" }, &intTgt, 789, nil},
 		{&fn0, &stringTgt, "hello", nil},
 
@@ -97,7 +99,7 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) {
 					return
 				}
 				t.Fatalf("has error: %v, but expecting %v", err, fnCase.err)
-			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) == false {
+			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) == false { //nolint:revive
 				t.Fatalf("unexpect result: expect %v but got %v", fnCase.expect, ret)
 			}
 		}

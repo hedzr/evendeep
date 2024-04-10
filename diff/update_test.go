@@ -5,7 +5,7 @@ import (
 )
 
 func TestUpdate_String(t *testing.T) {
-	var u = Update{
+	u := Update{
 		Old: nil,
 		New: nil,
 		Typ: "",
@@ -38,5 +38,5 @@ func TestUpdate_String(t *testing.T) {
 		New: 2,
 		Typ: "int",
 	}
-	// t.Logf("u: %v", u)
+	t.Logf("u: %v", u)
 }

@@ -8,7 +8,7 @@ import (
 
 // Comparer interface.
 type Comparer interface {
-	Match(typ reflect.Type) bool
+	Match(typeToMatch reflect.Type) bool
 	Equal(ctx Context, lhs, rhs reflect.Value, path Path) (equal bool)
 }
 

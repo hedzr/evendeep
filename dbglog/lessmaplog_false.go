@@ -20,12 +20,12 @@ var logValid = true
 //
 // To query the active state by calling ChildLogEnabled.
 //
-// The best practise for DisableLogAndDefer is:
+// The best practice for DisableLogAndDefer is:
 //
 //	defer dbglog.DisableLogAndDefer()()
 //	evendeep.CopyTo(...) // the verbose logging will be prevent even if buildtag 'verbose' defined.
 func DisableLogAndDefer() func() {
-	var sav = logValid
+	sav := logValid
 	logValid = MoreMapLog
 	return func() { logValid = sav }
 }
