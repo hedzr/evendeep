@@ -34,7 +34,7 @@ func TestDeepDiff(t *testing.T) {
 	checkTestCases(t, testData)
 }
 
-func TestDeepEqual(t *testing.T) {
+func TestDeepEqual(t *testing.T) { //nolint:revive
 	equal := DeepEqual([]int{3, 0, 9}, []int{9, 3, 0}, diff.WithSliceOrderedComparison(true))
 	if !equal {
 		t.Errorf("expecting equal = true but got false")

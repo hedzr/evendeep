@@ -54,11 +54,10 @@ func TestContainsStringSlice(t *testing.T) {
 
 	idx, matchedString, containsBool = tool.PartialContains([]string{"acoludbe", "bcouldbe", "ccouldbe"}, "byebye")
 	t.Logf("%v,%v,%v", idx, matchedString, containsBool)
-
 }
 
 func TestReverseSlice(t *testing.T) {
-	var ss = []int{8, 9, 7, 9, 3, 5}
+	ss := []int{8, 9, 7, 9, 3, 5}
 	tool.ReverseSlice(ss)
 	t.Logf("ss: %v", ss)
 
@@ -74,6 +73,7 @@ func TestReverseSlice(t *testing.T) {
 func TestInspectStruct(t *testing.T) {
 	a4 := prepareDataA4()
 	tool.InspectStruct(reflect.ValueOf(&a4))
+	t.Log()
 }
 
 func TestFindInSlice(t *testing.T) {

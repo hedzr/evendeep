@@ -54,11 +54,11 @@ func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) 
 	if valueField.Kind() == reflect.Interface && !valueField.IsNil() {
 		elm := valueField.Elem()
 		if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
-			valueField = elm
+			valueField = elm //nolint:revive
 		}
 	}
 	if valueField.Kind() == reflect.Ptr {
-		valueField = valueField.Elem()
+		valueField = valueField.Elem() //nolint:revive
 	}
 	if valueField.CanAddr() {
 		addrStr = fmt.Sprintf("0x%X", valueField.Addr().Pointer())
@@ -67,15 +67,15 @@ func testFieldValue(valueField reflect.Value) (v reflect.Value, addrStr string) 
 	return
 }
 
-func inspectStructV(val reflect.Value, level int) {
+func inspectStructV(val reflect.Value, level int) { //nolint:revive
 	if val.Kind() == reflect.Interface && !val.IsNil() {
 		elm := val.Elem()
 		if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
-			val = elm
+			val = elm //nolint:revive
 		}
 	}
 	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
+		val = val.Elem() //nolint:revive
 	}
 
 	padding := strings.Repeat("  ", level)

@@ -29,7 +29,7 @@ func UintptrFromString(s string) uintptr {
 }
 
 func UintptrToUint(u uintptr) uint64 { return uintptrToUint(u) }
-func uintptrToUint(u uintptr) uint64 {
+func uintptrToUint(u uintptr) uint64 { //nolint:revive
 	size := unsafe.Sizeof(u)
 	switch size {
 	case 4: //nolint:gomnd //simple case

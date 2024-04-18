@@ -18,7 +18,7 @@ func TestUnsafePointer(t *testing.T) {
 	p := unsafe.Pointer(uintptr(unsafe.Pointer(s)) + unsafe.Offsetof(s.b))
 
 	// Typecasting it to a string pointer and printing the value of it
-	fmt.Println(*(*string)(p))
+	_, _ = fmt.Println(*(*string)(p))
 
 	str := *(*string)(p)
 	if str != "test" {
@@ -32,15 +32,14 @@ func TestUnsafePointer(t *testing.T) {
 		UintptrToString(startAddress),
 	)
 
+	var u uintptr
 	str = UintptrToString(startAddress)
-	if u := UintptrFromString(str); u != startAddress {
+	if u = UintptrFromString(str); u != startAddress {
 		t.Fail()
-	} else {
-
-		b := toBytes1(u)
-		fmt.Println(b)
-		b = toBytes2(&u)
-		fmt.Println(b)
-
 	}
+
+	b := toBytes1(u)
+	_, _ = fmt.Println(b)
+	b = toBytes2(&u)
+	_, _ = fmt.Println(b)
 }

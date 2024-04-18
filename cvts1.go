@@ -17,7 +17,7 @@ import (
 func parseToMap[T any](in string) (out map[string]T) {
 	out = make(map[string]T)
 	ins := strings.TrimSpace(in)
-	if len(ins) >= 2 && ins[0] == '{' && ins[len(in)-1] == '}' {
+	if len(ins) >= 2 && ins[0] == '{' && ins[len(in)-1] == '}' { //nolint:revive
 		a := strings.Split(ins[1:len(ins)-1], ",")
 		for _, it := range a {
 			b := strings.Split(it, ":")
@@ -38,7 +38,7 @@ func parseToMap[T any](in string) (out map[string]T) {
 // parseToSlice parses a string to a slice
 func parseToSlice[T any](in string) (out []T) {
 	ins := strings.TrimSpace(in)
-	if len(ins) >= 2 && ins[0] == '[' && ins[len(in)-1] == ']' {
+	if len(ins) >= 2 && ins[0] == '[' && ins[len(in)-1] == ']' { //nolint:revive
 		a := strings.Split(ins[1:len(ins)-1], ",")
 		for _, it := range a {
 			v := strings.TrimSpace(it)
@@ -52,7 +52,7 @@ func parseToSlice[T any](in string) (out []T) {
 	return
 }
 
-func parseToAny[T any](in string) (out T) {
+func parseToAny[T any](in string) (out T) { //nolint:revive
 	var t1 any = &out
 	switch z := t1.(type) {
 	case *[]time.Duration:
@@ -130,7 +130,7 @@ func parseToAny[T any](in string) (out T) {
 	return
 }
 
-func anyToIntSliceT[T Integers](data any) (ret []T) {
+func anyToIntSliceT[T Integers](data any) (ret []T) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -180,12 +180,11 @@ func anyToIntSliceT[T Integers](data any) (ret []T) {
 	// case []fmt.Stringer:
 	// 	return zfToIntT[string,T](z)
 	default:
-		break
 	}
 	return
 }
 
-func anyToUintSliceT[T Uintegers](data any) (ret []T) {
+func anyToUintSliceT[T Uintegers](data any) (ret []T) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -235,7 +234,6 @@ func anyToUintSliceT[T Uintegers](data any) (ret []T) {
 	// case []fmt.Stringer:
 	// 	return zfToIntT[string,T](z)
 	default:
-		break
 	}
 	return
 }
@@ -266,7 +264,7 @@ func anyToUintT[In any, Out Uintegers](in In) (out Out) {
 	return
 }
 
-func anyToInt(data any) int64 {
+func anyToInt(data any) int64 { //nolint:revive
 	if data == nil {
 		return 0
 	}
@@ -343,7 +341,7 @@ func anyToInt(data any) int64 {
 	return 0
 }
 
-func anyToUint(data any) uint64 {
+func anyToUint(data any) uint64 { //nolint:revive
 	if data == nil {
 		return 0
 	}
@@ -472,7 +470,7 @@ func zfToUint64MNTA[T any, Out Uintegers](in map[any]T) (out map[string]Out) {
 	return
 }
 
-func anyToInt64MapT[Out Integers](data any) (ret map[string]Out) {
+func anyToInt64MapT[Out Integers](data any) (ret map[string]Out) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -526,12 +524,11 @@ func anyToInt64MapT[Out Integers](data any) (ret map[string]Out) {
 		return parseToMap[Out](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
 
-func anyToUint64MapT[Out Uintegers](data any) (ret map[string]Out) {
+func anyToUint64MapT[Out Uintegers](data any) (ret map[string]Out) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -585,7 +582,6 @@ func anyToUint64MapT[Out Uintegers](data any) (ret map[string]Out) {
 		return parseToMap[Out](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -594,7 +590,7 @@ func anyToUint64MapT[Out Uintegers](data any) (ret map[string]Out) {
 
 //
 
-func anyToFloat[R Floats](data any) R {
+func anyToFloat[R Floats](data any) R { //nolint:revive
 	if data == nil {
 		return 0
 	}
@@ -664,7 +660,7 @@ func zfToFloatS[T, R Floats](in []T) (out []R) {
 	return
 }
 
-func anyToFloatSlice[R Floats](data any) (ret []R) {
+func anyToFloatSlice[R Floats](data any) (ret []R) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -723,7 +719,6 @@ func anyToFloatSlice[R Floats](data any) (ret []R) {
 		return parseToSlice[R](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -740,7 +735,7 @@ func zsToFloatS[T Integers | Uintegers, R Floats](z []T) (ret []R) {
 
 //
 
-func anyToFloat64Map[R Floats](data any) (ret map[string]R) {
+func anyToFloat64Map[R Floats](data any) (ret map[string]R) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -795,7 +790,6 @@ func anyToFloat64Map[R Floats](data any) (ret map[string]R) {
 		return parseToMap[R](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }

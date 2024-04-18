@@ -103,7 +103,7 @@ func init() { //nolint:gochecknoinits //no need
 // This allows us to check for implementations of the Stringer and error
 // interfaces to be used for pretty printing ordinarily unaddressable and
 // inaccessible values such as unexported struct fields.
-func UnsafeReflectValue(v reflect.Value) (rv reflect.Value) {
+func UnsafeReflectValue(v reflect.Value) (rv reflect.Value) { //nolint:revive
 	indirects := 1
 	vt := v.Type()
 	upv := unsafe.Pointer(uintptr(unsafe.Pointer(&v)) + offsetPtr)

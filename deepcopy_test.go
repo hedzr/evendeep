@@ -29,7 +29,7 @@ func TestFlagsRevert(t *testing.T) {
 	}
 }
 
-func TestWithXXX(t *testing.T) {
+func TestWithXXX(t *testing.T) { //nolint:revive
 	copier := evendeep.NewForTest()
 
 	type AA struct {
@@ -286,7 +286,10 @@ func TestMakeClone(t *testing.T) {
 
 	aa := AA{A: true, B: 16, C: helloString}
 	ret := evendeep.MakeClone(aa)
-	aaCopy := ret.(AA)
+	aaCopy, ok := ret.(AA)
+	if !ok {
+		t.FailNow()
+	}
 	t.Logf("ret = %v", aaCopy)
 	// ret = {true 16 hello}
 }

@@ -151,7 +151,7 @@ func (s *Cvt) String(data any) string               { return anyToString(data) }
 func (s *Cvt) StringSlice(data any) []string        { return anyToStringSlice(data) }
 func (s *Cvt) StringMap(data any) map[string]string { return anyToStringMap(data) }
 
-func anyToStringSlice(data any) (ret []string) {
+func anyToStringSlice(data any) (ret []string) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -202,7 +202,6 @@ func anyToStringSlice(data any) (ret []string) {
 		return parseToSlice[string](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -252,7 +251,6 @@ func anyToStringMap(data any) (ret map[string]string) {
 		return parseToMap[string](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -323,7 +321,7 @@ var stringToBoolMap = map[string]struct{}{
 
 func (s *Cvt) BoolSlice(data any) []bool { return anyToBoolSlice(data) }
 
-func anyToBoolSlice(data any) (ret []bool) {
+func anyToBoolSlice(data any) (ret []bool) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -374,7 +372,6 @@ func anyToBoolSlice(data any) (ret []bool) {
 		return zfToBoolSS(anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -426,7 +423,6 @@ func anyToBoolMap(data any) (ret map[string]bool) {
 		return parseToMap[bool](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -475,7 +471,7 @@ func (s *Cvt) UintMap(data any) map[string]uint     { return anyToUint64MapT[uin
 
 //
 
-func anyToString(data any) string {
+func anyToString(data any) string { //nolint:revive
 	if data == nil {
 		return "<nil>"
 	}
@@ -618,7 +614,7 @@ func (s *Cvt) Float32Map(data any) map[string]float32 { return anyToFloat64Map[f
 func (s *Cvt) Complex128(data any) complex128 { return anyToComplex[complex128](data) }
 func (s *Cvt) Complex64(data any) complex64   { return anyToComplex[complex64](data) }
 
-func anyToComplex[R Complexes](data any) R {
+func anyToComplex[R Complexes](data any) R { //nolint:revive
 	if data == nil {
 		return 0
 	}
@@ -691,7 +687,7 @@ func zfToComplexS[T, R Complexes](in []T) (out []R) {
 	return
 }
 
-func anyToComplexSlice[R Complexes](data any) (ret []R) {
+func anyToComplexSlice[R Complexes](data any) (ret []R) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -749,7 +745,6 @@ func anyToComplexSlice[R Complexes](data any) (ret []R) {
 		return parseToSlice[R](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -765,7 +760,7 @@ func zsToComplexS[T Integers | Uintegers | Floats, R Complexes](z []T) (ret []R)
 func (s *Cvt) Complex128Map(data any) map[string]complex128 { return anyToComplexMap[complex128](data) }
 func (s *Cvt) Complex64Map(data any) map[string]complex64   { return anyToComplexMap[complex64](data) }
 
-func anyToComplexMap[R Complexes](data any) (ret map[string]R) {
+func anyToComplexMap[R Complexes](data any) (ret map[string]R) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -817,7 +812,6 @@ func anyToComplexMap[R Complexes](data any) (ret map[string]R) {
 		return parseToMap[R](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -842,7 +836,7 @@ func zfToComplex128MN[T Numerics | string | bool, Out Complexes](in map[string]T
 
 func (s *Cvt) Duration(data any) time.Duration { return anyToDuration(data) }
 
-func anyToDuration(data any) time.Duration {
+func anyToDuration(data any) time.Duration { //nolint:revive
 	if data == nil {
 		return 0
 	}
@@ -887,7 +881,7 @@ func anyToDuration(data any) time.Duration {
 
 func (s *Cvt) DurationSlice(data any) []time.Duration { return anyToDurationSlice(data) }
 
-func anyToDurationSlice(data any) (ret []time.Duration) {
+func anyToDurationSlice(data any) (ret []time.Duration) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -955,7 +949,6 @@ func anyToDurationSlice(data any) (ret []time.Duration) {
 	case any:
 		return parseToSlice[time.Duration](anyToString(z))
 	default:
-		break
 	}
 	return
 }
@@ -986,13 +979,12 @@ func zsToDurationSB[T bool | Floats | Complexes](z []T) (ret []time.Duration) {
 
 func (s *Cvt) DurationMap(data any) map[string]time.Duration { return anyToDurationMap(data) }
 
-func anyToDurationMap(data any) (ret map[string]time.Duration) {
+func anyToDurationMap(data any) (ret map[string]time.Duration) { //nolint:revive
 	if data == nil {
 		return
 	}
 
 	switch z := data.(type) {
-
 	case map[string]time.Duration:
 		return z
 	case map[string]string:
@@ -1028,7 +1020,6 @@ func anyToDurationMap(data any) (ret map[string]time.Duration) {
 		return parseToMap[time.Duration](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -1037,7 +1028,7 @@ func anyToDurationMap(data any) (ret map[string]time.Duration) {
 
 func (s *Cvt) Time(data any) time.Time { return anyToTime(data) }
 
-func anyToTime(data any) (tm time.Time) {
+func anyToTime(data any) (tm time.Time) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -1154,7 +1145,7 @@ var (
 	onceFormats          sync.Once
 )
 
-func onceInitTimeFormats() []string {
+func onceInitTimeFormats() []string { //nolint:revive
 	onceFormats.Do(func() {
 		knownDateTimeFormats = []string{
 			"2006-01-02 15:04:05.999999999 -0700",
@@ -1208,7 +1199,7 @@ func onceInitTimeFormats() []string {
 
 func (s *Cvt) TimeSlice(data any) []time.Time { return anyToTimeSlice(data) }
 
-func anyToTimeSlice(data any) (ret []time.Time) {
+func anyToTimeSlice(data any) (ret []time.Time) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -1217,7 +1208,7 @@ func anyToTimeSlice(data any) (ret []time.Time) {
 	case []time.Time:
 		return z
 	case []*time.Time:
-		break // todo convert []*time.Time to []time.Time?
+		// break // todo convert []*time.Time to []time.Time?
 
 	case []int:
 		return zsToTimeS(z)
@@ -1268,7 +1259,6 @@ func anyToTimeSlice(data any) (ret []time.Time) {
 		return parseToSlice[time.Time](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -1283,7 +1273,7 @@ func zsToTimeS[T Integers | Uintegers](z []T) (ret []time.Time) {
 
 func (s *Cvt) TimeMap(data any) map[string]time.Time { return anyToTimeMap(data) }
 
-func anyToTimeMap(data any) (ret map[string]time.Time) {
+func anyToTimeMap(data any) (ret map[string]time.Time) { //nolint:revive
 	if data == nil {
 		return
 	}
@@ -1325,7 +1315,6 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 		return parseToMap[time.Time](anyToString(z))
 
 	default:
-		break
 	}
 	return
 }
@@ -1341,7 +1330,7 @@ func anyToTimeMap(data any) (ret map[string]time.Time) {
 //
 
 //nolint:lll //no why
-func (valueConverters ValueConverters) findConverters(params *Params, from, to reflect.Type, userDefinedOnly bool) (converter ValueConverter, ctx *ValueConverterContext) {
+func (valueConverters ValueConverters) findConverters(params *Params, from, to reflect.Type, userDefinedOnly bool) (converter ValueConverter, ctx *ValueConverterContext) { //nolint:revive,lll
 	var yes bool
 	var minV int
 	if userDefinedOnly {
@@ -1361,7 +1350,7 @@ func (valueConverters ValueConverters) findConverters(params *Params, from, to r
 }
 
 //nolint:lll //no why
-func (valueCopiers ValueCopiers) findCopiers(params *Params, from, to reflect.Type, userDefinedOnly bool) (copier ValueCopier, ctx *ValueConverterContext) {
+func (valueCopiers ValueCopiers) findCopiers(params *Params, from, to reflect.Type, userDefinedOnly bool) (copier ValueCopier, ctx *ValueConverterContext) { //nolint:revive,lll
 	var yes bool
 	var minV int
 	if userDefinedOnly {
@@ -1402,10 +1391,10 @@ func (ctx *ValueConverterContext) IsPassSourceToTargetFunction() bool {
 // If no comfortable converter found, the return processed is false.
 //
 //nolint:lll //no why
-func (ctx *ValueConverterContext) Preprocess(source reflect.Value, targetType reflect.Type, cvtOuter ValueConverter) (processed bool, target reflect.Value, err error) {
+func (ctx *ValueConverterContext) Preprocess(source reflect.Value, targetType reflect.Type, cvtOuter ValueConverter) (processed bool, target reflect.Value, err error) { //nolint:revive,lll
 	if ctx != nil && ctx.Params != nil && ctx.Params.controller != nil {
 		sourceType := source.Type()
-		if cvt, ctxCvt := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType, false); cvt != nil && cvt != cvtOuter {
+		if cvt, ctxCvt := ctx.controller.valueConverters.findConverters(ctx.Params, sourceType, targetType, false); cvt != nil && cvt != cvtOuter { //nolint:revive,lll
 			target, err = cvt.Transform(ctxCvt, source, targetType)
 			processed = true
 			return
@@ -1571,6 +1560,7 @@ func (c *toConverterBase) fallback(target reflect.Value) (err error) { //nolint:
 type fromConverterBase struct{ cvtbase }
 
 func (c *fromConverterBase) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+	_, _, _ = ctx, source, target
 	panic("not impl")
 }
 
@@ -1578,15 +1568,16 @@ func (c *fromConverterBase) Transform(ctx *ValueConverterContext,
 	source reflect.Value,
 	targetType reflect.Type,
 ) (target reflect.Value, err error) {
+	_, _, _, _ = ctx, source, target, targetType
 	panic("not impl")
 }
 
 func (c *fromConverterBase) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+	_, _, _ = params, source, target
 	panic("not impl")
 }
 
-//nolint:unused,lll //future
-func (c *fromConverterBase) preprocess(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (processed bool, target reflect.Value, err error) {
+func (c *fromConverterBase) preprocess(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (processed bool, target reflect.Value, err error) { //nolint:revive,lll,unused
 	if !(ctx != nil && ctx.Params != nil && ctx.Params.controller != nil) {
 		return
 	}
@@ -1736,7 +1727,7 @@ func (c *toStringConverter) Transform(ctx *ValueConverterContext,
 	return
 }
 
-func (c *toStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *toStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive
 	if yes = target.Kind() == reflect.String; yes {
 		ctx = &ValueConverterContext{params}
 	}
@@ -1751,7 +1742,7 @@ var marshallableTypes = map[string]reflect.Type{ //nolint:gochecknoglobals //no
 	"MarshalJSON": reflect.TypeOf((*json.Marshaler)(nil)).Elem(),
 }
 
-var textMarshaller = TextMarshaller(func(v interface{}) ([]byte, error) { //nolint:gochecknoglobals //no
+var textMarshaller = TextMarshaller(func(v interface{}) ([]byte, error) { //nolint:revive,gochecknoglobals //no
 	return json.MarshalIndent(v, "", "  ")
 })
 
@@ -1778,7 +1769,7 @@ func doMarshalling(source reflect.Value) (str string, err error) {
 	if mtd, yes := canMarshalling(source); yes {
 		ret := mtd.Call(nil)
 		if err, yes = (ret[1].Interface()).(error); err == nil && yes {
-			data = ret[0].Interface().([]byte) //nolint:errcheck //no need
+			data, _ = ret[0].Interface().([]byte) //nolint:revive,errcheck //no need
 		}
 	} else {
 		data, err = textMarshaller(source.Interface())
@@ -1794,8 +1785,8 @@ func tryMarshalling(source reflect.Value) (str string, processed bool, err error
 	var mtd reflect.Value
 	if mtd, processed = canMarshalling(source); processed {
 		ret := mtd.Call(nil)
-		if err, _ = (ret[1].Interface()).(error); err == nil {
-			data = ret[0].Interface().([]byte) //nolint:errcheck //no need
+		if err, _ = (ret[1].Interface()).(error); err == nil { //nolint:revive
+			data = ret[0].Interface().([]byte) //nolint:revive,errcheck //no need
 		}
 	}
 	if err == nil {
@@ -1808,7 +1799,7 @@ func tryMarshalling(source reflect.Value) (str string, processed bool, err error
 
 type fromStringConverter struct{ fromConverterBase }
 
-func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:revive
 	tgt, tgtptr := ref.Rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
@@ -1845,7 +1836,7 @@ func (c *fromStringConverter) CopyTo(ctx *ValueConverterContext, source, target 
 }
 
 // Transform will transform source string to target type (bool, int, ...)
-func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive,lll
 	if !source.IsValid() {
 		target, err = c.convertToOrZeroTarget(ctx, source, targetType)
 		return
@@ -1901,7 +1892,7 @@ func (c *fromStringConverter) Transform(ctx *ValueConverterContext, source refle
 }
 
 //nolint:lll //keep it
-func (c *fromStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *fromStringConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive
 	if yes = source.Kind() == reflect.String; yes {
 		ctx = &ValueConverterContext{params}
 	}
@@ -1917,7 +1908,7 @@ func (c *fromStringConverter) Match(params *Params, source, target reflect.Type)
 // fromMapConverter transforms a map to other types (esp string, slice, struct).
 type fromMapConverter struct{ fromConverterBase }
 
-func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *fromMapConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:revive
 	tgt, tgtptr := ref.Rdecode(target)
 	tgttyp := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
 	dbglog.Log("  target: %v (%v), tgtptr: %v, tgt: %v, tgttyp: %v",
@@ -1995,7 +1986,7 @@ func (c *fromMapConverter) Transform(ctx *ValueConverterContext, source reflect.
 }
 
 //nolint:lll,gocognit //keep it
-func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, target reflect.Value, targetType reflect.Type) (err error) { //nolint:unparam
+func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, target reflect.Value, targetType reflect.Type) (err error) { //nolint:revive,unparam
 	cc, _, _ := ctx.controller, target, targetType
 
 	preSetter := func(value reflect.Value, names ...string) (processed bool, err error) {
@@ -2061,7 +2052,7 @@ func toExportedName(s string) string {
 	return s
 }
 
-func wordSplitter(s string) (result [][]rune) {
+func wordSplitter(s string) (result [][]rune) { //nolint:revive
 	runes := []rune(s)
 	var word []rune
 	for i, r := range runes {
@@ -2095,7 +2086,7 @@ func makeCapitalize1st(r []rune) (ret []rune) {
 }
 
 //nolint:lll,gocognit //keep it
-func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive,lll
 	cc := ctx.controller
 
 	preSetter := func(value reflect.Value, names ...string) (processed bool, err error) {
@@ -2149,16 +2140,16 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 		// use the key.(string) as the target struct field name
 		tsf, ok := targetType.FieldByName(ks)
 		if !ok {
-			var Ks string
+			var kS string
 			if tryForExportedFieldName {
-				if Ks = toExportedName(ks); Ks != ks {
-					tsf, ok = targetType.FieldByName(Ks)
+				if kS = toExportedName(ks); kS != ks {
+					tsf, ok = targetType.FieldByName(kS)
 				}
 			}
 			if !ok {
 				continue
 			}
-			ks = Ks
+			ks = kS
 		}
 
 		fld := target.FieldByName(ks)
@@ -2236,12 +2227,12 @@ func (c *fromSyncPkgConverter) Match(params *Params, source, target reflect.Type
 	return
 }
 
-func (c *fromSyncPkgConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *fromSyncPkgConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:revive,lll
 	_, _, _ = ctx, source, target
 	return
 }
 
-func (c *fromSyncPkgConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromSyncPkgConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive,lll
 	_, _, _ = ctx, source, target
 	return
 }
@@ -2263,7 +2254,7 @@ func (c *fromBytesBufferConverter) CopyTo(ctx *ValueConverterContext, source, ta
 		return
 	}
 
-	from := source.Interface().(bytes.Buffer) //nolint:errcheck //no need
+	from, _ := source.Interface().(bytes.Buffer) //nolint:revive,errcheck //no need
 	tv := tgtptr.Interface()
 	switch to := tv.(type) {
 	case bytes.Buffer:
@@ -2291,7 +2282,7 @@ func (c *fromBytesBufferConverter) Transform(ctx *ValueConverterContext, source 
 
 	// TO/DO implement me
 	// panic("implement me")
-	from := source.Interface().(bytes.Buffer) //nolint:errcheck //no need
+	from, _ := source.Interface().(bytes.Buffer) //nolint:revive,errcheck //no need
 	var to bytes.Buffer
 	_, err = to.Write(from.Bytes())
 	target = reflect.ValueOf(to)
@@ -2354,7 +2345,7 @@ func (c *fromTimeConverter) CopyTo(ctx *ValueConverterContext, source, target re
 }
 
 //nolint:lll //keep it
-func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive
 	if source.IsValid() {
 		var processed bool
 		if target, processed = c.checkSource(ctx, source, targetType); processed {
@@ -2366,27 +2357,27 @@ func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect
 			b := ref.IsNil(source) || ref.IsZero(source)
 			target = reflect.ValueOf(b)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			tm := source.Interface().(time.Time) //nolint:errcheck //no need
+			tm, _ := source.Interface().(time.Time) //nolint:revive,errcheck //no need
 			t := reflect.ValueOf(tm.Unix())
 			target, err = rToInteger(t, targetType)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			tm := source.Interface().(time.Time) //nolint:errcheck //no need
+			tm, _ := source.Interface().(time.Time) //nolint:revive,errcheck //no need
 			t := reflect.ValueOf(tm.Unix())
 			target, err = rToUInteger(t, targetType)
 
 		case reflect.Float32, reflect.Float64:
-			tm := source.Interface().(time.Time) //nolint:errcheck //no need
-			f := float64(tm.UnixNano()) / 1e9    //nolint:gomnd //simple case
+			tm, _ := source.Interface().(time.Time) //nolint:revive,errcheck //no need
+			f := float64(tm.UnixNano()) / 1e9       //nolint:gomnd //simple case
 			t := reflect.ValueOf(f)
 			target, err = rToFloat(t, targetType)
 		case reflect.Complex64, reflect.Complex128:
-			tm := source.Interface().(time.Time) //nolint:errcheck //no need
-			f := float64(tm.UnixNano()) / 1e9    //nolint:gomnd //simple case
+			tm, _ := source.Interface().(time.Time) //nolint:revive,errcheck //no need
+			f := float64(tm.UnixNano()) / 1e9       //nolint:gomnd //simple case
 			t := reflect.ValueOf(f)
 			target, err = rToComplex(t, targetType)
 
 		case reflect.String:
-			tm := source.Interface().(time.Time) //nolint:errcheck //no need
+			tm, _ := source.Interface().(time.Time) //nolint:revive,errcheck //no need
 			str := tm.Format(time.RFC3339)
 			t := reflect.ValueOf(str)
 			target, err = rToString(t, targetType)
@@ -2400,7 +2391,7 @@ func (c *fromTimeConverter) Transform(ctx *ValueConverterContext, source reflect
 	return
 }
 
-func (c *fromTimeConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *fromTimeConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if sk := source.Kind(); sk == reflect.Struct {
 		if yes = source.Name() == "Time" && source.PkgPath() == timeConstString; yes {
 			ctx = &ValueConverterContext{params}
@@ -2530,7 +2521,7 @@ func (c *toTimeConverter) Transform(ctx *ValueConverterContext, source reflect.V
 	return
 }
 
-func (c *toTimeConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *toTimeConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if tk := target.Kind(); tk == reflect.Struct {
 		if yes = target.Name() == "Time" && target.PkgPath() == timeConstString; yes {
 			ctx = &ValueConverterContext{params}
@@ -2555,7 +2546,7 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 		ref.Typfmtv(&tgt), ref.Typfmt(tgttyp))
 
 	var processed bool
-	if target, processed = c.checkSource(ctx, source, tgttyp); processed {
+	if target, processed = c.checkSource(ctx, source, tgttyp); processed { //nolint:revive
 		return
 	}
 
@@ -2582,7 +2573,7 @@ func (c *fromDurationConverter) CopyTo(ctx *ValueConverterContext, source, targe
 }
 
 //nolint:lll //keep it
-func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive
 	if source.IsValid() {
 		// var processed bool
 		// if processed, target, err = c.preprocess(ctx, source, targetType); processed {
@@ -2636,8 +2627,7 @@ func (c *fromDurationConverter) Transform(ctx *ValueConverterContext, source ref
 	return
 }
 
-//nolint:lll //keep it
-func (c *fromDurationConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *fromDurationConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if sk := source.Kind(); sk == reflect.Int64 {
 		if yes = source.Name() == "Duration" && source.PkgPath() == timeConstString; yes {
 			ctx = &ValueConverterContext{params}
@@ -2676,7 +2666,7 @@ func (c *toDurationConverter) CopyTo(ctx *ValueConverterContext, source, target 
 }
 
 //nolint:lll //keep it
-func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) {
+func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive,lll
 	if source.IsValid() { //nolint:nestif,gocritic // no need to switch to 'switch' clause
 		var processed bool
 		if target, processed = c.checkSource(ctx, source, targetType); processed {
@@ -2736,7 +2726,7 @@ func (c *toDurationConverter) Transform(ctx *ValueConverterContext, source refle
 }
 
 //nolint:lll //keep it
-func (c *toDurationConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *toDurationConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if tk := target.Kind(); tk == reflect.Int64 {
 		if yes = target.Name() == "Duration" && target.PkgPath() == timeConstString; yes {
 			ctx = &ValueConverterContext{params}
@@ -2767,7 +2757,7 @@ func copyToFuncImpl(controller *cpController, source, target reflect.Value, targ
 		if len(res) > 0 {
 			last := res[len(res)-1]
 			if ref.Iserrortype(targetType.Out(len(res)-1)) && !ref.IsNil(last) {
-				err = last.Interface().(error) //nolint:errcheck //no need
+				err, _ = last.Interface().(error) //nolint:revive,errcheck //no need
 			}
 		}
 	}
@@ -2808,7 +2798,7 @@ func (c *toFuncConverter) copyTo(ctx *ValueConverterContext, source, src, tgt, t
 	return
 }
 
-func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:revive
 	src := ref.Rdecodesimple(source)
 	tgt, tgtptr := ref.Rdecode(target)
 	tgtType := c.safeType(tgt, tgtptr) // because tgt might be invalid, so we fetch tgt type via its pointer
@@ -2843,7 +2833,7 @@ func (c *toFuncConverter) CopyTo(ctx *ValueConverterContext, source, target refl
 //	return
 // }
 
-func (c *toFuncConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *toFuncConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if tk := target.Kind(); tk == reflect.Func {
 		yes, ctx = true, &ValueConverterContext{params}
 	}
@@ -2903,8 +2893,7 @@ func (c *fromFuncConverter) CopyTo(ctx *ValueConverterContext, source, target re
 	return
 }
 
-//nolint:lll,gocognit //keep it
-func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, source, target reflect.Value) (err error) {
+func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, source, target reflect.Value) (err error) { //nolint:revive,lll
 	sourceType := source.Type()
 	var presetInArgsLen int
 	var ok bool
@@ -2922,7 +2911,7 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 			ok = ref.Iserrortype(lastoutargtype)
 			if ok {
 				v := results[len(results)-1].Interface()
-				err, _ = v.(error)
+				err, _ = v.(error) //nolint:revive
 				if err != nil {
 					return
 				}
@@ -2943,7 +2932,7 @@ func (c *fromFuncConverter) funcResultToTarget(ctx *ValueConverterContext, sourc
 		}
 	}
 	//nolint:lll //keep it
-	err = errors.New("unmatched number of function return and preset input args: function needs %v params but preset %v input args", sourceType.NumIn(), presetInArgsLen)
+	err = errors.New("unmatched number of function return and preset input args: function needs %v params but preset %v input args", sourceType.NumIn(), presetInArgsLen) //nolint:revive,lll
 	return
 }
 
@@ -3070,7 +3059,7 @@ func (c *fromFuncConverter) Transform(ctx *ValueConverterContext, source reflect
 //	return
 // }
 
-func (c *fromFuncConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) {
+func (c *fromFuncConverter) Match(params *Params, source, target reflect.Type) (ctx *ValueConverterContext, yes bool) { //nolint:revive,lll
 	if sk := source.Kind(); sk == reflect.Func {
 		yes, ctx = true, &ValueConverterContext{params}
 	}

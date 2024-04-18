@@ -69,7 +69,7 @@ type SourceValueExtractor func(targetName string) typ.Any
 type TargetValueSetter func(value *reflect.Value, sourceNames ...string) (err error)
 
 // CopyTo makes a deep clone of a source object or merges it into the target.
-func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) {
+func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (err error) { //nolint:revive
 	if fromObjOrPtr == nil || toObjPtr == nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (c *cpController) CopyTo(fromObjOrPtr, toObjPtr interface{}, opts ...Opt) (
 	return
 }
 
-func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) {
+func (c *cpController) copyTo(params *Params, from, to reflect.Value) (err error) { //nolint:revive
 	err = c.copyToInternal(params, from, to,
 		func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			kind, pkgPath := from.Kind(), from.Type().PkgPath()
@@ -205,9 +205,9 @@ func (c *cpController) copyToInternal( //nolint:revive,gocognit //yes, it is an 
 	return
 }
 
-func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (processed bool) {
+func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (processed bool) { //nolint:revive
 	if from.CanInterface() { //nolint:nestif //keep it
-		var fromObj interface{}
+		var fromObj interface{} //nolint:revive
 		if params != nil && params.srcOwner != nil {
 			f, t := *params.srcOwner, *params.dstOwner
 		retry:
@@ -228,7 +228,7 @@ func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (pr
 	return
 }
 
-func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) {
+func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) { //nolint:revive
 	if dc, ok := fromObj.(Cloneable); ok { //nolint:gocritic // no need to rewrite to 'switch'
 		to.Set(reflect.ValueOf(dc.Clone()))
 		processed = true

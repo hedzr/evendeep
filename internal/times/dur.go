@@ -28,7 +28,7 @@ func shortDur(d time.Duration, frac bool) string {
 	return string(arr[n:])
 }
 
-func shortDurFormat(buf *[32]byte, d time.Duration, useFrac bool) int {
+func shortDurFormat(buf *[32]byte, d time.Duration, useFrac bool) int { //nolint:revive
 	// Largest time is:
 	// 2540400h10m10.000000000s
 	// 2540400h10m10s999ms999us999na
@@ -73,27 +73,27 @@ func shortDurFormat(buf *[32]byte, d time.Duration, useFrac bool) int {
 		var days, hours, minutes, seconds, ms, us uint64
 		if u >= uint64(24*time.Hour) {
 			days = u / 24 / uint64(time.Hour)
-			u = u % (24 * uint64(time.Hour))
+			u = u % (24 * uint64(time.Hour)) //nolint:gocritic
 		}
 		if u >= uint64(time.Hour) {
 			hours = u / uint64(time.Hour)
-			u = u % uint64(time.Hour)
+			u = u % uint64(time.Hour) //nolint:gocritic
 		}
 		if u >= uint64(time.Minute) {
 			minutes = u / uint64(time.Minute)
-			u = u % uint64(time.Minute)
+			u = u % uint64(time.Minute) //nolint:gocritic
 		}
 		if u >= uint64(time.Second) {
 			seconds = u / uint64(time.Second)
-			u = u % uint64(time.Second)
+			u = u % uint64(time.Second) //nolint:gocritic
 		}
 		if u >= uint64(time.Millisecond) {
 			ms = u / uint64(time.Millisecond)
-			u = u % uint64(time.Millisecond)
+			u = u % uint64(time.Millisecond) //nolint:gocritic
 		}
 		if u >= uint64(time.Microsecond) {
 			us = u / uint64(time.Microsecond)
-			u = u % uint64(time.Microsecond)
+			u = u % uint64(time.Microsecond) //nolint:gocritic
 		}
 
 		if u > 0 {
@@ -148,15 +148,15 @@ func shortDurFormat(buf *[32]byte, d time.Duration, useFrac bool) int {
 func fmtSeconds(buf []byte, u uint64, w int) (nw int) {
 	// Special case: if duration is smaller than a second,
 	// use smaller units, like 1.2ms
-	w--
+	w-- //nolint:revive
 	buf[w] = 's'
-	w = fmtMsec(buf[:w], u, w)
+	w = fmtMsec(buf[:w], u, w) //nolint:revive
 	return w
 }
 
 func fmtMsec(buf []byte, u uint64, w int) (nw int) {
 	var prec int
-	w--
+	w-- //nolint:revive
 	switch {
 	case u == 0:
 		buf[w] = '0'
@@ -169,15 +169,15 @@ func fmtMsec(buf []byte, u uint64, w int) (nw int) {
 		// print microseconds
 		prec = 3
 		// U+00B5 'µ' micro sign == 0xC2 0xB5
-		w-- // Need room for two bytes.
+		w-- //nolint:revive // Need room for two bytes.
 		copy(buf[w:], "µ")
 	default:
 		// print milliseconds
 		prec = 6
 		buf[w] = 'm'
 	}
-	w, u = fmtFrac(buf[:w], u, prec)
-	w = fmtInt(buf[:w], u)
+	w, u = fmtFrac(buf[:w], u, prec) //nolint:revive
+	w = fmtInt(buf[:w], u)           //nolint:revive
 	return w
 }
 
@@ -196,7 +196,7 @@ func fmtFrac(buf []byte, v uint64, prec int) (nw int, nv uint64) {
 			w--
 			buf[w] = byte(digit) + '0'
 		}
-		v /= 10
+		v /= 10 //nolint:revive
 	}
 	if printed {
 		w--
@@ -216,7 +216,7 @@ func fmtInt(buf []byte, v uint64) int {
 		for v > 0 {
 			w--
 			buf[w] = byte(v%10) + '0'
-			v /= 10
+			v /= 10 //nolint:revive
 		}
 	}
 	return w
@@ -268,7 +268,7 @@ func MustParseDuration(s string) (dur time.Duration) {
 // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 //
 // The difference is we accept day part, such as '3d7s'.
-func ParseDuration(s string) (time.Duration, error) {
+func ParseDuration(s string) (time.Duration, error) { //nolint:revive
 	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
 	orig := s
 	var d uint64
@@ -279,7 +279,7 @@ func ParseDuration(s string) (time.Duration, error) {
 		c := s[0]
 		if c == '-' || c == '+' {
 			neg = c == '-'
-			s = s[1:]
+			s = s[1:] //nolint:revive
 		}
 	}
 	// Special case: if all that is left is "0", this is zero.
@@ -303,7 +303,7 @@ func ParseDuration(s string) (time.Duration, error) {
 		}
 		// Consume [0-9]*
 		pl := len(s)
-		v, s, err = leadingInt(s)
+		v, s, err = leadingInt(s) //nolint:revive
 		if err != nil {
 			return 0, errors.New("time: invalid duration " + quote(orig))
 		}
@@ -312,9 +312,9 @@ func ParseDuration(s string) (time.Duration, error) {
 		// Consume (\.[0-9]*)?
 		post := false
 		if s != "" && s[0] == '.' {
-			s = s[1:]
+			s = s[1:] //nolint:revive
 			pl := len(s)
-			f, scale, s = leadingFraction(s)
+			f, scale, s = leadingFraction(s) //nolint:revive
 			post = pl != len(s)
 		}
 		if !pre && !post {
@@ -334,7 +334,7 @@ func ParseDuration(s string) (time.Duration, error) {
 			return 0, errors.New("time: missing unit in duration " + quote(orig))
 		}
 		u := s[:i]
-		s = s[i:]
+		s = s[i:] //nolint:revive
 		unit, ok := unitMap[u]
 		if !ok {
 			return 0, errors.New("time: unknown unit " + quote(u) + " in duration " + quote(orig))

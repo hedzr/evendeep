@@ -27,6 +27,8 @@ func TestFieldsTableT_getFields_special(t *testing.T) {
 
 	iv := reflect.ValueOf(123)
 	tr.getFields(&iv, iv.Type(), "an", 0)
+
+	t.Log()
 }
 
 func TestTableRecT_FieldName(t *testing.T) {
@@ -43,6 +45,8 @@ func TestTableRecT_FieldName(t *testing.T) {
 	if tr.FieldName() != "A.B.C" {
 		t.FailNow()
 	}
+
+	t.Log()
 }
 
 func TestTableRecT_ShortFieldName(t *testing.T) {
@@ -54,7 +58,7 @@ func TestTableRecT_ShortFieldName(t *testing.T) {
 	}
 }
 
-func TestSetToZero(t *testing.T) {
+func TestSetToZero(t *testing.T) { //nolint:revive
 	val := 10
 	type Tmp struct {
 		A int16
@@ -214,7 +218,7 @@ func TestSetToZero(t *testing.T) {
 
 	type Func func()
 	var fn Func = func() {}
-	for i, case_ := range []*struct {
+	for i, case1 := range []*struct {
 		Src  typ.Any
 		Zero typ.Any
 	}{
@@ -233,15 +237,15 @@ func TestSetToZero(t *testing.T) {
 
 		{fn, Func(nil)},
 	} {
-		v := reflect.ValueOf(case_)
+		v := reflect.ValueOf(case1)
 		vind := ref.Rdecodesimple(v)
 
 		vf := vind.Field(0) // vf = vf.Elem()
 		t.Logf("%d. src: %+v", i, ref.Valfmt(&vf))
 		setToZero(&vf)
 
-		if why, equal := diff.New(case_.Src, case_.Zero, diff.WithTreatEmptyStructPtrAsNilPtr(true)); !equal {
-			t.Logf("%d. FAILED: Setting to Zero for source '%v', expect '%v' but failed.\n   why: %v", i, case_.Src, case_.Zero, why)
+		if why, equal := diff.New(case1.Src, case1.Zero, diff.WithTreatEmptyStructPtrAsNilPtr(true)); !equal {
+			t.Logf("%d. FAILED: Setting to Zero for source '%v', expect '%v' but failed.\n   why: %v", i, case1.Src, case1.Zero, why)
 			t.FailNow()
 		}
 	}
@@ -262,7 +266,7 @@ func TestIgnoredPackagePrefixesContains(t *testing.T) {
 }
 
 func TestFieldAccessorT_mapkey_special(t *testing.T) {
-	const byName = false
+	// const byName = false
 	x2 := x2data()
 	v1 := reflect.ValueOf(&x2)
 	t1, _ := ref.Rdecode(v1)
@@ -280,11 +284,13 @@ func TestFieldAccessorT_IsAnyFlagsOK(t *testing.T) {
 }
 
 func TestFieldAccessorT_FieldType_is_nil(t *testing.T) {
-	var a *fieldAccessorT = nil
+	var a *fieldAccessorT = nil //nolint:revive
 	_ = a.FieldType()
 
 	a = &fieldAccessorT{isStruct: false}
 	_ = a.NumField()
+
+	t.Log()
 }
 
 type zPart struct {
@@ -344,7 +350,7 @@ func TestFieldAccessorT_Operations(t *testing.T) {
 	// }
 }
 
-func TestStructIteratorT_Next_X1(t *testing.T) {
+func TestStructIteratorT_Next_X1(t *testing.T) { //nolint:revive
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := ref.Rdecode(v1)
@@ -367,7 +373,7 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
-			if flags.isFlagIgnored() || !ok {
+			if !ok || flags.isFlagIgnored() {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -375,7 +381,10 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 				t.Logf("%d. field info missed", i)
 				continue
 			}
-			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), ref.Valfmt(srcval), accessor.StructFieldName(), ref.Valfmt(dstval), ref.Typfmt(accessor.StructField().Type))
+			t.Logf("%d. %s (%v) -> %s (%v) | %v", i,
+				strings.Join(tool.ReverseStringSlice(sourcefield.names), "."),
+				ref.Valfmt(srcval), accessor.StructFieldName(),
+				ref.Valfmt(dstval), ref.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
 	})
@@ -390,7 +399,7 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 			sourcefield := sourcefields.tableRecordsT[i]
 			flags := parseFieldTags(sourcefield.structField.Tag, "")
 			accessor, ok := targetIterator.Next(nil, byName) //nolint:govet
-			if flags.isFlagIgnored() || !ok {
+			if !ok || flags.isFlagIgnored() {
 				continue
 			}
 			srcval, dstval := sourcefield.FieldValue(), accessor.FieldValue()
@@ -398,20 +407,23 @@ func TestStructIteratorT_Next_X1(t *testing.T) {
 				t.Logf("%d. field info missed", i)
 				continue
 			}
-			t.Logf("%d. %s (%v) -> %s (%v) | %v", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), ref.Valfmt(srcval), accessor.StructFieldName(), ref.Valfmt(dstval), ref.Typfmt(accessor.StructField().Type))
+			t.Logf("%d. %s (%v) -> %s (%v) | %v", i,
+				strings.Join(tool.ReverseStringSlice(sourcefield.names), "."),
+				ref.Valfmt(srcval), accessor.StructFieldName(),
+				ref.Valfmt(dstval), ref.Typfmt(accessor.StructField().Type))
 			// ec.Attach(invokeStructFieldTransformer(c, params, srcval, dstval, padding))
 		}
 	})
 }
 
-func loopIt(t *testing.T, it structIterable, byName bool, checkName func(accessor accessor, field *reflect.StructField)) {
+func loopIt(t *testing.T, it structIterable, byName bool, checkName func(accessor accessor, field *reflect.StructField)) { //nolint:revive
 	for i := 0; ; i++ {
 		accessor, ok := it.Next(nil, byName)
 		if !ok {
 			break
 		}
 		field := accessor.StructField()
-		if accessor.IsStruct() && field == nil {
+		if field == nil && accessor.IsStruct() {
 			t.Logf("%d. field info missed", i)
 			continue
 		}
@@ -488,7 +500,6 @@ func x2data() Employee {
 }
 
 func testGetAllFieldsX1(t *testing.T) {
-
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := ref.Rdecode(v1)
@@ -501,10 +512,11 @@ func testGetAllFieldsX1(t *testing.T) {
 		srctypstr := ref.Typfmtv(srcval)
 		dbglog.Log("%d. %s (%v) %v -> %s (%v)", i, strings.Join(tool.ReverseStringSlice(sourcefield.names), "."), ref.Valfmt(srcval), srctypstr, "", "")
 	}
+
+	t.Log()
 }
 
 func testStructIteratorNextT1(t *testing.T) {
-
 	x1 := x1data()
 	v1 := reflect.ValueOf(&x1)
 	t1, _ := ref.Rdecode(v1)
@@ -532,7 +544,6 @@ func TestStructIterator_Next_Employee2(t *testing.T) {
 }
 
 func testStructIteratorNextEmployee2(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 
@@ -567,7 +578,7 @@ func testStructIteratorNextEmployee2(t *testing.T) {
 			continue
 		}
 		t.Logf("%d. %q (%v) %v %q", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath)
-		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath))
+		_, _ = sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath))
 	}
 
 	if sb.String() != `0. "Base" (evendeep.Base (struct)) [0] ""
@@ -584,7 +595,6 @@ func testStructIteratorNextEmployee2(t *testing.T) {
 }
 
 func testStructIteratorNextEmployee2Exp(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 
@@ -619,7 +629,7 @@ func testStructIteratorNextEmployee2Exp(t *testing.T) {
 			continue
 		}
 		t.Logf("%d. %q (%v) %v %q", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath)
-		sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath))
+		_, _ = sb.WriteString(fmt.Sprintf("%d. %q (%v) %v %q\n", i, field.Name, ref.Typfmt(field.Type), field.Index, field.PkgPath))
 	}
 
 	if sb.String() != `0. "Name" (string (string)) [0] ""
@@ -648,7 +658,6 @@ func TestStructIterator_Next_User(t *testing.T) {
 }
 
 func testStructIteratorNextUser(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
 	tgt := User{
@@ -677,11 +686,9 @@ func testStructIteratorNextUser(t *testing.T) {
 		field := accessor.StructField()
 		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index, field)
 	}
-
 }
 
 func testStructIteratorNextUserNew(t *testing.T) {
-
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	// //tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -689,7 +696,8 @@ func testStructIteratorNextUserNew(t *testing.T) {
 	// //tm1 := time.Date(2021, 2, 28, 13, 1, 23, 800, timeZone2)
 	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
-	const byName = false
+	// const byName = false
+
 	var sb strings.Builder
 	defer func() {
 		t.Logf("\n%v\n", sb.String())
@@ -698,7 +706,7 @@ func testStructIteratorNextUserNew(t *testing.T) {
 	for _, tgt := range []*User{
 		new(User),
 	} {
-		sb.WriteString("\n")
+		_, _ = sb.WriteString("\n")
 		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := ref.Rdecode(v1)
 		it := newStructIterator(t1, withStructPtrAutoExpand(true), withStructFieldPtrAutoNew(true))
@@ -711,11 +719,9 @@ func testStructIteratorNextUserNew(t *testing.T) {
 			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
-
 }
 
 func testStructIteratorNextUserZero(t *testing.T) {
-
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -732,7 +738,7 @@ func testStructIteratorNextUserZero(t *testing.T) {
 	for _, tgt := range []*User{
 		new(User),
 	} {
-		sb.WriteString("\n\n\n")
+		_, _ = sb.WriteString("\n\n\n")
 		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := ref.Rdecode(v1)
 		it := newStructIterator(t1)
@@ -745,11 +751,9 @@ func testStructIteratorNextUserZero(t *testing.T) {
 			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
-
 }
 
 func testStructIteratorNextUserMore(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -780,7 +784,7 @@ func testStructIteratorNextUserMore(t *testing.T) {
 			Deleted:   false,
 		},
 	} {
-		sb.WriteString("\n\n\n")
+		_, _ = sb.WriteString("\n\n\n")
 		v1 := reflect.ValueOf(&tgt) // nolint:gosec // G601: Implicit memory aliasing in for loop
 		t1, _ := ref.Rdecode(v1)
 		it := newStructIterator(t1)
@@ -793,7 +797,6 @@ func testStructIteratorNextUserMore(t *testing.T) {
 			_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v(%v) | fld: %+v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index, field)
 		}
 	}
-
 }
 
 func TestStructIterator_Next_A4(t *testing.T) {
@@ -987,7 +990,6 @@ func TestFieldsTable_getallfields(t *testing.T) {
 }
 
 func testFieldsTableGetFieldsDeeply(t *testing.T) {
-
 	x2 := new(X1)
 	t2 := ref.Rdecodesimple(reflect.ValueOf(&x2))
 
@@ -1003,7 +1005,6 @@ func testFieldsTableGetFieldsDeeply(t *testing.T) {
 			ref.Typfmt(f.structField.Type), f.structField.Tag, f.structField.PkgPath,
 		)
 	}
-
 }
 
 func testFieldsTableGetAllFields(t *testing.T) {
@@ -1065,7 +1066,6 @@ func testFieldsTableGetAllFields(t *testing.T) {
 }
 
 func testFieldsTableGetAllFieldsEmployee2(t *testing.T) {
-
 	// timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -1124,12 +1124,10 @@ func testFieldsTableGetAllFieldsEmployee2(t *testing.T) {
 		} else {
 			t.Log("The loops and outputs verified")
 		}
-
 	}
 }
 
 func testFieldsTableGetAllFieldsEmployee22(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -1155,7 +1153,7 @@ func testFieldsTableGetAllFieldsEmployee22(t *testing.T) {
 			Valid:  true,
 		},
 	} {
-		sb.WriteString("\n")
+		_, _ = sb.WriteString("\n")
 
 		v4 := reflect.ValueOf(&a4) // nolint:gosec // G601: Implicit memory aliasing in for loop
 
@@ -1188,7 +1186,6 @@ func testFieldsTableGetAllFieldsEmployee22(t *testing.T) {
 }
 
 func testFieldsTableGetAllFieldsUser(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	// tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)

@@ -13,6 +13,7 @@ func TestSmartParseInt(t *testing.T) {
 	_ = MustParseFloat(".1")
 	_, _ = ParseComplex(".1")
 	_ = MustParseComplex(".1")
+	t.Log()
 }
 
 func TestQuote(t *testing.T) {

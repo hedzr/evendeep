@@ -8,7 +8,7 @@ import (
 )
 
 func TestPtrOf(t *testing.T) {
-	var i = 100
+	i := 100
 	v := reflect.ValueOf(&i)
 	vind := ref.Rindirect(v)
 	vp := PtrOf(vind)

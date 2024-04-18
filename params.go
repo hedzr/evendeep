@@ -83,7 +83,7 @@ func withOwnersSimple(c *cpController, ownerParams *Params) paramsOpt { //nolint
 	}
 }
 
-func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt { //nolint:lll,gocognit //future
+func withOwners(c *cpController, ownerParams *Params, ownerSource, ownerTarget, osDecoded, otDecoded *reflect.Value) paramsOpt { //nolint:revive,lll,gocognit //future
 	return func(p *Params) {
 		p.srcOwner = ownerSource
 		p.dstOwner = ownerTarget
@@ -358,7 +358,10 @@ func (params *Params) revoke() {
 // }
 
 func (params *Params) isStruct() bool { //nolint:unused //future
-	return params != nil && params.accessor != nil && params.accessor.IsStruct() && params.dstOwner != nil
+	if params == nil || params.accessor == nil || params.dstOwner == nil {
+		return false
+	}
+	return params.accessor.IsStruct()
 }
 
 func (params *Params) parseFieldTags(tag reflect.StructTag) (flagsInTag *fieldTags, isIgnored bool) {

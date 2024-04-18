@@ -1,12 +1,12 @@
 package evendeep
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
-
-	"reflect"
-	"testing"
 )
 
 func TestFieldTags_Parse(t *testing.T) {
@@ -15,23 +15,23 @@ func TestFieldTags_Parse(t *testing.T) {
 }
 
 type AFT struct {
-	flat01 *int `copy:",flat"`
+	flat01 *int `copy:",flat"` //nolint:revive,unused
 
-	flags     flags.Flags     `copy:",cleareq"` //nolint:unused,structcheck //test only
-	converter *ValueConverter //nolint:unused,structcheck //test only
-	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test only
+	flags     flags.Flags     `copy:",cleareq"` //nolint:revive,unused,structcheck //test only
+	converter *ValueConverter //nolint:revive,unused,structcheck //test only
+	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:revive,unused,structcheck //test only
 
-	ignored01 int `copy:"-"`
+	ignored01 int `copy:"-"` //nolint:revive,unused
 }
 
-func prepareAFT() (a AFT, expects []flags.Flags) {
+func prepareAFT() (a AFT, expects []flags.Flags) { //nolint:revive,unparam
 	expects = []flags.Flags{
 		// flat01
 		{cms.Flat: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
 
-		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
-		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true},
+		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},           //nolint:revive,lll
+		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},                                //nolint:revive,lll
+		{cms.Must: true, cms.KeepIfNotEq: true, cms.SliceCopyAppend: true, cms.MapMerge: true, cms.NoOmitTarget: true, cms.OmitIfZero: true, cms.ByOrdinal: true}, //nolint:revive,lll
 
 		// ignored01
 		{cms.Ignore: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
@@ -43,7 +43,6 @@ func prepareAFT() (a AFT, expects []flags.Flags) {
 }
 
 func subtestParse(t *testing.T) {
-
 	a, expects := prepareAFT()
 
 	// c := newCopier()
@@ -65,10 +64,11 @@ func subtestParse(t *testing.T) {
 
 func subtestFlagTests(t *testing.T) {
 	type AFS1 struct {
-		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:unused,structcheck //test
-		converter *ValueConverter `copy:",ignore"`                                         //nolint:unused,structcheck //test
-		wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:unused,structcheck //test
+		flags     flags.Flags     `copy:",cleareq,must"`                                   //nolint:revive,unused,structcheck //test
+		converter *ValueConverter `copy:",ignore"`                                         //nolint:revive,unused,structcheck //test
+		wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:revive,unused,structcheck //test
 	}
+
 	var a AFS1
 
 	v := reflect.ValueOf(&a)
@@ -90,7 +90,7 @@ func subtestFlagTests(t *testing.T) {
 	ve := v.Elem()
 	t.Logf("z: %v, nil: %v", ref.Valfmt(&ve), ref.Valfmt(nil))
 
-	var nilArray = [1]*int{(*int)(nil)}
+	nilArray := [1]*int{(*int)(nil)}
 	v = reflect.ValueOf(nilArray)
 	t.Logf("nilArray: %v, nil: %v", ref.Valfmt(&v), ref.Valfmt(nil))
 
@@ -103,13 +103,15 @@ func subtestFlagTests(t *testing.T) {
 	})
 	ref.Rwant(v, reflect.Struct)
 
-	var ss1 = []int{8, 9}
-	var ss2 = []int64{}
-	var ss3 = []int{}
-	var ss4 = [4]int{}
-	var vv1 = reflect.ValueOf(ss1)
-	var tt3 = reflect.TypeOf(ss3)
-	var tp4 = reflect.TypeOf(&ss4)
+	var (
+		ss1 = []int{8, 9}
+		ss2 = []int64{}
+		ss3 = []int{}
+		ss4 = [4]int{}
+		vv1 = reflect.ValueOf(ss1)
+		tt3 = reflect.TypeOf(ss3)
+		tp4 = reflect.TypeOf(&ss4)
+	)
 	t.Logf("ss1.type: %v", ref.Typfmtv(&vv1))
 	t.Log(ref.CanConvertHelper(reflect.ValueOf(&ss1), reflect.TypeOf(&ss2)))
 	t.Log(ref.CanConvertHelper(vv1, reflect.TypeOf(ss2)))
@@ -124,7 +126,7 @@ func TestFieldTags_CalcTargetName(t *testing.T) {
 		},
 		converter: nil,
 		copier:    nil,
-		nameConverter: func(source string, ctx *NameConverterContext) (target string, ok bool) {
+		nameConverter: func(source string, ctx *NameConverterContext) (target string, ok bool) { //nolint:revive
 			if source == "" {
 				target, ok = "hehe", true
 			}

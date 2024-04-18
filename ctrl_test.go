@@ -89,7 +89,7 @@ type ccs struct {
 	*float64
 }
 
-func (s *ccs) Clone() interface{} {
+func (s *ccs) Clone() interface{} { //nolint:revive
 	return &ccs{
 		string:  s.string,
 		int:     s.int,
@@ -113,7 +113,7 @@ func TestCloneableSource(t *testing.T) {
 		sav := *tgt
 		evendeep.DeepCopy(&src, &tgt)
 		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
-		if reflect.DeepEqual(src, tgt) == false {
+		if !reflect.DeepEqual(src, tgt) {
 			var err error
 			dif, equal := diff.New(src, tgt)
 			if !equal {
@@ -131,7 +131,7 @@ type dcs struct {
 	*float64
 }
 
-func (s *dcs) DeepCopy() interface{} {
+func (s *dcs) DeepCopy() interface{} { //nolint:revive
 	return &dcs{
 		string:  s.string,
 		int:     s.int,
@@ -155,7 +155,7 @@ func TestDeepCopyableSource(t *testing.T) {
 		sav := *tgt
 		evendeep.DeepCopy(&src, &tgt)
 		t.Logf("src: %v, old: %v, new tgt: %v", src, sav, tgt)
-		if reflect.DeepEqual(src, tgt) == false {
+		if !reflect.DeepEqual(src, tgt) {
 			var err error
 			dif, equal := diff.New(src, tgt)
 			if !equal {
@@ -167,7 +167,7 @@ func TestDeepCopyableSource(t *testing.T) {
 	}) // NewTasskks creates a
 }
 
-func TestSimple(t *testing.T) {
+func TestSimple(t *testing.T) { //nolint:revive
 	// var dInt = 9
 	// var dStr = worldString
 
@@ -249,11 +249,13 @@ func TestSimple(t *testing.T) {
 }
 
 func TestTypeConvert(t *testing.T) {
-	var i9 int = 9
-	var i5 int = 5
-	var ui6 uint = 6
-	var i64 int64 = 10
-	var f64 float64 = 9.1
+	var (
+		i9        = 9
+		i5        = 5
+		ui6 uint  = 6
+		i64 int64 = 10
+		f64       = 9.1
+	)
 
 	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
@@ -290,7 +292,7 @@ func TestTypeConvert(t *testing.T) {
 			"complex -> int - ErrCannotConvertTo test",
 			complex64(8.1+3i), &i5, int(8),
 			nil,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if errors.IsDescended(evendeep.ErrCannotConvertTo, e) {
 					return
 				}
@@ -301,7 +303,7 @@ func TestTypeConvert(t *testing.T) {
 			"int -> intptr",
 			8, &i9, 8,
 			nil,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if d, ok := dst.(*int); ok && e == nil {
 					if *d == src {
 						return
@@ -319,20 +321,22 @@ func TestTypeConvert(t *testing.T) {
 	}
 }
 
-func TestTypeConvert2Slice(t *testing.T) {
-	var i9 int = 9
-	var i5 int = 5
-	// var ui6 = uint(6)
-	// var i64 int64 = 10
-	// var f64 float64 = 9.1
+func TestTypeConvert2Slice(t *testing.T) { //nolint:revive
+	var (
+		i9 = 9
+		i5 = 5
+		//  ui6 = uint(6)
+		//  i64 int64 = 10
+		//  f64 = 9.1
+
+		si64  = []int64{9}
+		si    = []int{9}
+		sui   = []uint{9}
+		sf64  = []float64{9.1}
+		sc128 = []complex128{9.1}
+	)
 
 	// slice
-
-	var si64 []int64 = []int64{9}
-	var si []int = []int{9}
-	var sui []uint = []uint{9}
-	var sf64 []float64 = []float64{9.1}
-	var sc128 []complex128 = []complex128{9.1}
 
 	opts := []evendeep.Opt{
 		evendeep.WithStrategies(cms.SliceMerge),
@@ -409,7 +413,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 			"complex -> int - ErrCannotConvertTo test",
 			complex64(8.1+3i), &i5, int(8),
 			opts,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if errors.IsDescended(evendeep.ErrCannotConvertTo, e) {
 					return
 				}
@@ -420,7 +424,7 @@ func TestTypeConvert2Slice(t *testing.T) {
 			"int -> intptr",
 			8, &i9, 8,
 			opts,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if d, ok := dst.(*int); ok && e == nil {
 					if *d == src {
 						return
@@ -463,7 +467,7 @@ func TestTypeConvert3Func(t *testing.T) {
 			"[]int -> func(int)(int,error)",
 			[]int{8}, &b1, nil,
 			opts,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if i1 != 16 {
 					err = errors.BadRequest
 				}
@@ -474,7 +478,7 @@ func TestTypeConvert3Func(t *testing.T) {
 			"int -> func(int)(int,error)",
 			8, &b2, nil,
 			opts,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if !errors.Is(e, errors.BadRequest) {
 					err = errors.BadRequest
 				}
@@ -511,13 +515,13 @@ func TestStructStdlib(t *testing.T) {
 	tm1 := time.Date(1979, 1, 29, 13, 3, 49, 19730313, timeZone2)
 	var tgt time.Time
 	var dur time.Duration
-	var dur1 time.Duration = 13*time.Second + 3*time.Nanosecond
+	var dur1 time.Duration = 13*time.Second + 3*time.Nanosecond //nolint:revive
 	var bb, bb1 bytes.Buffer
-	bb1.WriteString("hellp world")
+	_, _ = bb1.WriteString("hellp world")
 	var b, be []byte
 	be = bb1.Bytes()
 
-	var bbn *bytes.Buffer = nil
+	var bbn *bytes.Buffer = nil //nolint:revive
 
 	for _, tc := range []evendeep.TestCase{
 		evendeep.NewTestCase(
@@ -548,15 +552,15 @@ func TestStructStdlib(t *testing.T) {
 			"stdlib - bytes.Buffer 2 - target is nil",
 			bb1, &bbn, &bb1,
 			nil,
-			func(src, dst, expect typ.Any, e error) (err error) {
+			func(src, dst, expect typ.Any, e error) (err error) { //nolint:revive
 				if err = e; e != nil {
 					return
 				}
-				if p, ok := dst.(**bytes.Buffer); ok && *p == nil {
+				p, ok := dst.(**bytes.Buffer)
+				if ok && *p == nil {
 					return
-				} else {
-					dbglog.Log("p = %v, ok = %v, dst = %v/%v", p, ok, dst, &bbn)
 				}
+				dbglog.Log("p = %v, ok = %v, dst = %v/%v", p, ok, dst, &bbn)
 				err = errors.InvalidArgument
 				return
 			},
@@ -566,7 +570,7 @@ func TestStructStdlib(t *testing.T) {
 	}
 }
 
-func TestStructSimple(t *testing.T) {
+func TestStructSimple(t *testing.T) { //nolint:revive
 	// defer dbglog.NewCaptureLog(t).Release()
 
 	nn := []int{2, 9, 77, 111, 23, 29}
@@ -716,7 +720,7 @@ func TestStructEmbedded(t *testing.T) {
 	}
 }
 
-func TestStructToSliceOrMap(t *testing.T) {
+func TestStructToSliceOrMap(t *testing.T) { //nolint:revive
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -766,7 +770,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 	}
 
 	t.Run("struct - slice - 1", func(t *testing.T) {
-		//
+		t.Log()
 	})
 
 	var str string
@@ -799,7 +803,7 @@ func TestStructToSliceOrMap(t *testing.T) {
 			"struct -> string",
 			src, &str, &expectJSON,
 			[]evendeep.Opt{
-				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) {
+				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) { //nolint:revive
 					return json.MarshalIndent(v, "", "  ")
 				}),
 				evendeep.WithMergeStrategyOpt,
@@ -941,7 +945,7 @@ func TestStructWithTargetSetter_struct2map(t *testing.T) {
 		}),
 	)
 
-	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString {
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString { //nolint:revive,lll
 		t.Errorf("err: %v, tgt: %v", err, tgt)
 		t.FailNow()
 	} else if _, ok := tgt["A"]; ok {
@@ -1021,7 +1025,7 @@ func TestStructWithTargetSetter_map2map(t *testing.T) {
 		}),
 	)
 
-	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString {
+	if err != nil || tgt["MoA"] != 5 || tgt["MoB"] != true || tgt["MoC"] != helloString || tgt["Z"] != worldString { //nolint:revive,lll
 		t.Errorf("err: %v, tgt: %v", err, tgt)
 		t.FailNow()
 	} else if _, ok := tgt["A"]; ok {
@@ -1033,7 +1037,7 @@ func TestStructWithTargetSetter_map2map(t *testing.T) {
 }
 
 func TestStructWithSSS(t *testing.T) {
-	//
+	t.Log()
 }
 
 type aS struct {
@@ -1089,6 +1093,7 @@ func TestStructWithNameConversions(t *testing.T) {
 
 func TestStructWithNameConverter(t *testing.T) {
 	// TODO enable name converter for each field, and TestStructWithNameConverter()
+	t.Log()
 }
 
 func TestSliceSimple(t *testing.T) {
@@ -1216,7 +1221,7 @@ func TestMapSimple(t *testing.T) {
 	}
 }
 
-func TestMapAndStruct(t *testing.T) {
+func TestMapAndStruct(t *testing.T) { //nolint:revive
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	timeZone2, _ := time.LoadLocation("Asia/Chongqing")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
@@ -1340,7 +1345,7 @@ func TestMapAndStruct(t *testing.T) {
 	}
 }
 
-func TestMapToString(t *testing.T) {
+func TestMapToString(t *testing.T) { //nolint:revive
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	// timeZone2, _ := time.LoadLocation("Asia/Chongqing")
@@ -1377,14 +1382,14 @@ func TestMapToString(t *testing.T) {
 	var str1 string
 
 	// map1 := make(map[string]interface{})
-	map1 := map[string]interface{}{
+	map1 := map[string]interface{}{ //nolint:revive
 		"Name":      "Bob",
 		"Birthday":  tm,
 		"Age":       24,
 		"EmployeID": int64(7),
 		"Avatar":    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
 		"Image":     []byte{95, 27, 43, 66, 0, 21, 210},
-		"Attr":      map[string]interface{}{"Attrs": []string{helloString, worldString}},
+		"Attr":      map[string]interface{}{"Attrs": []string{helloString, worldString}}, //nolint:revive
 		"Valid":     true,
 		"Deleted":   false,
 	}
@@ -1411,7 +1416,7 @@ func TestMapToString(t *testing.T) {
 			"map -> string [json]",
 			map1, &str1, &expect1,
 			[]evendeep.Opt{
-				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) {
+				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) { //nolint:revive
 					return json.MarshalIndent(v, "", "  ")
 				}),
 				evendeep.WithMergeStrategyOpt,
@@ -1441,7 +1446,7 @@ func TestMapToString(t *testing.T) {
 	}
 }
 
-func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) {
+func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, notFailed ...interface{}) { //nolint:revive
 	t.Logf("checking result ... %v, %v", result, title)
 
 	// if diff := deep.Equal(src, tgt); diff == nil {
@@ -1466,7 +1471,7 @@ func testIfBadCopy(t *testing.T, src, tgt, result interface{}, title string, not
 		return
 	}
 
-	fmt.Println(dif)
+	_, _ = fmt.Println(dif)
 	err := errors.New("diff.PrettyDiff identified its not equal:\ndifferent:\n%v", dif)
 
 	for _, b := range notFailed {
@@ -1575,7 +1580,7 @@ type MyTypeToStringConverter struct{}
 // Uncomment this line if you wanna take a ValueCopier implementation too:
 // func (c *MyTypeToStringConverter) CopyTo(ctx *evendeep.ValueConverterContext, source, target reflect.Value) (err error) { return }
 
-func (c *MyTypeToStringConverter) Transform(ctx *evendeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:lll
+func (c *MyTypeToStringConverter) Transform(ctx *evendeep.ValueConverterContext, source reflect.Value, targetType reflect.Type) (target reflect.Value, err error) { //nolint:revive,lll
 	if source.IsValid() && targetType.Kind() == reflect.String {
 		var str string
 		if str, err = evendeep.FallbackToBuiltinStringMarshalling(source); err == nil {

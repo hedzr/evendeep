@@ -25,7 +25,7 @@ func rForBool(v reflect.Value) (ret reflect.Value) {
 }
 
 // rToBool transform string (or anything) -> bool.
-func rToBool(v reflect.Value) (ret reflect.Value) {
+func rToBool(v reflect.Value) (ret reflect.Value) { //nolint:revive
 	var b bool
 
 	if !v.IsValid() || ref.IsNil(v) || ref.IsZero(v) {
@@ -71,12 +71,12 @@ func internalToBool(s string) (b bool) {
 func rForInteger(v reflect.Value) (ret reflect.Value) {
 	int64typ := reflect.TypeOf((*int64)(nil)).Elem()
 	if !v.IsValid() {
-		v = reflect.Zero(int64typ)
+		v = reflect.Zero(int64typ) //nolint:revive
 	} else if k := v.Kind(); k < reflect.Int || k > reflect.Int64 {
 		if ref.CanConvert(&v, int64typ) {
-			v = v.Convert(int64typ)
+			v = v.Convert(int64typ) //nolint:revive
 		} else {
-			v = reflect.Zero(int64typ)
+			v = reflect.Zero(int64typ) //nolint:revive
 		}
 	}
 
@@ -129,12 +129,12 @@ func rToInteger(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 func rForUInteger(v reflect.Value) (ret reflect.Value) {
 	uint64typ := reflect.TypeOf((*uint64)(nil)).Elem()
 	if !v.IsValid() {
-		v = reflect.Zero(uint64typ)
+		v = reflect.Zero(uint64typ) //nolint:revive
 	} else if k := v.Kind(); k < reflect.Uint || k > reflect.Uintptr {
 		if ref.CanConvert(&v, uint64typ) {
-			v = v.Convert(uint64typ)
+			v = v.Convert(uint64typ) //nolint:revive
 		} else {
-			v = reflect.Zero(uint64typ)
+			v = reflect.Zero(uint64typ) //nolint:revive
 		}
 	}
 
@@ -213,12 +213,12 @@ func getPointerAsUintptr(v reflect.Value) uintptr { //nolint:unused // intergral
 func rForFloat(v reflect.Value) (ret reflect.Value) {
 	float64typ := reflect.TypeOf((*float64)(nil)).Elem()
 	if !v.IsValid() {
-		v = reflect.Zero(float64typ)
+		v = reflect.Zero(float64typ) //nolint:revive
 	} else if k := v.Kind(); k < reflect.Float32 || k > reflect.Float64 {
 		if ref.CanConvert(&v, float64typ) {
-			v = v.Convert(float64typ)
+			v = v.Convert(float64typ) //nolint:revive
 		} else {
-			v = reflect.Zero(float64typ)
+			v = reflect.Zero(float64typ) //nolint:revive
 		}
 	}
 
@@ -237,7 +237,7 @@ func rToFloat(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) { //nolint:revive
 			var fval float64
 			fval, err = strconv.ParseFloat(str, bitSize)
 			if err == nil {
@@ -271,20 +271,20 @@ func rToFloat(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, err
 func rForComplex(v reflect.Value) (ret reflect.Value) {
 	complex128typ := reflect.TypeOf((*complex128)(nil)).Elem()
 	if !v.IsValid() {
-		v = reflect.Zero(complex128typ)
+		v = reflect.Zero(complex128typ) //nolint:revive
 	} else if k := v.Kind(); k < reflect.Complex64 || k > reflect.Complex128 {
 		// if canConvert(&v, complex128typ) {
 		//	v = v.Convert(complex128typ)
 		// } else {
 		switch k { //nolint:exhaustive //no need
 		case reflect.Float64, reflect.Float32:
-			v = reflect.ValueOf(complex(v.Float(), 0.0))
+			v = reflect.ValueOf(complex(v.Float(), 0.0)) //nolint:revive
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			v = reflect.ValueOf(complex(float64(v.Int()), 0.0))
+			v = reflect.ValueOf(complex(float64(v.Int()), 0.0)) //nolint:revive
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-			v = reflect.ValueOf(complex(float64(v.Uint()), 0.0))
+			v = reflect.ValueOf(complex(float64(v.Uint()), 0.0)) //nolint:revive
 		default:
-			v = reflect.Zero(complex128typ)
+			v = reflect.Zero(complex128typ) //nolint:revive
 		}
 		// }
 	}
@@ -304,7 +304,7 @@ func rToComplex(v reflect.Value, desiredType reflect.Type) (ret reflect.Value, e
 		return
 	}
 	ret, err = toTypeConverter(v, desiredType, 10, //nolint:gomnd //no need
-		func(str string, base, bitSize int) (ret reflect.Value, err error) {
+		func(str string, base, bitSize int) (ret reflect.Value, err error) { //nolint:revive
 			var cval complex128
 			if str[0] != '(' {
 				str = "(" + str
@@ -380,7 +380,7 @@ func tryStringerIt(source reflect.Value, desiredType reflect.Type) (target refle
 	return
 }
 
-func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.Value, err error) {
+func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.Value, err error) { //nolint:revive
 	if source.IsValid() {
 		switch k := source.Kind(); k { //nolint:exhaustive //no need
 		case reflect.Bool:
@@ -429,7 +429,7 @@ func rToString(source reflect.Value, desiredType reflect.Type) (target reflect.V
 }
 
 //nolint:unparam,unused,deadcode,lll //reserved
-func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
+func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) { //nolint:revive,lll
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
 
@@ -458,7 +458,7 @@ func rToArray(ctx *ValueConverterContext, sources reflect.Value, desiredType ref
 }
 
 //nolint:unparam,unused,deadcode,lll //reserved
-func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) {
+func rToSlice(ctx *ValueConverterContext, sources reflect.Value, desiredType reflect.Type, targetLength int) (target reflect.Value, err error) { //nolint:revive,lll
 	eltyp := desiredType.Elem() // length := desiredType.Len()
 	dbglog.Log("  desiredType: %v, el.type: %v", ref.Typfmt(desiredType), ref.Typfmt(eltyp))
 

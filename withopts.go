@@ -364,15 +364,16 @@ func isWildMatch(s, pattern string) bool {
 	runeInputArray := []rune(s)
 	runePatternArray := []rune(pattern)
 	if len(runeInputArray) > 0 && len(runePatternArray) > 0 {
-		if runePatternArray[len(runePatternArray)-1] != '*' && runePatternArray[len(runePatternArray)-1] != '?' && runeInputArray[len(runeInputArray)-1] != runePatternArray[len(runePatternArray)-1] {
+		if runePatternArray[len(runePatternArray)-1] != '*' &&
+			runePatternArray[len(runePatternArray)-1] != '?' &&
+			runeInputArray[len(runeInputArray)-1] != runePatternArray[len(runePatternArray)-1] {
 			return false
 		}
 	}
 	return isMatchUtil([]rune(s), []rune(pattern), 0, 0, len([]rune(s)), len([]rune(pattern)))
 }
 
-func isMatchUtil(input, pattern []rune, inputIndex, patternIndex int, inputLength, patternLength int) bool {
-
+func isMatchUtil(input, pattern []rune, inputIndex, patternIndex, inputLength, patternLength int) bool { //nolint:revive
 	if inputIndex == inputLength && patternIndex == patternLength {
 		return true
 	} else if patternIndex == patternLength {
@@ -380,9 +381,8 @@ func isMatchUtil(input, pattern []rune, inputIndex, patternIndex int, inputLengt
 	} else if inputIndex == inputLength {
 		if pattern[patternIndex] == '*' && restPatternStar(pattern, patternIndex+1, patternLength) {
 			return true
-		} else {
-			return false
 		}
+		return false
 	}
 
 	if pattern[patternIndex] == '*' {
@@ -397,20 +397,19 @@ func isMatchUtil(input, pattern []rune, inputIndex, patternIndex int, inputLengt
 	if inputIndex < inputLength {
 		if input[inputIndex] == pattern[patternIndex] {
 			return isMatchUtil(input, pattern, inputIndex+1, patternIndex+1, inputLength, patternLength)
-		} else {
-			return false
 		}
+		return false
 	}
 
 	return false
 }
 
-func restPatternStar(pattern []rune, patternIndex int, patternLength int) bool {
+func restPatternStar(pattern []rune, patternIndex, patternLength int) bool { //nolint:revive
 	for patternIndex < patternLength {
 		if pattern[patternIndex] != '*' {
 			return false
 		}
-		patternIndex++
+		patternIndex++ //nolint:revive
 	}
 	return true
 }
@@ -451,7 +450,7 @@ func WithoutPanic() Opt {
 //
 // It's synonym of RegisterDefaultStringMarshaller.
 func WithStringMarshaller(m TextMarshaller) Opt {
-	return func(c *cpController) {
+	return func(c *cpController) { //nolint:revive
 		RegisterDefaultStringMarshaller(m)
 	}
 }
@@ -467,10 +466,10 @@ func WithStringMarshaller(m TextMarshaller) Opt {
 // It's synonym of WithStringMarshaller.
 func RegisterDefaultStringMarshaller(m TextMarshaller) {
 	if m == nil {
-		m = json.Marshal
+		m = json.Marshal //nolint:revive
 	}
 	textMarshaller = m
 }
 
-// TextMarshaller for string marshalling.
-type TextMarshaller func(v interface{}) ([]byte, error)
+// TextMarshaller for string marshaling.
+type TextMarshaller func(v interface{}) ([]byte, error) //nolint:revive

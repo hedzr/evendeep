@@ -23,18 +23,18 @@ func parseFieldTags(tag reflect.StructTag, tagName string) *fieldTags {
 //	    IgnoredName string `copy:"-"`
 //	}
 type fieldTags struct {
-	flags flags.Flags `copy:"zeroIfEq"`
+	flags flags.Flags `copy:"zeroIfEq"` //nolint:revive,unused
 
-	converter     *ValueConverter   `yaml:"-,omitempty"` //nolint:unused //future
-	copier        *ValueCopier      `yaml:"-,omitempty"` //nolint:unused //future
-	nameConverter nameConverterFunc `yaml:"-,omitempty"`
+	converter     *ValueConverter   `yaml:"-,omitempty"` //nolint:revive,unused //future
+	copier        *ValueCopier      `yaml:"-,omitempty"` //nolint:revive,unused //future
+	nameConverter nameConverterFunc `yaml:"-,omitempty"` //nolint:revive,unused
 
 	// nameConvertRule:
 	// "-"                 ignore
 	// "dstName"           from source field to 'dstName' field (thinking about name converters too)
 	// "->dstName"         from source field to 'dstName' field (thinking about name converters too)
 	// "srcName->dstName"  from 'srcName' to 'dstName' field
-	nameConvertRule flags.NameConvertRule // first section in struct field tag, such as: "someName,must,..."
+	nameConvertRule flags.NameConvertRule //nolint:revive,unused // first section in struct field tag, such as: "someName,must,..."
 }
 
 type nameConverterFunc func(source string, ctx *NameConverterContext) (target string, ok bool)
@@ -56,8 +56,8 @@ func (f *fieldTags) isFlagExists(ftf cms.CopyMergeStrategy) bool {
 	return f.flags[ftf]
 }
 
-func (f *fieldTags) isFlagIgnored() bool { return f.isFlagExists(cms.Ignore) }
-func (f *fieldTags) isFlagFlat() bool    { return f.isFlagExists(cms.Flat) }
+func (f *fieldTags) isFlagIgnored() bool { return f.isFlagExists(cms.Ignore) } //nolint:revive,unused
+func (f *fieldTags) isFlagFlat() bool    { return f.isFlagExists(cms.Flat) }   //nolint:revive,unused
 
 func (f *fieldTags) Parse(s reflect.StructTag, tagName string) {
 	f.flags, f.nameConvertRule = flags.Parse(s, tagName)

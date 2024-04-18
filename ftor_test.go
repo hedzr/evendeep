@@ -10,7 +10,7 @@ import (
 	"github.com/hedzr/evendeep/typ"
 )
 
-func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) {
+func testDeepEqual(printer func(msg string, args ...interface{}), got, expect typ.Any) { //nolint:revive
 	// a,b:=reflect.ValueOf(got),reflect.ValueOf(expect)
 	// switch kind:=a.Kind();kind {
 	// case reflect.Map:
@@ -68,7 +68,7 @@ func TestCopyUnsafePointer(t *testing.T) {
 	t.Log()
 }
 
-func TestCopySlice_differModes(t *testing.T) {
+func TestCopySlice_differModes(t *testing.T) { //nolint:revive
 	// defer dbglog.NewCaptureLog(t).Release()
 
 	c := newCloner()

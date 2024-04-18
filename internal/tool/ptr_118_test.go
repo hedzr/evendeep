@@ -6,8 +6,7 @@ import (
 )
 
 func TestPointerTo(t *testing.T) {
-	var ii int
-	ii = 8
+	ii := 8
 
 	tv := reflect.TypeOf(ii)
 	tv1 := PointerTo(tv)

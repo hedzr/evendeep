@@ -77,20 +77,21 @@ func TestSliceLen(t *testing.T) {
 	v = reflect.Append(v, reflect.ValueOf("def"))
 	v = reflect.Append(v, reflect.ValueOf("ghi"), reflect.ValueOf("jkl"))
 
-	fmt.Println("Our value is a type of :", v.Kind())
+	_, _ = fmt.Println("Our value is a type of :", v.Kind())
 	fmt.Printf("len : %v, %v\n", v.Len(), ref.Typfmtv(&v))
 
 	vSlice := v.Slice(0, v.Len())
 	vSliceElems := vSlice.Interface()
 
-	fmt.Println("With the elements of : ", vSliceElems)
+	_, _ = fmt.Println("With the elements of : ", vSliceElems)
 
 	v = reflect.AppendSlice(v, reflect.ValueOf([]string{"mno", "pqr", "stu"}))
 
 	vSlice = v.Slice(0, v.Len())
 	vSliceElems = vSlice.Interface()
 
-	fmt.Println("After AppendSlice : ", vSliceElems)
+	_, _ = fmt.Println("After AppendSlice : ", vSliceElems)
+	t.Log()
 }
 
 func TestUnexported(t *testing.T) {
@@ -113,11 +114,12 @@ func TestUnexported(t *testing.T) {
 	i = 9
 	rf.Set(ri)
 
-	fmt.Println(s, i, runtime.Version())
+	_, _ = fmt.Println(s, i, runtime.Version())
 
 	rf = rs.Field(0)
 	cl.SetUnexportedField(rf, reflect.ValueOf(123))
-	fmt.Println(s, i, runtime.Version())
+	_, _ = fmt.Println(s, i, runtime.Version())
+	t.Log()
 }
 
 func TestTm00(t *testing.T) {

@@ -44,7 +44,6 @@ func canConvert(v *reflect.Value, t reflect.Type) bool {
 }
 
 func TestTimeStruct(t *testing.T) {
-
 	timeZone, _ := time.LoadLocation("America/Phoenix")
 	tm := time.Date(1999, 3, 13, 5, 57, 11, 1901, timeZone)
 	tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
@@ -61,16 +60,14 @@ func TestTimeStruct(t *testing.T) {
 		if vd.Elem().CanSet() {
 			vd.Elem().Set(vs.Elem())
 			return
-		} else {
-			t.Logf("vd.CanSet == false")
 		}
+		t.Logf("vd.CanSet == false")
 	} else {
 		t.Logf("vs.CanConvert == false")
 	}
 }
 
 func TestUintptr(t *testing.T) {
-
 	x0 := evendeep.X0{}
 	up := unsafe.Pointer(&x0)
 
@@ -101,6 +98,7 @@ func TestUintptr(t *testing.T) {
 func TestInspectStruct(t *testing.T) {
 	em := new(evendeep.Employee)
 	tool.InspectStruct(em)
+	t.Log(em)
 }
 
 func TestDeepCopyFromOutside(t *testing.T) {

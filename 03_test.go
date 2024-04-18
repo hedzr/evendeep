@@ -18,6 +18,7 @@ func TestRegisterInitRoutines(t *testing.T) {
 	registerInitRoutines(func() {})
 	registerLazyInitRoutines(nil)
 	registerLazyInitRoutines(func() {})
+	t.Log()
 }
 
 // TestCpChan _
@@ -46,6 +47,7 @@ func TestCpChan(t *testing.T) {
 func TestInspectStruct(t *testing.T) {
 	a4 := prepareDataA4()
 	tool.InspectStruct(reflect.ValueOf(&a4))
+	t.Log()
 }
 
 func TestParamsBasics(t *testing.T) {
@@ -229,8 +231,8 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 
 	slicePanic := func() {
 		n := []int{5, 7, 4}
-		fmt.Println(n[4])
-		fmt.Println("normally returned from a")
+		_, _ = fmt.Println(n[4])
+		_, _ = fmt.Println("normally returned from a")
 	}
 
 	t.Run("defer in copyStructInternal", func(t *testing.T) {
@@ -257,6 +259,7 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 					func(paramsChild *Params, ec errors.Error, i, amount *int, padding string) (err error) {
 						paramsChild.nextTargetField()
 						slicePanic()
+						_, _, _, _ = ec, i, amount, padding
 						return
 					})
 				t.Log(err)
@@ -278,10 +281,12 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 			postCatcher(func() {
 				_ = c.copyToInternal(nil, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 					slicePanic()
+					_, _, _, _ = c, params, from, to
 					return
 				})
 			})
 		}
+		t.Log()
 	})
 
 	t.Run("invalid src or dst", func(t *testing.T) {
@@ -303,6 +308,7 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 		t.Logf("svv1: %v", svv1.IsValid())
 		_ = c.copyToInternal(nil, svv1, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			slicePanic()
+			_, _, _, _ = c, params, from, to
 			return
 		})
 
@@ -310,6 +316,7 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 		params := newParams(withFlags(cms.OmitIfEmpty, cms.ByName))
 		_ = c.copyToInternal(params, svv1, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			slicePanic()
+			_, _, _, _ = c, params, from, to
 			return
 		})
 
@@ -318,11 +325,13 @@ func TestDeferCatchers(t *testing.T) { //nolint:revive
 		t.Logf("dvv1: %v", dvv1.IsValid())
 		_ = c.copyToInternal(nil, svv, dvv1, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
 			slicePanic()
+			_, _, _, _ = c, params, from, to
 			return
 		})
 
 		// both src and dst are valid and params is also valid
 		_ = c.copyToInternal(params, svv, dvv, func(c *cpController, params *Params, from, to reflect.Value) (err error) {
+			_, _, _, _ = c, params, from, to
 			return
 		})
 	})

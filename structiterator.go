@@ -40,18 +40,20 @@ func (rec tableRecT) FieldName() string {
 	var sb strings.Builder
 	for i := len(rec.names) - 1; i >= 0; i-- {
 		if sb.Len() > 0 {
-			sb.WriteRune('.')
+			_, _ = sb.WriteRune('.')
 		}
-		sb.WriteString(rec.names[i])
+		_, _ = sb.WriteString(rec.names[i])
 	}
 	return sb.String()
 }
+
 func (rec tableRecT) ShortFieldName() string {
 	if len(rec.names) > 0 {
 		return rec.names[0]
 	}
 	return ""
 }
+
 func (rec tableRecT) ShouldIgnore() bool {
 	if rec.structField != nil {
 		ft := parseFieldTags(rec.structField.Tag, "")
@@ -60,7 +62,7 @@ func (rec tableRecT) ShouldIgnore() bool {
 	return false
 }
 
-func (table *fieldsTableT) isReservedPackage(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool {
+func (table *fieldsTableT) isReservedPackage(field *reflect.StructField, typ reflect.Type, kind reflect.Kind) bool { //nolint:revive,unparam,unused
 	n, _, _ := typ.PkgPath(), field, kind
 	return packageisreserved(n) // ignore golang stdlib, such as "io", "runtime", ...
 }
@@ -68,7 +70,7 @@ func (table *fieldsTableT) isReservedPackage(field *reflect.StructField, typ ref
 func (table *fieldsTableT) getAllFields(structValue reflect.Value, autoexpandstruct bool) fieldsTableT {
 	table.autoExpandStruct = autoexpandstruct
 
-	structValue, _ = ref.Rdecode(structValue)
+	structValue, _ = ref.Rdecode(structValue) //nolint:revive
 	if structValue.Kind() != reflect.Struct {
 		return *table
 	}
@@ -95,7 +97,7 @@ func (table *fieldsTableT) safeGetStructFieldValueInd(structValue *reflect.Value
 	if structValue != nil && structValue.IsValid() {
 		for structValue.Kind() == reflect.Ptr {
 			v := structValue.Elem()
-			structValue = &v
+			structValue = &v //nolint:revive
 		}
 		if structValue != nil && structValue.IsValid() {
 			sv := structValue.Field(i)
@@ -105,8 +107,7 @@ func (table *fieldsTableT) safeGetStructFieldValueInd(structValue *reflect.Value
 	return nil
 }
 
-//nolint:lll //keep it
-func (table *fieldsTableT) getFields(structValue *reflect.Value, structType reflect.Type, fieldName string, fi int) (ret tableRecordsT) {
+func (table *fieldsTableT) getFields(structValue *reflect.Value, structType reflect.Type, fieldName string, fi int) (ret tableRecordsT) { //nolint:revive,lll
 	st := ref.Rdecodetypesimple(structType)
 	if st.Kind() != reflect.Struct {
 		return
@@ -302,7 +303,7 @@ func setToZeroAs(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind)
 	}
 }
 
-func setToZeroAsImpl(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+func setToZeroAsImpl(fieldValue *reflect.Value, typ reflect.Type, kind reflect.Kind) { //nolint:revive
 	switch kind { //nolint:exhaustive //no need
 	case reflect.Bool:
 		fieldValue.SetBool(false)
@@ -339,7 +340,7 @@ func setToZeroAsImpl(fieldValue *reflect.Value, typ reflect.Type, kind reflect.K
 	}
 }
 
-func setToZeroForArray(arrayValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+func setToZeroForArray(arrayValue *reflect.Value, typ reflect.Type, kind reflect.Kind) { //nolint:revive,unparam
 	for i, amount := 0, arrayValue.Len(); i < amount; i++ {
 		v := arrayValue.Index(i)
 		vt, vk := v.Type(), v.Kind()
@@ -348,7 +349,7 @@ func setToZeroForArray(arrayValue *reflect.Value, typ reflect.Type, kind reflect
 	_, _ = typ, kind
 }
 
-func setToZeroForStruct(structValue *reflect.Value, typ reflect.Type, kind reflect.Kind) {
+func setToZeroForStruct(structValue *reflect.Value, typ reflect.Type, kind reflect.Kind) { //nolint:revive,unparam
 	for i, amount := 0, structValue.NumField(); i < amount; i++ {
 		fv := structValue.Field(i)
 		setToZero(&fv)
@@ -386,34 +387,41 @@ func (s *fieldAccessorT) Set(v reflect.Value) {
 		dbglog.Wrn(`    setting struct field value, but the container has type: %v`, ref.Typfmt(s.structType))
 	}
 }
+
 func (s *fieldAccessorT) SourceField() *tableRecT { return s.sourceTableRec }
+
 func (s *fieldAccessorT) IsFlagOK(f cms.CopyMergeStrategy) bool {
 	if s.fieldTags != nil {
 		return s.fieldTags.flags.IsFlagOK(f)
 	}
 	return false
 }
+
 func (s *fieldAccessorT) IsGroupedFlagOK(f ...cms.CopyMergeStrategy) bool {
 	if s.fieldTags != nil {
 		return s.fieldTags.flags.IsGroupedFlagOK(f...)
 	}
 	return false
 }
+
 func (s *fieldAccessorT) IsAnyFlagsOK(f ...cms.CopyMergeStrategy) bool {
 	if s.fieldTags != nil {
 		return s.fieldTags.flags.IsAnyFlagsOK(f...)
 	}
 	return false
 }
+
 func (s *fieldAccessorT) IsAllFlagsOK(f ...cms.CopyMergeStrategy) bool {
 	if s.fieldTags != nil {
 		return s.fieldTags.flags.IsAllFlagsOK(f...)
 	}
 	return false
 }
+
 func (s *fieldAccessorT) IsStruct() bool {
 	return s.isStruct // s.structType != nil && s.structType.Kind() == reflect.Struct
 }
+
 func (s *fieldAccessorT) Type() reflect.Type { return s.structType }
 func (s *fieldAccessorT) ValueValid() bool   { return s.structValue != nil && s.structValue.IsValid() }
 func (s *fieldAccessorT) FieldValue() *reflect.Value {
@@ -429,12 +437,13 @@ func (s *fieldAccessorT) FieldValue() *reflect.Value {
 				return &r
 			}
 		}
-	} else { // if s.structType != nil && s.structType.Kind() == reflect.Map {
-		key := s.mapkey()
-		val := s.structValue.MapIndex(key)
-		return &val
+		return nil
 	}
-	return nil
+
+	// if s.structType != nil && s.structType.Kind() == reflect.Map {
+	key := s.mapkey()
+	val := s.structValue.MapIndex(key)
+	return &val
 }
 
 //nolint:lll //keep it
@@ -453,6 +462,7 @@ func (s *fieldAccessorT) FieldType() *reflect.Type { //nolint:gocritic //ptrToRe
 	}
 	return nil
 }
+
 func (s *fieldAccessorT) NumField() int {
 	if s.isStruct {
 		sf := s.structType
@@ -463,6 +473,7 @@ func (s *fieldAccessorT) NumField() int {
 	}
 	return 0
 }
+
 func (s *fieldAccessorT) StructField() *reflect.StructField {
 	// if s.ValueValid() {
 	//	r := s.structValue.Type().Field(s.index)
@@ -471,6 +482,7 @@ func (s *fieldAccessorT) StructField() *reflect.StructField {
 	// return s.structField
 	return s.getStructField()
 }
+
 func (s *fieldAccessorT) getStructField() *reflect.StructField {
 	if s.isStruct {
 		if s.structField == nil && s.index >= 0 && s.index < s.structType.NumField() {
@@ -485,6 +497,7 @@ func (s *fieldAccessorT) getStructField() *reflect.StructField {
 	}
 	return nil
 }
+
 func (s *fieldAccessorT) StructFieldName() string {
 	if s.isStruct {
 		if fld := s.StructField(); fld != nil {
@@ -498,12 +511,14 @@ func (s *fieldAccessorT) StructFieldName() string {
 	}
 	return ""
 }
+
 func (s *fieldAccessorT) incr() *fieldAccessorT {
 	s.index++
 	s.structField = nil
 	return s
 }
-func (s *fieldAccessorT) ensurePtrField() (newed bool) {
+
+func (s *fieldAccessorT) ensurePtrField() (newed bool) { //nolint:revive
 	if s.isStruct && s.index < s.structType.NumField() {
 		if s.structValue != nil {
 			sf := s.structType.Field(s.index)
@@ -526,7 +541,7 @@ func (s *fieldAccessorT) ensurePtrField() (newed bool) {
 					if settable := fv.CanSet(); settable || !ref.IsExported(&sf) { // unexported field, try new it
 						typ := sf.Type.Elem()
 						nv := reflect.New(typ)
-						if settable {
+						if settable { //nolint:revive
 							fv.Set(nv)
 						} else {
 							cl.SetUnexportedField(fv, nv)
@@ -578,12 +593,15 @@ func (s *structIteratorT) iipush(structvalue *reflect.Value, structtype reflect.
 	s.stack = append(s.stack, &fieldAccessorT{isStruct: true, structValue: structvalue, structType: structtype, index: index})
 	return s.iitop()
 }
+
 func (s *structIteratorT) iiempty() bool { return len(s.stack) == 0 }
+
 func (s *structIteratorT) iipop() {
 	if len(s.stack) > 0 {
 		s.stack = s.stack[0 : len(s.stack)-1]
 	}
 }
+
 func (s *structIteratorT) iitop() *fieldAccessorT {
 	if len(s.stack) == 0 {
 		logz.Panic(`unexpected iitop() on an empty stack`)
@@ -705,7 +723,7 @@ func (s *structIteratorT) withSourceIteratorIndexIncrease(srcIndexDelta int) (so
 	return
 }
 
-func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bool) {
+func (s *structIteratorT) Next(params *Params, byName bool) (acc accessor, ok bool) { //nolint:revive
 	var sourceTableRec *tableRecT
 	var accessorTmp *fieldAccessorT
 	sourceTableRec, ok = s.withSourceIteratorIndexIncrease(+1)
@@ -765,8 +783,8 @@ func (s *structIteratorT) doNextMapItem(params *Params, sourceTableRec *tableRec
 		st := srcStructField.Type
 		elTyp := s.dstStruct.Type().Elem()
 		tk = elTyp.Kind()
-		ok = st.ConvertibleTo(elTyp) || st.AssignableTo(elTyp) ||
-			tk == reflect.String || tk == reflect.Interface
+		ok = tk == reflect.String || tk == reflect.Interface ||
+			st.ConvertibleTo(elTyp) || st.AssignableTo(elTyp)
 		return
 	}
 
@@ -834,8 +852,7 @@ func (s *structIteratorT) doNextFieldByName(sourceTableRec *tableRecT, srcStruct
 	return // return ok = false, the caller loop will be broken.
 }
 
-//nolint:gocognit //keep it
-func (s *structIteratorT) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (accessor *fieldAccessorT, ok bool) {
+func (s *structIteratorT) doNext(srcFieldIsFuncAndTargetShouldNotExpand bool) (accessor *fieldAccessorT, ok bool) { //nolint:revive,lll
 	var lastone *fieldAccessorT
 	var inretry bool
 
@@ -864,8 +881,8 @@ retryExpand:
 			k1 := tind.Kind()
 			dbglog.Log("   typ: %v, name: %v | %v", ref.Typfmt(tind), field.Name, field)
 			if s.autoNew {
-				var did = lastone.ensurePtrField()
-				if did {
+				did := lastone.ensurePtrField()
+				if did { //nolint:revive
 					dbglog.Log("     lastone.ensurePtrField() made ptr field newed.")
 				}
 			}
@@ -968,12 +985,16 @@ func (s *structIteratorT) ShouldBeIgnored(name string, ignoredNames []string) (y
 	return
 }
 
-var onceinitignoredpackages sync.Once              //nolint:gochecknoglobals //keep it
-var _ignoredpackages ignoredpackages               //nolint:gochecknoglobals //keep it
-var _ignoredpackageprefixes ignoredpackageprefixes //nolint:gochecknoglobals //keep it
+var (
+	onceinitignoredpackages sync.Once              //nolint:gochecknoglobals //keep it
+	_ignoredpackages        ignoredpackages        //nolint:gochecknoglobals //keep it
+	_ignoredpackageprefixes ignoredpackageprefixes //nolint:gochecknoglobals //keep it
+)
 
-type ignoredpackages map[string]bool
-type ignoredpackageprefixes []string
+type (
+	ignoredpackages        map[string]bool
+	ignoredpackageprefixes []string
+)
 
 func (a ignoredpackages) contains(packageName string) (yes bool) {
 	// for _, s := range a {
@@ -984,6 +1005,7 @@ func (a ignoredpackages) contains(packageName string) (yes bool) {
 	_, yes = a[packageName]
 	return
 }
+
 func (a ignoredpackageprefixes) contains(packageName string) (yes bool) {
 	for _, s := range a {
 		if yes = strings.HasPrefix(packageName, s); yes {

@@ -1,6 +1,6 @@
 package times
 
-func quote(s string) string {
+func quote(s string) string { //nolint:revive
 	buf := make([]byte, 1, len(s)+2) // slice will be at least len(s) + quotes
 	buf[0] = '"'
 	for i, c := range s {
@@ -22,8 +22,8 @@ func quote(s string) string {
 			}
 			for j := 0; j < width; j++ {
 				buf = append(buf, `\x`...)
-				buf = append(buf, lowerhex[s[i+j]>>4])
-				buf = append(buf, lowerhex[s[i+j]&0xF])
+				buf = append(buf, lowerhex[s[i+j]>>4])  //nolint:gocritic
+				buf = append(buf, lowerhex[s[i+j]&0xF]) //nolint:gocritic
 			}
 		} else {
 			if c == '"' || c == '\\' {

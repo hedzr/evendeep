@@ -23,7 +23,7 @@ func TrimQuotes(s string) string { return trimQuotes(s) }
 // 	return s
 // }
 
-func trimQuotes(s string) string {
+func trimQuotes(s string) string { //nolint:revive
 	switch {
 	case s[0] == '\'':
 		if s[len(s)-1] == '\'' {

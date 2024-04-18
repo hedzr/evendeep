@@ -40,17 +40,17 @@ func New(opts ...Opt) DeepCopier {
 // Copy is a synonym of DeepCopy.
 //
 // DeepCopy makes a deep clone of a source object or merges it into the target.
-func Copy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
+func Copy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) { //nolint:revive
 	return DeepCopy(fromObj, toObj, opts...)
 }
 
 // DeepCopy makes a deep clone of a source object or merges it into the target.
-func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
+func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) { //nolint:revive
 	if fromObj == nil {
 		return toObj
 	}
 
-	defer DefaultCopyController.SaveFlagsAndRestore()()
+	defer DefaultCopyController.SaveFlagsAndRestore()() //nolint:revive
 
 	if err := DefaultCopyController.CopyTo(fromObj, toObj, opts...); err == nil {
 		result = toObj
@@ -60,7 +60,7 @@ func DeepCopy(fromObj, toObj interface{}, opts ...Opt) (result interface{}) {
 }
 
 // MakeClone makes a deep clone of a source object.
-func MakeClone(fromObj interface{}) (result interface{}) {
+func MakeClone(fromObj interface{}) (result interface{}) { //nolint:revive
 	if fromObj == nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 	)
 	dbglog.Log("toPtrObj: %v", toPtrObj)
 
-	defer defaultCloneController.SaveFlagsAndRestore()()
+	defer defaultCloneController.SaveFlagsAndRestore()() //nolint:revive
 
 	if err := defaultCloneController.CopyTo(fromObj, toPtrObj); err == nil {
 		result = toPtr.Elem().Interface()
@@ -89,20 +89,20 @@ func MakeClone(fromObj interface{}) (result interface{}) {
 type Cloneable interface {
 	// Clone return a pointer to copy of source object.
 	// But you can return the copy itself with your will.
-	Clone() interface{}
+	Clone() interface{} //nolint:revive
 }
 
 // DeepCopyable interface represents a cloneable object that supports DeepCopy() method.
 //
 // The native DeepCopy algorithm of a DeepCopyable object can be adapted into DeepCopier.
 type DeepCopyable interface {
-	DeepCopy() interface{}
+	DeepCopy() interface{} //nolint:revive
 }
 
 // DeepCopier interface.
 type DeepCopier interface {
 	// CopyTo function.
-	CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error)
+	CopyTo(fromObj, toObj interface{}, opts ...Opt) (err error) //nolint:revive
 }
 
 //nolint:gochecknoglobals //i know that

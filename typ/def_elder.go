@@ -4,4 +4,4 @@
 package typ
 
 // Any type for go1.17 and older.
-type Any interface{}
+type Any interface{} //nolint:revive

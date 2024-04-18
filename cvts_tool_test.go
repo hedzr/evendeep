@@ -30,7 +30,7 @@ func TestUintptrAndUnsafePointer(t *testing.T) {
 	p := unsafe.Pointer(uintptr(unsafe.Pointer(s)) + unsafe.Offsetof(s.b))
 
 	// Typecasting it to a string pointer and printing the value of it
-	fmt.Println(*(*string)(p))
+	_, _ = fmt.Println(*(*string)(p))
 
 	u := uintptr(unsafe.Pointer(s))
 	us := fmt.Sprintf("%v", u)
@@ -47,7 +47,8 @@ func TestGetPointerAsUintptr(t *testing.T) {
 
 	v := reflect.ValueOf(s)
 	u := getPointerAsUintptr(v)
-	fmt.Println(u)
+	_, _ = fmt.Println(u)
+	t.Log()
 }
 
 func TestForBool(t *testing.T) {
@@ -83,7 +84,7 @@ func TestToBool(t *testing.T) {
 	} {
 		v1 := reflect.ValueOf(vi)
 		v2, _ := ref.Rdecode(v1)
-		if rToBool(v2).Interface() != false {
+		if rToBool(v2).Interface() != false { //nolint:revive
 			t.Fatalf("for %v (%v) toBool failed", vi, ref.Typfmtv(&v2))
 		}
 	}
@@ -106,7 +107,7 @@ func TestToBool(t *testing.T) {
 	} {
 		v1 := reflect.ValueOf(vi)
 		v2, _ := ref.Rdecode(v1)
-		if rToBool(v2).Interface() != true {
+		if rToBool(v2).Interface() != true { //nolint:revive
 			t.Fatalf("for %v (%v) toBool failed", vi, ref.Typfmtv(&v2))
 		}
 	}
@@ -370,7 +371,7 @@ func TestBytesBufferConverter_Transform(t *testing.T) {
 	var bbc fromBytesBufferConverter
 	tgtType := reflect.TypeOf((*bytes.Buffer)(nil)).Elem()
 	var bb bytes.Buffer
-	bb.WriteString("hello")
+	_, _ = bb.WriteString("hello")
 	src := reflect.ValueOf(bb)
 	tgt, err := bbc.Transform(nil, src, tgtType)
 	if err != nil {
@@ -388,9 +389,9 @@ func TestToStringConverter_Transform(t *testing.T) { //nolint:revive
 	tgtType := reflect.TypeOf((*string)(nil)).Elem()
 
 	var bb bytes.Buffer
-	bb.WriteString("hello")
+	_, _ = bb.WriteString("hello")
 	var sb strings.Builder
-	sb.WriteString("hello")
+	_, _ = sb.WriteString("hello")
 
 	for sv, exp := range map[typ.Any]string{
 		"sss":           "sss",
@@ -536,7 +537,7 @@ func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
-			if reflect.DeepEqual(dur, cas.expect) == false {
+			if !reflect.DeepEqual(dur, cas.expect) {
 				t.Fatalf("err transform: expect %v but got %v", cas.expect, tgt)
 			}
 			t.Logf("res #%d: %v", ix, dur)
@@ -554,7 +555,7 @@ func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 		var fdc fromDurationConverter
 
 		for ix, cas := range []struct {
-			src, tgt, expect interface{}
+			src, tgt, expect interface{} //nolint:revive
 			desiredType      reflect.Type
 		}{
 			{13 * time.Hour, &dur, "13h0m0s", stringtyp},
@@ -571,7 +572,7 @@ func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
-			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+			if !reflect.DeepEqual(tgt.Interface(), cas.expect) {
 				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
@@ -584,7 +585,7 @@ func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 		var tdc toDurationConverter
 
 		for ix, cas := range []struct {
-			src, tgt, expect interface{}
+			src, tgt, expect interface{} //nolint:revive
 		}{
 			{"71ms", &dur, 71 * time.Millisecond},
 			{"9h71ms", &dur, 9*time.Hour + 71*time.Millisecond},
@@ -600,7 +601,7 @@ func TestToDurationConverter_Transform(t *testing.T) { //nolint:revive
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
-			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+			if !reflect.DeepEqual(tgt.Interface(), cas.expect) {
 				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
@@ -675,7 +676,7 @@ func TestToTimeConverter_Transform(t *testing.T) { //nolint:revive
 
 		for ix, cas := range []struct {
 			src         string
-			tgt, expect interface{}
+			tgt, expect interface{} //nolint:revive
 			desiredType reflect.Type
 		}{
 			{"2001-02-03 04:05:06.078912", &dur, "2001-02-03T04:05:06Z", stringtyp},
@@ -693,7 +694,7 @@ func TestToTimeConverter_Transform(t *testing.T) { //nolint:revive
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
-			if reflect.DeepEqual(tgt.Interface(), cas.expect) == false {
+			if !reflect.DeepEqual(tgt.Interface(), cas.expect) {
 				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, tgt.Interface(), ref.Typfmt(tgt.Type()))
 			}
 			t.Logf("res #%d: %v (%v)", ix, tgt.Interface(), ref.Typfmt(tgt.Type()))
@@ -707,7 +708,7 @@ func TestToTimeConverter_Transform(t *testing.T) { //nolint:revive
 		tgtType := reflect.TypeOf((*time.Time)(nil)).Elem()
 
 		for ix, cas := range []struct {
-			src, tgt, expect interface{}
+			src, tgt, expect interface{} //nolint:revive
 		}{
 			{"2001-02-03 04:05:06.078912", &tm, "2001-02-03 04:05:06.078912Z"},
 			{"2001-02-03 04:05:06.078912345", &tm, "2001-02-03 04:05:06.078912345Z"},
@@ -724,7 +725,7 @@ func TestToTimeConverter_Transform(t *testing.T) { //nolint:revive
 				t.Fatalf("err: %v", err)
 			}
 			got := tgt.Interface().(time.Time).UTC().Format(layout)
-			if reflect.DeepEqual(got, cas.expect) == false {
+			if !reflect.DeepEqual(got, cas.expect) {
 				t.Fatalf("err transform: expect %v but got %v (%v)", cas.expect, got, ref.Typfmt(tgt.Type()))
 			}
 			t.Logf("res #%d: %v (%v)", ix, got, ref.Typfmt(tgt.Type()))
@@ -829,23 +830,23 @@ func TestHasStringer(t *testing.T) {
 func TestNameToMapKey(t *testing.T) {
 	name := "9527"
 	// value := 789
-	mapslice := []interface{}{
-		map[int]interface{}{
+	mapslice := []interface{}{ //nolint:revive
+		map[int]interface{}{ //nolint:revive
 			111: 333,
 		},
-		map[int]interface{}{
+		map[int]interface{}{ //nolint:revive
 			9527: 333,
 		},
-		map[float32]interface{}{
+		map[float32]interface{}{ //nolint:revive
 			9527: 333,
 		},
-		map[complex128]interface{}{
+		map[complex128]interface{}{ //nolint:revive
 			9527: 333,
 		},
-		map[string]interface{}{
+		map[string]interface{}{ //nolint:revive
 			"my": 12,
 		},
-		map[string]interface{}{
+		map[string]interface{}{ //nolint:revive
 			"9527": 33,
 		},
 	}
@@ -883,7 +884,7 @@ func TestFromFuncConverterAlongMainEntry(t *testing.T) {
 	}
 }
 
-func TestFromFuncConverter(t *testing.T) {
+func TestFromFuncConverter(t *testing.T) { //nolint:revive
 	fn0 := func() string { return "hello" }
 
 	type C struct {
@@ -912,9 +913,9 @@ func TestFromFuncConverter(t *testing.T) {
 	lazyInitRoutines()
 
 	for ix, fnCase := range []struct {
-		fn     interface{}
-		target interface{}
-		expect interface{}
+		fn     interface{} //nolint:revive
+		target interface{} //nolint:revive
+		expect interface{} //nolint:revive
 		err    error
 	}{
 		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet},
@@ -931,14 +932,14 @@ func TestFromFuncConverter(t *testing.T) {
 		},
 
 		{
-			func() map[string]interface{} { return map[string]interface{}{"hello": "world"} },
-			&map[string]interface{}{"k": 1, "hello": "bob"},
-			map[string]interface{}{"hello": "world", "k": 1},
+			func() map[string]interface{} { return map[string]interface{}{"hello": "world"} }, //nolint:revive
+			&map[string]interface{}{"k": 1, "hello": "bob"},                                   //nolint:revive
+			map[string]interface{}{"hello": "world", "k": 1},                                  //nolint:revive
 			nil,
 		},
 
 		{func() string { return "hello" }, &stringTgt, "hello", nil},
-		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet}, // string -> number, implicit converting will be tried, and failure if it's really not a number
+		{func() string { return "hello" }, &intTgt, 1, ErrCannotSet}, //nolint:revive,lll // string -> number, implicit converting will be tried, and failure if it's really not a number
 		{func() string { return "789" }, &intTgt, 789, nil},
 		{&fn0, &stringTgt, "hello", nil},
 
@@ -971,7 +972,7 @@ func TestFromFuncConverter(t *testing.T) {
 				// but when go1.13 and higher, we will test the returned error obj
 				// can match case.err, see also TestFromFuncConverterGo113AndHigher()
 				t.Fatalf("has error: %v, but expecting %v", err, fnCase.err)
-			} else if ret := tt.Interface(); reflect.DeepEqual(ret, fnCase.expect) == false {
+			} else if ret := tt.Interface(); !reflect.DeepEqual(ret, fnCase.expect) {
 				t.Fatalf("unexpect result: expect %v but got %v", fnCase.expect, ret)
 			}
 		}
@@ -980,7 +981,7 @@ func TestFromFuncConverter(t *testing.T) {
 
 func newValueConverterContextForTest(c *cpController) *ValueConverterContext {
 	if c == nil {
-		c = newDeepCopier()
+		c = newDeepCopier() //nolint:revive
 	}
 	return &ValueConverterContext{newParams(withOwnersSimple(c, nil))}
 }

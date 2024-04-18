@@ -42,9 +42,9 @@ func TestFromFuncConverterGo113AndHigher(t *testing.T) { //nolint:revive
 	lazyInitRoutines()
 
 	for ix, fnCase := range []struct {
-		fn     interface{}
-		target interface{}
-		expect interface{}
+		fn     interface{} //nolint:revive
+		target interface{} //nolint:revive
+		expect interface{} //nolint:revive
 		err    error
 	}{
 		{func() ([]int, error) { return []int{2, 3}, nil }, &[]int{1}, []int{1, 2, 3}, nil},

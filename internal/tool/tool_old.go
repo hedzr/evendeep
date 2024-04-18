@@ -4,7 +4,7 @@
 package tool
 
 // ReverseSlice reverse any slice/array.
-func ReverseSlice(s interface{}) { ReverseAnySlice(s) }
+func ReverseSlice(s interface{}) { ReverseAnySlice(s) } //nolint:revive
 
 // ReverseStringSlice reverse a string slice.
 func ReverseStringSlice(s []string) []string {
