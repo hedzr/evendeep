@@ -22,7 +22,7 @@ go 1.21
 
 require (
 	github.com/hedzr/is v0.5.19
-	github.com/hedzr/logg v0.5.19
+	github.com/hedzr/logg v0.5.20
 	gopkg.in/hedzr/errors.v3 v3.3.2
 )
 

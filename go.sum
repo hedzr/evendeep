@@ -1,7 +1,7 @@
 github.com/hedzr/is v0.5.19 h1:bqaHyyS0neR/P4jr8XgVHmWKP1ItwlQohS9QbbjJy6s=
 github.com/hedzr/is v0.5.19/go.mod h1:xnqZCQcP5Fu36FfMp40pjrS57gCsbKF84rT49tQE3yI=
-github.com/hedzr/logg v0.5.19 h1:4Qf9gDjC77mNqUjAX7ZDKUOdA2EECcJyp2UhmMhIpPY=
-github.com/hedzr/logg v0.5.19/go.mod h1:nie97TI3MmPdviihNTNb92/61WEIWCexMrCGfPm6Cc0=
+github.com/hedzr/logg v0.5.20 h1:QkElQTSKdgwdAKRWORbyR1mM/9PZpMTvyIsAqsk6Soo=
+github.com/hedzr/logg v0.5.20/go.mod h1:nie97TI3MmPdviihNTNb92/61WEIWCexMrCGfPm6Cc0=
 golang.org/x/crypto v0.22.0 h1:g1v0xeRhjcugydODzvb3mEM9SQ0HGp9s/nh3COQ/C30=
 golang.org/x/crypto v0.22.0/go.mod h1:vr6Su+7cTlO45qkww3VDJlzDn0ctJvRgYbC2NvXHt+M=
 golang.org/x/net v0.24.0 h1:1PcaxkF854Fu3+lvBIx5SYn9wRlBzzcnHZSiaFFAb0w=
