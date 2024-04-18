@@ -54,17 +54,25 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.1.10
+
+  - upgraded deps
+  - fix go toolchain versions
+
 - v1.1.9
 
   - security patch
+
 - v1.1.8
 
   - improved errors.v3 - prevent attach itself into nested container
   - upgraded deps
+
 - v1.1.7
 
   - improved map -> struct, the lower-case map key names will be mapping to camel-case to match the corresponding export field names.
   - upgraded deps
+
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
 ## Usages

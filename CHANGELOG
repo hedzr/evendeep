@@ -1,5 +1,9 @@
 # HISTORY
 
+- v1.1.10
+  - upgraded deps
+  - fix go toolchain versions
+
 - v1.1.9
   - security patch
 
