@@ -54,6 +54,10 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.1.11
+
+  - security patch
+
 - v1.1.10
 
   - upgraded deps
