@@ -54,7 +54,7 @@ This library is designed for making everything customizable.
 
 ## History
 
-- v1.1.13
+- v1.1.15
   - security patch
 
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)

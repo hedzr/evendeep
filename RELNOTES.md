@@ -8,4 +8,4 @@
 
 The Updates:
 
-- normal updates
+- normal updates / security patches
