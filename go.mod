@@ -1,6 +1,6 @@
 module github.com/hedzr/evendeep
 
-go 1.21
+go 1.22.7
 
 // replace github.com/hedzr/cmdr/v2 => ../cmdr
 
