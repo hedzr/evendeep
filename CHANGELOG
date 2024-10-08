@@ -1,5 +1,12 @@
 # HISTORY
 
+- v1.1.17
+  - security patch
+  - move to go toolchain 1.22.7
+
+- v1.1.15
+  - security patch
+
 - v1.1.13
   - security patch
 

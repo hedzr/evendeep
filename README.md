@@ -54,8 +54,9 @@ This library is designed for making everything customizable.
 
 ## History
 
-- v1.1.15
+- v1.1.17
   - security patch
+  - move to go toolchain 1.22.7
 
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
