@@ -21,9 +21,9 @@ go 1.22.7
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
 require (
-	github.com/hedzr/is v0.5.25
-	github.com/hedzr/logg v0.5.25
-	gopkg.in/hedzr/errors.v3 v3.3.2
+	github.com/hedzr/is v0.5.26
+	github.com/hedzr/logg v0.5.26
+	gopkg.in/hedzr/errors.v3 v3.3.3
 )
 
 require (
