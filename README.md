@@ -54,6 +54,12 @@ This library is designed for making everything customizable.
 
 ## History
 
+- v1.2.1
+  - upgrade deps
+- v1.2.0
+  - security patch
+- v1.1.18
+  - security patch
 - v1.1.17
   - security patch
   - move to go toolchain 1.22.7
