@@ -271,6 +271,8 @@ func aCheck(flags Flags, tags string) (targetNameRule NameConvertRule) {
 	return
 }
 
+const CopyTagName = "copy"
+
 // Parse _
 // use "copy" if tagName is empty.
 func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule NameConvertRule) {
@@ -279,7 +281,7 @@ func Parse(s reflect.StructTag, tagName string) (flags Flags, targetNameRule Nam
 	flags = New()
 
 	if tagName == "" {
-		tagName = "copy" //nolint:revive
+		tagName = CopyTagName
 	}
 
 	tags := s.Get(tagName)

@@ -204,7 +204,7 @@ func subtestParse(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		fld := v.Type().Field(i)
 
-		f, nameConvertRules := Parse(fld.Tag, "copy")
+		f, nameConvertRules := Parse(fld.Tag, CopyTagName)
 
 		if !isFlagExists(f, cms.Ignore) {
 			t.Logf("%q flags: %v [without ignore] | %v: %v, %v -> %v", fld.Tag,

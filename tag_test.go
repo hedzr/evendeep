@@ -79,8 +79,8 @@ func subtestFlagTests(t *testing.T) {
 
 	var ft fieldTags
 	ft.Parse(sf.Tag, "")
-	ft.Parse(sf0.Tag, "copy") // entering 'continue' branch
-	ft.Parse(sf1.Tag, "")     // entering 'delete' branch
+	ft.Parse(sf0.Tag, flags.CopyTagName) // entering 'continue' branch
+	ft.Parse(sf1.Tag, "")                // entering 'delete' branch
 
 	var z *fieldTags
 	z.isFlagExists(cms.SliceCopy)

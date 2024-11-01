@@ -9,6 +9,7 @@ import (
 
 	"github.com/hedzr/evendeep/dbglog"
 	"github.com/hedzr/evendeep/diff"
+	"github.com/hedzr/evendeep/flags"
 	"github.com/hedzr/evendeep/flags/cms"
 	"github.com/hedzr/evendeep/ref"
 	"github.com/hedzr/evendeep/typ"
@@ -49,7 +50,7 @@ func TestNewForTest(t *testing.T) {
 		WithIgnoreNamesReset(),
 		WithIgnoreNames("Bugs*", "Test*"),
 
-		WithStructTagName("copy"),
+		WithStructTagName(flags.CopyTagName),
 
 		WithoutPanic(),
 
