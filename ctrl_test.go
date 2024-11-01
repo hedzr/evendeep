@@ -1353,30 +1353,6 @@ func TestMapToString(t *testing.T) { //nolint:revive
 	// tm2 := time.Date(2003, 9, 1, 23, 59, 59, 3579, timeZone)
 	// tm3 := time.Date(2015, 1, 29, 19, 31, 37, 77, timeZone2)
 
-	expect2 := evendeep.User{
-		Name:      "Bob",
-		Birthday:  &tm,
-		Age:       24,
-		EmployeID: 7,
-		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
-		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
-		Valid:     true,
-	}
-
-	expect3 := evendeep.Employee2{
-		Base: evendeep.Base{
-			Name:      "Bob",
-			Birthday:  &tm,
-			Age:       24,
-			EmployeID: 7,
-		},
-		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
-		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
-		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
-		Valid:  true,
-	}
-
 	var s2 evendeep.User
 	var s3 evendeep.Employee2
 	var str1 string
@@ -1411,20 +1387,31 @@ func TestMapToString(t *testing.T) { //nolint:revive
   "Valid": true
 }`
 
-	cases := []evendeep.TestCase{
-		evendeep.NewTestCase(
-			"map -> string [json]",
-			map1, &str1, &expect1,
-			[]evendeep.Opt{
-				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) { //nolint:revive
-					return json.MarshalIndent(v, "", "  ")
-				}),
-				evendeep.WithMergeStrategyOpt,
-				evendeep.WithAutoExpandStructOpt,
-			},
-			nil,
-		),
+	expect2 := evendeep.User{
+		Name:      "Bob",
+		Birthday:  &tm,
+		Age:       24,
+		EmployeID: 7,
+		Avatar:    "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:     []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:      &evendeep.Attr{Attrs: []string{helloString, worldString}},
+		Valid:     true,
+	}
 
+	expect3 := evendeep.Employee2{
+		Base: evendeep.Base{
+			Name:      "Bob",
+			Birthday:  &tm,
+			Age:       24,
+			EmployeID: 7,
+		},
+		Avatar: "https://tse4-mm.cn.bing.net/th/id/OIP-C.SAy__OKoxrIqrXWAb7Tj1wHaEC?pid=ImgDet&rs=1",
+		Image:  []byte{95, 27, 43, 66, 0, 21, 210},
+		Attr:   &evendeep.Attr{Attrs: []string{helloString, worldString}},
+		Valid:  true,
+	}
+
+	cases := []evendeep.TestCase{
 		evendeep.NewTestCase(
 			"map -> struct User",
 			map1, &s2, &expect2,
@@ -1437,12 +1424,27 @@ func TestMapToString(t *testing.T) { //nolint:revive
 			[]evendeep.Opt{evendeep.WithMergeStrategyOpt, evendeep.WithAutoExpandStructOpt},
 			nil,
 		),
+		evendeep.NewTestCase(
+			"map -> string [json]",
+			map1, &str1, &expect1,
+			[]evendeep.Opt{
+				evendeep.WithStringMarshaller(func(v interface{}) ([]byte, error) { //nolint:revive
+					return json.MarshalIndent(v, "", "  ")
+				}),
+				evendeep.WithMergeStrategyOpt,
+				evendeep.WithAutoExpandStructOpt,
+			},
+			nil,
+		),
 	}
 
 	for ix, tc := range cases {
-		if !t.Run(fmt.Sprintf("%3d. %s", ix, tc.Description), evendeep.DefaultDeepCopyTestRunner(ix, tc)) {
+		desc := fmt.Sprintf("%3d. %s", ix, tc.Description)
+		tr := evendeep.DefaultDeepCopyTestRunner(ix, tc)
+		if !t.Run(desc, tr) {
 			break
 		}
+		t.Logf("%5d. passed ----------------", ix)
 	}
 }
 

@@ -2037,12 +2037,35 @@ func (c *fromMapConverter) toStructDirectly(ctx *ValueConverterContext, source, 
 	return
 }
 
+const tryForExportedFieldName = true
+const trySmartFieldName = true
+
 func toExportedName(s string) string {
 	if s != "" {
 		a := wordSplitter(s)
-		for i, word := range a {
-			a[i] = makeCapitalize1st(word)
+
+		if trySmartFieldName {
+			// https://go.dev/wiki/CodeReviewComments#initialisms
+			var smartTrans = map[string]string{
+				"tls":  "TLS",
+				"json": "JSON", "toml": "TOML", "yaml": "YAML", "xml": "XML",
+				"id":  "ID",
+				"url": "URL", "http": "HTTP", "uri": "URI",
+				"nato": "NATO",
+			}
+			for i, word := range a {
+				if t, ok := smartTrans[string(word)]; ok {
+					a[i] = []rune(t)
+				} else {
+					a[i] = makeCapitalize1st(word)
+				}
+			}
+		} else {
+			for i, word := range a {
+				a[i] = makeCapitalize1st(word)
+			}
 		}
+
 		var r []rune
 		for _, word := range a {
 			r = append(r, word...)
@@ -2103,6 +2126,34 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 		return
 	}
 
+	trySolveTargetName := func(keyStr, targetName string, structType reflect.Type) (tsf reflect.StructField, fieldName string, solved bool) {
+		// use the key.(string) as the target struct field name
+		tsf, solved = targetType.FieldByName(targetName)
+		if !solved {
+			if tryForExportedFieldName {
+				if fieldName = toExportedName(keyStr); fieldName != keyStr {
+					tsf, solved = targetType.FieldByName(fieldName)
+				}
+			}
+			if !solved {
+				for i := 0; i < structType.NumField(); i++ {
+					fld := structType.Field(i)
+					f, r := flags.Parse(fld.Tag, flags.CopyTagName)
+					if r.Valid() && r.ToName() == keyStr {
+						tsf, fieldName, solved = fld, fld.Name, true
+						_ = f
+						return
+					}
+				}
+			} else {
+				// ks = fieldName
+				return
+			}
+		}
+		fieldName = keyStr
+		return
+	}
+
 	ec := errors.New("map -> struct errors")
 	defer ec.Defer(&err)
 
@@ -2135,22 +2186,25 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			}
 		}
 
-		const tryForExportedFieldName = true
-
-		// use the key.(string) as the target struct field name
-		tsf, ok := targetType.FieldByName(ks)
+		tsf, kstmp, ok := trySolveTargetName(ks, ks, targetType)
 		if !ok {
-			var kS string
-			if tryForExportedFieldName {
-				if kS = toExportedName(ks); kS != ks {
-					tsf, ok = targetType.FieldByName(kS)
-				}
-			}
-			if !ok {
-				continue
-			}
-			ks = kS
+			continue
 		}
+		ks = kstmp
+		// // use the key.(string) as the target struct field name
+		// tsf, ok := targetType.FieldByName(ks)
+		// if !ok {
+		// 	var kS string
+		// 	if tryForExportedFieldName {
+		// 		if kS = toExportedName(ks); kS != ks {
+		// 			tsf, ok = targetType.FieldByName(kS)
+		// 		}
+		// 	}
+		// 	if !ok {
+		// 		continue
+		// 	}
+		// 	ks = kS
+		// }
 
 		fld := target.FieldByName(ks)
 		// dbglog.Log("  fld %q: ", ks)
@@ -2161,7 +2215,7 @@ func (c *fromMapConverter) toStruct(ctx *ValueConverterContext, source reflect.V
 			fld = fld.Elem()
 		} else if tsfk == reflect.Ptr {
 			dbglog.Log("  fld.%q: %v (%v)", ks, ref.Valfmt(&fld), ref.Typfmtv(&fld))
-			if fld.IsNil() {
+			if ref.IsNil(fld) {
 				n := reflect.New(fld.Type().Elem())
 				target.FieldByName(ks).Set(n)
 				fld = target.FieldByName(ks)
