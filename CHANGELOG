@@ -1,5 +1,10 @@
 # HISTORY
 
+- v1.2.3
+  - fix processing the struct tag name CopyTagName
+  - improved toExportedName and trySolveTargetName
+  - upgrade deps
+
 - v1.2.1
   - upgrade deps - hedzr/is & hedzr/logg
 
