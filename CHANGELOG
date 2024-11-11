@@ -1,5 +1,8 @@
 # HISTORY
 
+- v1.2.5
+  - security patch
+
 - v1.2.3
   - fix processing the struct tag name CopyTagName
   - improved toExportedName and trySolveTargetName
