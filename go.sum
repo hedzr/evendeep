@@ -1,7 +1,7 @@
-github.com/hedzr/is v0.6.1 h1:XLYf/zZKU3wTpvwaEnDFPIG3hFv3CW5C+biP4WUyFIY=
-github.com/hedzr/is v0.6.1/go.mod h1:xBfXsyXVnxBpq8dYy2zKjex/ErTCpaFVB+j8JDvGTYY=
-github.com/hedzr/logg v0.7.5 h1:8lo0K86RxPCdJZ0dfOErW1wlYtFT96a7H1QTfV0I/nE=
-github.com/hedzr/logg v0.7.5/go.mod h1:PIrj0vsRWedjCX9AH9n7NkSJX0v1AcpyhZuIyaLIDhU=
+github.com/hedzr/is v0.6.2 h1:dZaeelVBKJIdDOqJzOA6qG7lE83xoMqMKlGdQ1hROZo=
+github.com/hedzr/is v0.6.2/go.mod h1:xBfXsyXVnxBpq8dYy2zKjex/ErTCpaFVB+j8JDvGTYY=
+github.com/hedzr/logg v0.7.15 h1:N6TINDwZ9QNujRTVJs1apgbS1nsnt3CqefH5GzRKd5I=
+github.com/hedzr/logg v0.7.15/go.mod h1:AOrqw69UzVxeS1r32hiZC8kCthniPtMBe/CUHnLQqLA=
 golang.org/x/crypto v0.29.0 h1:L5SG1JTTXupVV3n6sUqMTeWbjAyfPwoda2DLX8J8FrQ=
 golang.org/x/crypto v0.29.0/go.mod h1:+F4F4N5hv6v38hfeYwTdx20oUvLLc+QfrE9Ax9HtgRg=
 golang.org/x/net v0.31.0 h1:68CPQngjLL0r2AlUKiSxtQFKvzRVbnzLwMUn5SzcLHo=
