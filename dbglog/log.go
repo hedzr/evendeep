@@ -23,18 +23,7 @@ func DeferVisit(ec errors.Error, err *error) { //nolint:gocritic
 // Log will print formatted message while build-tags `delve` or `verbose` present.
 //
 // The flag dbglog.LogValid identify that state.
-func Log(format string, args ...interface{}) { //nolint:revive,goprintffuncname //no
-	_, _ = format, args
-}
-
-func Err(format string, args ...interface{}) { //nolint:revive,goprintffuncname //no
-	_, _ = format, args
-}
-
-func Wrn(format string, args ...interface{}) { //nolint:revive,goprintffuncname //so what
-	_, _ = format, args
-}
-
-func Colored(clr color.Color, format string, args ...interface{}) { //nolint:revive,goprintffuncname //so what
-	_, _, _ = clr, format, args
-}
+func Log(string, ...interface{})                  {}
+func Err(string, ...interface{})                  {}
+func Wrn(string, ...interface{})                  {}
+func Colored(color.Color, string, ...interface{}) {}
