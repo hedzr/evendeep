@@ -56,8 +56,9 @@ func (f *fieldTags) isFlagExists(ftf cms.CopyMergeStrategy) bool {
 	return f.flags[ftf]
 }
 
-func (f *fieldTags) isFlagIgnored() bool { return f.isFlagExists(cms.Ignore) } //nolint:revive,unused
-func (f *fieldTags) isFlagFlat() bool    { return f.isFlagExists(cms.Flat) }   //nolint:revive,unused
+func (f *fieldTags) isFlagIgnored() bool { return f.isFlagExists(cms.Ignore) }  //nolint:revive,unused
+func (f *fieldTags) isFlagFlat() bool    { return f.isFlagExists(cms.Flat) }    //nolint:revive,unused
+func (f *fieldTags) isFlagShallow() bool { return f.isFlagExists(cms.Shallow) } //nolint:revive,unused
 
 func (f *fieldTags) Parse(s reflect.StructTag, tagName string) {
 	f.flags, f.nameConvertRule = flags.Parse(s, tagName)

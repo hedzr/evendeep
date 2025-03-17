@@ -17,6 +17,8 @@ func TestFieldTags_Parse(t *testing.T) {
 type AFT struct {
 	flat01 *int `copy:",flat"` //nolint:revive,unused
 
+	shallow01 *int `copy:",shallow"`
+
 	flags     flags.Flags     `copy:",cleareq"` //nolint:revive,unused,structcheck //test only
 	converter *ValueConverter //nolint:revive,unused,structcheck //test only
 	wouldBe   int             `copy:",must,keepneq,omitzero,slicecopyappend,mapmerge"` //nolint:revive,unused,structcheck //test only
@@ -28,6 +30,9 @@ func prepareAFT() (a AFT, expects []flags.Flags) { //nolint:revive,unparam
 	expects = []flags.Flags{
 		// flat01
 		{cms.Flat: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
+
+		// shallow01
+		{cms.Shallow: true, cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},
 
 		{cms.Default: true, cms.ClearIfEq: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},           //nolint:revive,lll
 		{cms.Default: true, cms.SliceCopy: true, cms.MapCopy: true, cms.NoOmitTarget: true, cms.NoOmit: true, cms.ByOrdinal: true},                                //nolint:revive,lll

@@ -32,19 +32,20 @@ func _() {
 	_ = x[UnexportedToo-93]
 	_ = x[ByOrdinal-94]
 	_ = x[ByName-95]
-	_ = x[MaxStrategy-96]
-	_ = x[ftf100-125]
-	_ = x[ftf110-136]
-	_ = x[ftf120-147]
-	_ = x[ftf130-158]
-	_ = x[ftf140-169]
-	_ = x[ftf150-180]
-	_ = x[ftf160-191]
-	_ = x[ftf170-202]
+	_ = x[Shallow-96]
+	_ = x[MaxStrategy-97]
+	_ = x[ftf100-126]
+	_ = x[ftf110-137]
+	_ = x[ftf120-148]
+	_ = x[ftf130-159]
+	_ = x[ftf140-170]
+	_ = x[ftf150-181]
+	_ = x[ftf160-192]
+	_ = x[ftf170-203]
 	_ = x[InvalidStrategy - -1]
 }
 
-const _CopyMergeStrategy_name = "InvalidStrategystd-mustcleareqkeepneqclearinvalidclearmissednoomitomitemptyomitnilomitzeronoomittgtomitemptytgtomitniltgtomitzerotgtslicecopyslicecopyappendslicemergemapcopymapmergeflatprivatebyordinalbynameMaxStrategyftf100ftf110ftf120ftf130ftf140ftf150ftf160ftf170"
+const _CopyMergeStrategy_name = "InvalidStrategystd-mustcleareqkeepneqclearinvalidclearmissednoomitomitemptyomitnilomitzeronoomittgtomitemptytgtomitniltgtomitzerotgtslicecopyslicecopyappendslicemergemapcopymapmergeflatprivatebyordinalbynameshallowMaxStrategyftf100ftf110ftf120ftf130ftf140ftf150ftf160ftf170"
 
 var _CopyMergeStrategy_map = map[CopyMergeStrategy]string{
 	-1:  _CopyMergeStrategy_name[0:15],
@@ -72,15 +73,16 @@ var _CopyMergeStrategy_map = map[CopyMergeStrategy]string{
 	93:  _CopyMergeStrategy_name[185:192],
 	94:  _CopyMergeStrategy_name[192:201],
 	95:  _CopyMergeStrategy_name[201:207],
-	96:  _CopyMergeStrategy_name[207:218],
-	125: _CopyMergeStrategy_name[218:224],
-	136: _CopyMergeStrategy_name[224:230],
-	147: _CopyMergeStrategy_name[230:236],
-	158: _CopyMergeStrategy_name[236:242],
-	169: _CopyMergeStrategy_name[242:248],
-	180: _CopyMergeStrategy_name[248:254],
-	191: _CopyMergeStrategy_name[254:260],
-	202: _CopyMergeStrategy_name[260:266],
+	96:  _CopyMergeStrategy_name[207:214],
+	97:  _CopyMergeStrategy_name[214:225],
+	126: _CopyMergeStrategy_name[225:231],
+	137: _CopyMergeStrategy_name[231:237],
+	148: _CopyMergeStrategy_name[237:243],
+	159: _CopyMergeStrategy_name[243:249],
+	170: _CopyMergeStrategy_name[249:255],
+	181: _CopyMergeStrategy_name[255:261],
+	192: _CopyMergeStrategy_name[261:267],
+	203: _CopyMergeStrategy_name[267:273],
 }
 
 func (i CopyMergeStrategy) String() string {

@@ -105,6 +105,9 @@ const (
 	// ByName will be applied to struct or map.
 	ByName // byname
 
+	// Shallow copy, more general mode similar with `flat`
+	Shallow // shallow
+
 	// MaxStrategy is a mark to indicate the max value of all available
 	// CopyMergeStrategies.
 	MaxStrategy

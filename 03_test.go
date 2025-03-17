@@ -116,9 +116,15 @@ func TestParamsBasics3(t *testing.T) {
 		var z *fieldTags // nolint:gosimple
 		z = fldTags
 
+		z.isFlagFlat()
+		z.isFlagIgnored()
+		z.isFlagShallow()
+
 		z.isFlagExists(cms.Flat)
 
 		z.isFlagExists(cms.Ignore)
+
+		z.isFlagExists(cms.Shallow)
 
 		z.isFlagExists(cms.SliceCopy)
 		p2.isFlagExists(cms.SliceCopy)
