@@ -27,7 +27,7 @@ func copyPointer(c *cpController, params *Params, from, to reflect.Value) (err e
 	fromType := from.Type()
 
 	if fromType == to.Type() {
-		if params.isFlagExists(cms.Flat) {
+		if params.isAnyFlagsOK(cms.Flat, cms.Shallow) {
 			to.Set(from)
 			return
 		}
@@ -434,6 +434,18 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 			continue
 		}
 
+		flagsInTag, ignored := params.parseFieldTags(sourceField.structField.Tag)
+		if ignored {
+			dbglog.Log("%d. %s : IGNORED", *i, sst.CurrRecord().FieldName())
+			if c.advanceTargetFieldPointerEvenIfSourceIgnored {
+				_ = params.nextTargetFieldLite()
+			} else {
+				sst.Step(1) // step the source field index subscription
+			}
+			continue
+		}
+
+		shallow := flagsInTag.isFlagShallow()
 		fn, srcval, dstval := sourceField.FieldName(), sourceField.FieldValue(), params.accessor.FieldValue()
 
 		dstfieldname := params.accessor.StructFieldName()
@@ -464,6 +476,12 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 				}
 			}
 
+			if shallow {
+				dbglog.Log("   > src field is shallow: %v (val: %v)", ref.Typfmtv(srcval), ref.Valfmt(srcval))
+				err = copyDefaultHandler(c, params, *srcval, *dstval)
+				continue
+			}
+
 			if srcval.IsValid() {
 				if err = invokeStructFieldTransformer(c, params, srcval, dstval, typ1, padding); err != nil {
 					ec.Attach(err)
@@ -472,6 +490,12 @@ func forEachSourceField(params *Params, ec errors.Error, i, amount *int, padding
 					dbglog.Log("    %d. fld %q copied. from-to: %v -> %v", *i, fn, ref.Valfmt(srcval), ref.Valfmt(dstval))
 				}
 			}
+			continue
+		}
+
+		if shallow {
+			dbglog.Log("    > src field is shallow: %v (val: %v)", ref.Typfmtv(srcval), ref.Valfmt(srcval))
+			err = copyDefaultHandler(c, params, *srcval, *dstval)
 			continue
 		}
 
