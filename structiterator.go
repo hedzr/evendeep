@@ -163,7 +163,7 @@ func (table *fieldsTableT) tableRec(svind *reflect.Value, sf *reflect.StructFiel
 	tr.structField = sf
 	if ref.IsExported(sf) {
 		tr.structFieldValue = svind
-	} else if svind.CanAddr() {
+	} else if svind != nil && svind.CanAddr() {
 		val := cl.GetUnexportedField(*svind)
 		tr.structFieldValue = &val
 	}
