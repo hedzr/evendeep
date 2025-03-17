@@ -1,5 +1,13 @@
 # HISTORY
 
+- v1.3.1
+  - improved `MakeClone()`
+  - feat: implementing shallow
+  - feat: `shallow` flag for struct field tag
+  - fix a crash when svind is nil
+  - improve log (non-verbose)
+  - upgrade deps - hedzr/is & hedzr/logg
+
 - v1.3.0
   - upgrade toolchain to go1.23.7
   - upgrade deps - hedzr/is & hedzr/logg
