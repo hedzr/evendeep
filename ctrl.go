@@ -142,7 +142,7 @@ func (c *cpController) copyToInternal( //nolint:revive,gocognit //yes, it is an 
 	}
 
 	if c.testCloneable(params, from, to) {
-		dbglog.Log(`from -> to is NOT cloneable`)
+		dbglog.Log(`from -> to was Clone'd.`)
 		return
 	}
 
@@ -230,13 +230,29 @@ func (c *cpController) testCloneable(params *Params, from, to reflect.Value) (pr
 
 func (c *cpController) testCloneable1(params *Params, fromObj interface{}, to reflect.Value) (processed bool) { //nolint:revive
 	if dc, ok := fromObj.(Cloneable); ok { //nolint:gocritic // no need to rewrite to 'switch'
-		to.Set(reflect.ValueOf(dc.Clone()))
+		v := dc.Clone()
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Ptr {
+			if k := to.Elem().Kind(); k != reflect.Ptr {
+				// rv = rv.Elem()
+				if x := params.dstOwner.Elem(); x.CanSet() {
+					dbglog.Log(`dstOwner(x): %v <- rv (%v)`, ref.Typfmtv(&x), ref.Typfmtv(&rv))
+					if x.Type() == rv.Type() {
+						x.Set(rv)
+					} else {
+						x.Set(rv.Elem())
+					}
+					processed = true
+					return
+				}
+			}
+		}
+		to.Set(rv)
 		processed = true
 	} else if dc1, ok1 := fromObj.(DeepCopyable); ok1 {
 		to.Set(reflect.ValueOf(dc1.DeepCopy()))
 		processed = true
 	}
-	_ = params
 	return
 }
 

@@ -427,6 +427,13 @@ func ArrayIsZerov(v *reflect.Value) bool {
 	return true
 }
 
+func IsPtr(v reflect.Value) bool {
+	return v.Kind() == reflect.Ptr
+}
+func IsPtrv(v *reflect.Value) bool {
+	return v.Kind() == reflect.Ptr
+}
+
 // IsNil for go1.12+, the difference is it never panic on unavailable kinds.
 // see also reflect.IsNil.
 func IsNil(v reflect.Value) bool {

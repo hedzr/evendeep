@@ -71,8 +71,10 @@ func MakeClone(fromObj interface{}) (result interface{}) { //nolint:revive
 		findTyp  = ref.Rdecodetypesimple(fromTyp)
 		toPtr    = reflect.New(findTyp)
 		toPtrObj = toPtr.Interface()
+		// toPP     = reflect.New(reflect.TypeOf(toPtrObj))
 	)
 	dbglog.Log("toPtrObj: %v", toPtrObj)
+	// dbglog.Log("toPP: %v", ref.Typfmtv(&toPP))
 
 	defer defaultCloneController.SaveFlagsAndRestore()() //nolint:revive
 
@@ -89,14 +91,14 @@ func MakeClone(fromObj interface{}) (result interface{}) { //nolint:revive
 type Cloneable interface {
 	// Clone return a pointer to copy of source object.
 	// But you can return the copy itself with your will.
-	Clone() interface{} //nolint:revive
+	Clone() any //nolint:revive
 }
 
 // DeepCopyable interface represents a cloneable object that supports DeepCopy() method.
 //
 // The native DeepCopy algorithm of a DeepCopyable object can be adapted into DeepCopier.
 type DeepCopyable interface {
-	DeepCopy() interface{} //nolint:revive
+	DeepCopy() any //nolint:revive
 }
 
 // DeepCopier interface.
