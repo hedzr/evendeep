@@ -1,5 +1,8 @@
 # HISTORY
 
+- v1.3.5
+  - upgrade deps - hedzr/is & hedzr/logg
+
 - v1.3.1
   - improved `MakeClone()`
   - feat: implementing shallow
