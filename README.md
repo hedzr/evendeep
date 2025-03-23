@@ -1,7 +1,7 @@
 # even-deep
 
 ![Go](https://github.com/hedzr/evendeep/workflows/Go/badge.svg)
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hedzr/store)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hedzr/evendeep)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/evendeep.svg?label=release)](https://github.com/hedzr/evendeep/releases)
 [![go.dev](https://img.shields.io/badge/go.dev-reference-green)](https://pkg.go.dev/github.com/hedzr/evendeep)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hedzr/evendeep)](https://goreportcard.com/report/github.com/hedzr/evendeep) `<!--
