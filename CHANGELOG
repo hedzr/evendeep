@@ -1,5 +1,9 @@
 # HISTORY
 
+- v1.3.7
+  - downgrade toolchain to go1.23.0
+  - upgrade deps - hedzr/is & hedzr/logg
+
 - v1.3.6
   - upgrade deps - hedzr/is & hedzr/logg
 
