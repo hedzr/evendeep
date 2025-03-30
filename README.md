@@ -54,11 +54,6 @@ This library is designed for making everything customizable.
 
 ## History
 
-- v1.3.0
-  - upgrade toolchain to go1.23.7
-- v1.1.17
-  - move to go toolchain 1.22.7
-
 - More in [CHANGELOG](https://github.com/hedzr/evendeep/blob/master/CHANGELOG)
 
 ## Usages
