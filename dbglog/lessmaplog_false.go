@@ -24,9 +24,6 @@ var logValid = true
 //
 //	defer dbglog.DisableLogAndDefer()()
 //	evendeep.CopyTo(...) // the verbose logging will be prevent even if buildtag 'verbose' defined.
-func DisableLogAndDefer() func() {
-	sav := logValid
-	logValid = MoreMapLog
-	return func() { logValid = sav }
-}
-func ChildLogEnabled() bool { return logValid }
+func DisableLogAndDefer() func() { return DisableLog() }
+func DisableLog() func()         { sav := logValid; logValid = MoreMapLog; return func() { logValid = sav } }
+func ChildLogEnabled() bool      { return logValid }

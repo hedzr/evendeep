@@ -27,4 +27,5 @@ var logValid = true
 //
 // If you want to enable/disable dbglog.Log manually, try SetLogEnabled and SetLogDisabled.
 func DisableLogAndDefer() func() { return func() {} }
+func DisableLog() func()         { return func() {} }
 func ChildLogEnabled() bool      { return true }
