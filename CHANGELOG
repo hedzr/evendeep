@@ -1,5 +1,9 @@
 # HISTORY
 
+- v1.3.16
+  - upgrade deps - hedzr/is & hedzr/logg
+  - security patch
+
 - v1.3.15
   - upgrade deps - hedzr/is & hedzr/logg
 
