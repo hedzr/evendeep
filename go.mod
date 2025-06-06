@@ -23,13 +23,13 @@ toolchain go1.23.3
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
 require (
-	github.com/hedzr/is v0.7.20
-	github.com/hedzr/logg v0.8.20
+	github.com/hedzr/is v0.7.21
+	github.com/hedzr/logg v0.8.21
 	gopkg.in/hedzr/errors.v3 v3.3.5
 )
 
 require (
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 )
