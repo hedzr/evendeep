@@ -23,8 +23,8 @@ toolchain go1.23.3
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
 require (
-	github.com/hedzr/is v0.8.26
-	github.com/hedzr/logg v0.8.25
+	github.com/hedzr/is v0.8.27
+	github.com/hedzr/logg v0.8.27
 	gopkg.in/hedzr/errors.v3 v3.3.5
 )
 
