@@ -1,5 +1,8 @@
 # HISTORY
 
+- v1.3.38
+  - upgrade deps - hedzr/is & hedzr/logg
+
 - v1.3.37
   - upgrade deps - hedzr/is & hedzr/logg
 
