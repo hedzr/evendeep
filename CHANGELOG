@@ -1,5 +1,8 @@
 # HISTORY
 
+- v1.3.47
+  - upgrade deps - hedzr/is & hedzr/logg
+
 - v1.3.46
   - upgrade deps - hedzr/is & hedzr/logg
 
@@ -189,7 +192,7 @@
 - v1.1.0
   - improved any -> string/bool/int/uint/float/complex/duration
   - fixed toBool
-  - BREAK: toBool(3) => true. In old versions, only convert number `1` to `true`. Since v1.1.0, any non-Zero number will be converted to `true`. 
+  - BREAK: toBool(3) => true. In old versions, only convert number `1` to `true`. Since v1.1.0, any non-Zero number will be converted to `true`.
 
 - v1.0.2
   - improved bool/duration/time[Slice/Map] <-> any converters
