@@ -20,7 +20,7 @@ type logCapturer struct {
 }
 
 func (tl logCapturer) Write(p []byte) (n int, err error) {
-	tl.TB.Logf(string(p))
+	tl.TB.Log(string(p))
 	return len(p), nil
 }
 

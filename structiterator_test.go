@@ -822,7 +822,7 @@ func teststructiteratorNextA4New(t *testing.T) {
 		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index)
 	}
 
-	t.Logf(sb.String())
+	t.Log(sb.String())
 	//nolint:goconst
 	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
 1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
@@ -881,7 +881,7 @@ func teststructiteratorNextA4Zero(t *testing.T) {
 		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index)
 	}
 
-	t.Logf(sb.String())
+	t.Log(sb.String())
 	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
 1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
@@ -939,7 +939,7 @@ func teststructiteratorNextA4(t *testing.T) {
 		_, _ = fmt.Fprintf(&sb, "%d. %q (%v) | %v %v\n", i, field.Name, ref.Typfmt(field.Type), ref.Typfmt(accessor.Type()), field.Index)
 	}
 
-	t.Logf(sb.String())
+	t.Log(sb.String())
 	if sb.String() != `0. "Name2" (string (string)) | evendeep.A2 (struct) [0]
 1. "Int2" (int (int)) | evendeep.A2 (struct) [1]
 2. "Bool2" (bool (bool)) | evendeep.A2 (struct) [2]
