@@ -1,5 +1,9 @@
 # HISTORY
 
+- v1.3.60
+  - upgrade deps - hedzr/is & hedzr/logg
+  - security patch
+
 - v1.3.55
   - fix compatibilities for new golang toolchain (1.24.x)
   - UPGRADE GO TOOLCHAIN TO 1.24.x (1.24.5)
