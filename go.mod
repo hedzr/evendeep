@@ -24,7 +24,7 @@ toolchain go1.24.5
 
 require (
 	github.com/hedzr/is v0.8.66
-	github.com/hedzr/logg v0.8.65
+	github.com/hedzr/logg v0.8.66
 	gopkg.in/hedzr/errors.v3 v3.3.5
 )
 
