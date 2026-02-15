@@ -1,8 +1,6 @@
 module github.com/hedzr/evendeep
 
-go 1.24.0
-
-toolchain go1.24.5
+go 1.25.0
 
 // replace github.com/hedzr/cmdr/v2 => ../cmdr
 
@@ -23,8 +21,8 @@ toolchain go1.24.5
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
 require (
-	github.com/hedzr/is v0.8.68
-	github.com/hedzr/logg v0.8.68
+	github.com/hedzr/is v0.9.0
+	github.com/hedzr/logg v0.9.0
 	gopkg.in/hedzr/errors.v3 v3.3.5
 )
 
