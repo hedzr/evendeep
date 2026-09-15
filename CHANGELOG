@@ -1,5 +1,10 @@
 # HISTORY
 
+- v1.4.9
+  - upgrade deps - hedzr/is & hedzr/logg
+  - security patch
+  - upgrade toolchain to go1.26+
+
 - v1.4.3
   - upgrade deps - hedzr/is & hedzr/logg
   - security patch
