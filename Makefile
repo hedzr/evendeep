@@ -216,6 +216,23 @@ clean2:
 
 #---------------------
 
+## audit: tidy dependencies and format, vet and test all code
+.PHONY: audit
+audit:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
+	@echo 'Formatting code...'
+	go fmt ./...
+	@echo 'Vetting code...'
+	go vet ./...
+	@echo 'Running tests...'
+	# go test -race -vet=off ./...
+	go test ./... -v -timeout 30m -race -cover -coverprofile=./logs/coverage-cl.txt -covermode=atomic -test.short -vet=off 2>&1 | tee ./logs/cover-cl.log && echo $?
+
+
+#---------------------
+
 
 ## build: Compile the binary. Synonym of `compile`
 build: compile
