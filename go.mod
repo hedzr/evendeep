@@ -1,6 +1,6 @@
 module github.com/hedzr/evendeep
 
-go 1.26.0
+go 1.27.0
 
 // replace github.com/hedzr/cmdr/v2 => ../cmdr
 
@@ -21,13 +21,13 @@ go 1.26.0
 // replace github.com/hedzr/go-log/v2 => ../libs.log
 
 require (
-	github.com/hedzr/is v0.9.9
-	github.com/hedzr/logg v0.9.9
+	github.com/hedzr/is v0.9.10
+	github.com/hedzr/logg v0.9.10
 	gopkg.in/hedzr/errors.v3 v3.3.5
 )
 
 require (
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
 )
