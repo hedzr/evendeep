@@ -58,7 +58,8 @@ jobs:
               go test ./...
             done
           else
-            GOSUMDB=off go mod download
+            # GOSUMDB=off go mod download
+            go mod download
             # go install -v github.com/swaggo/swag/cmd/swag
             # go generate ./...
             [ -d ./cli ] && go build -v ./cli/... || go build -v ./...
