@@ -19,18 +19,15 @@ This library is designed for making everything customizable.
 - unexported values (optional), ...
 - circular references immunization
 - fully customizable
-
   - user-defined value/type converters/transformers
   - user-defined field to field name converting rule via struct Tag
 - easily apply different strategies
-
   - basic strategies are: copy-n-merge, clone,
   - strategies per struct field:
     `slicecopy`, `slicemerge`, `mapcopy`, `mapmerge`,
     `omitempty` (keep if source is zero or nil), `omitnil`, `omitzero`,
     `keepneq` (keep if not equal), `cleareq` (clear if equal), ...
 - copy fields by name or ordinal
-
   - field to field
   - field to method, method to field
   - value to function (as input), function result to value
@@ -40,14 +37,12 @@ This library is designed for making everything customizable.
   - User-defined setter for struct or map target (if mapkey is string)
   - ...
 - The deep series
-
   - deepcopy: [`DeepCopy()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L48),
     or [`New()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L32)
   - deepclone:[`MakeClone()`](https://github.com/hedzr/evendeep/blob/master/deepcopy.go#L63)
   - deepequal: [`DeepEqual()`](https://github.com/hedzr/evendeep/blob/master/deepequal.go#L12)
   - deepdiff: [`DeepDiff()`](https://github.com/hedzr/evendeep/blob/master/deepdiff.go#L13)
 - Compatibilities
-
   - Run for Go Modules and Generics enable, and log/slog present (go1.21+ since v1)
     - since v1, `debug/buildinfo` requires go1.18+, `log/slog` wants go1.21+.
     - for the v0.x versions, go1.11+ is okay.
